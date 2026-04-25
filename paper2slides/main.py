@@ -35,21 +35,19 @@ logger = logging.getLogger(__name__)
 def main():
     """Main entry point for Paper2Slides CLI."""
     parser = argparse.ArgumentParser(
-        description="Paper2Slides - Auto-reuses checkpoints",
+        description="PaperCue - PDF to editable PPTX with speaker script",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     
     parser.add_argument("--input", "-i", help="Input file or directory path (relative or absolute)")
     parser.add_argument("--content", choices=["paper", "general"], default="paper",
                         help="Content type (default: paper)")
-    parser.add_argument("--output", choices=["poster", "slides"], default="poster",
-                        help="Output type (default: poster)")
-    parser.add_argument("--style", default="doraemon",
+    parser.add_argument("--output", choices=["slides"], default="slides",
+                        help="Output type (only slides/PPTX is supported)")
+    parser.add_argument("--style", default="academic",
                         help="Style: academic, doraemon, or custom description")
-    parser.add_argument("--length", choices=["short", "medium", "long"], default="short",
-                        help="Slides length (default: short)")
-    parser.add_argument("--density", choices=["sparse", "medium", "dense"], default="medium",
-                        help="Poster density (default: medium)")
+    parser.add_argument("--length", choices=["short", "medium", "long"], default="medium",
+                        help="Slides length (default: medium)")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
                         help=f"Output directory (default: {DEFAULT_OUTPUT_DIR})")
     parser.add_argument("--from-stage", choices=STAGES,
@@ -97,7 +95,6 @@ def main():
         "style": style_type,
         "custom_style": custom_style,
         "slides_length": args.length,
-        "poster_density": args.density,
         "fast_mode": args.fast,
         "max_workers": args.parallel if args.parallel else 1,
     }

@@ -48,6 +48,7 @@ htmlcov/
 !.env.example
 paper2slides/.env
 paper2slides/.env.*
+!paper2slides/.env.example
 
 # Local API/key demos
 shunyu_relay_demo.py
@@ -91,5 +92,5 @@ uploads/
 *.pptx
 *.ppt
 *.pdf
-!assets/*.pdf
-!docs/*.pdf
+~$*.pptx
+~$*.ppt

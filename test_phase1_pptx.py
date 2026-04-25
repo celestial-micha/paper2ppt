@@ -6,7 +6,7 @@ from paper2slides.generator.config import GenerationConfig, GenerationInput, Out
 from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
 from paper2slides.generator.pptx_renderer import PptxRenderer
-from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _qa_repair_node
+from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _qa_repair_node
 from paper2slides.generator.spec_builder import build_presentation_spec
 from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
@@ -147,6 +147,16 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn("## Slide 1: Opening", script)
         self.assertIn("Suggested narration", script)
         self.assertIn("Success rate: 5.36%", script)
+
+    def test_drops_metrics_without_visible_values(self):
+        metrics = [
+            MetricBlock(label="Not really a metric", value="", note="qualitative point"),
+            MetricBlock(label="Success rate", value="5.36%", note="overall"),
+        ]
+
+        compact = _compact_metric_blocks(metrics)
+        self.assertEqual(len(compact), 1)
+        self.assertEqual(compact[0].value, "5.36%")
 
 
 if __name__ == "__main__":

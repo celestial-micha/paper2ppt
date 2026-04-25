@@ -169,9 +169,9 @@ def _prepare_packet_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
     source_packet = {
         "deck_title": state.get("title") or "Paper2Slides Presentation",
         "target": {
-            "principle": "presentation-first, concise, visual-led",
-            "max_bullets_per_slide": 5,
-            "max_words_per_bullet": 14,
+            "principle": "presentation-first, balanced density, visual-led",
+            "max_bullets_per_slide": 4,
+            "max_words_per_bullet": 18,
             "max_visuals_per_slide": 2,
         },
         "slides": [_section_to_packet(section) for section in plan.sections],
@@ -238,11 +238,11 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
     for index, slide in enumerate(spec.slides, start=1):
         slide.slide_id = slide.slide_id or f"slide_{index:02d}"
         slide.title = _clean_text(slide.title) or f"Slide {index}"
-        slide.takeaway = _limit_words(_clean_text(slide.takeaway), 18)
+        slide.takeaway = _limit_words(_clean_text(slide.takeaway), 22)
         slide.layout = slide.layout or _infer_layout(slide)
 
         slide.text_blocks = _compact_text_blocks(slide.text_blocks)
-        slide.metric_blocks = slide.metric_blocks[:4]
+        slide.metric_blocks = _compact_metric_blocks(slide.metric_blocks)
         if not slide.metric_blocks:
             slide.metric_blocks = _extract_metrics_from_slide(slide)[:4]
 
@@ -351,7 +351,7 @@ def _qa_repair_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
                 value=_limit_words(metric.value, 3),
                 note=_limit_words(metric.note, 5),
             )
-            for metric in slide.metric_blocks[:3]
+            for metric in _compact_metric_blocks(slide.metric_blocks)[:3]
         ]
         slide.table_blocks = [_compact_table_block(slide.table_blocks[0])] if slide.table_blocks else []
         for image in slide.image_blocks:
@@ -493,11 +493,13 @@ Rules:
 - Do NOT create or request generated images.
 - Prefer source figures/tables as the center of a slide. Text explains the visual.
 - Each slide must have one message.
-- Use 3-5 bullets per content slide.
-- Each bullet must be <= 14 words.
+- Use 2-4 bullets per slide depending on importance.
+- Each bullet must be <= 18 words.
 - Do not paste paragraphs from the source.
-- Use a short takeaway, <= 18 words.
+- Use a short but complete takeaway, <= 22 words.
+- Vary density: section/closing slides can be sparse; method/results slides should include enough context to be self-explanatory.
 - Extract 2-4 important metrics for metric-led or otherwise empty slides.
+- Only output a metric when it has a visible numeric/value field; otherwise turn that idea into a bullet.
 - Build comparison/metric tables when they communicate better than text.
 - Avoid fully empty-looking slides: if no figure/table exists, include metrics or a compact comparison table.
 - The cover should use a strong source figure when one is relevant.
@@ -646,18 +648,18 @@ def _parse_llm_spec(raw_response: str, plan: ContentPlan, source_plan_path: str)
     for index, item in enumerate(data.get("slides", []), start=1):
         bullets = item.get("bullets") or item.get("text_blocks") or []
         text_blocks = [
-            TextBlock(text=_limit_words(str(bullet), 14), role="bullet", bullet_level=0)
+            TextBlock(text=_limit_words(str(bullet), 18), role="bullet", bullet_level=0)
             for bullet in bullets
             if _clean_text(str(bullet))
-        ][:5]
+        ][:4]
 
         metric_blocks = []
         for metric in item.get("metrics", [])[:4]:
             metric_blocks.append(
                 MetricBlock(
-                    label=_limit_words(metric.get("label", ""), 4),
-                    value=_limit_words(metric.get("value", ""), 5),
-                    note=_limit_words(metric.get("note", ""), 8),
+                    label=_limit_words(metric.get("label", ""), 5),
+                    value=_limit_words(metric.get("value", ""), 6),
+                    note=_limit_words(metric.get("note", ""), 10),
                 )
             )
 
@@ -670,7 +672,7 @@ def _parse_llm_spec(raw_response: str, plan: ContentPlan, source_plan_path: str)
                     ImageBlock(
                         path=fig.image_path,
                         title=fig.figure_id,
-                        caption=_limit_words(fig_ref.get("caption") or fig.caption or "", 16),
+                        caption=_limit_words(fig_ref.get("caption") or fig.caption or "", 18),
                         placeholder_text=fig_ref.get("focus", ""),
                     )
                 )
@@ -685,7 +687,7 @@ def _parse_llm_spec(raw_response: str, plan: ContentPlan, source_plan_path: str)
                     TableBlock(
                         title=_clean_text(table.get("title", "")) or "Key Data",
                         rows=[[str(cell) for cell in row[:4]] for row in rows[:6]],
-                        caption=_limit_words(table.get("caption", ""), 18),
+                        caption=_limit_words(table.get("caption", ""), 22),
                     )
                 )
 
@@ -716,7 +718,7 @@ def _fallback_compact_spec(plan: ContentPlan, source_plan_path: str = "") -> Pre
     base = build_presentation_spec(plan, title="Paper2Slides Presentation", source_plan_path=source_plan_path)
     for slide in base.slides:
         slide.layout = _infer_layout(slide)
-        slide.takeaway = _limit_words(slide.text_blocks[0].text if slide.text_blocks else slide.title, 18)
+        slide.takeaway = _limit_words(slide.text_blocks[0].text if slide.text_blocks else slide.title, 22)
         slide.text_blocks = _compact_text_blocks(slide.text_blocks)
         slide.metric_blocks = _extract_metrics_from_slide(slide)[:4]
     base.metadata = {**(base.metadata or {}), "curation": "fallback_compact"}
@@ -772,13 +774,27 @@ def _compact_text_blocks(blocks: List[TextBlock]) -> List[TextBlock]:
     for block in blocks:
         parts = _split_into_points(block.text)
         for part in parts:
-            point = _limit_words(part, 14)
+            point = _limit_words(part, 18)
             if not point or point.lower() in seen:
                 continue
             compact.append(TextBlock(text=point, role="bullet", bullet_level=0))
             seen.add(point.lower())
-            if len(compact) >= 5:
+            if len(compact) >= 4:
                 return compact
+    return compact
+
+
+def _compact_metric_blocks(blocks: List[MetricBlock]) -> List[MetricBlock]:
+    compact: List[MetricBlock] = []
+    for metric in blocks[:4]:
+        label = _limit_words(_clean_text(metric.label), 4)
+        value = _limit_words(_clean_text(metric.value), 5)
+        note = _limit_words(_clean_text(metric.note), 8)
+        if not value:
+            value = _first_metric_value(" ".join([label, note]))
+        if not value:
+            continue
+        compact.append(MetricBlock(label=label or "Key metric", value=value, note=note))
     return compact
 
 
@@ -797,6 +813,11 @@ def _extract_metrics_from_slide(slide: SlideSpec) -> List[MetricBlock]:
         if len(metrics) >= 4:
             break
     return metrics
+
+
+def _first_metric_value(text: str) -> str:
+    match = re.search(r"(?<![A-Za-z0-9])(?:\d+(?:\.\d+)?%|r\s*=\s*-?\d+(?:\.\d+)?|p\s*=\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?)", text or "")
+    return match.group(0).replace(" ", "") if match else ""
 
 
 def _metric_label_for_value(value: str, context: str) -> str:
@@ -829,7 +850,7 @@ def _pick_cover_figure(plan: ContentPlan) -> Optional[ImageBlock]:
     return ImageBlock(
         path=fig.image_path,
         title=fig.figure_id,
-        caption=_limit_words(fig.caption or "", 14),
+        caption=_limit_words(fig.caption or "", 18),
         placeholder_text=fig.figure_id,
     )
 
@@ -854,6 +875,9 @@ def _limit_words(text: str, max_words: int) -> str:
 def _clean_text(text: str) -> str:
     cleaned = str(text or "")
     replacements = {
+        "→": "->",
+        "↔": "<->",
+        "≈": "~",
         "—": "-",
         "–": "-",
         "бк": "-",

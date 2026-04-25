@@ -201,12 +201,16 @@ class PptxRenderer:
         )
 
         claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
+        has_metrics = bool(slide_spec.metric_blocks)
+        claim_width = self.Inches(7.05 if has_metrics else 10.6)
+        bullet_width = self.Inches(7.0 if has_metrics else 10.3)
+
         self._add_text(
             slide,
             claim,
             self.Inches(0.86),
             self.Inches(1.42),
-            self.Inches(7.05),
+            claim_width,
             self.Inches(1.05),
             size=self._fit_title_size(claim, base=22 if not closing else 24, min_size=17),
             bold=True,
@@ -217,16 +221,16 @@ class PptxRenderer:
 
         self._add_bullet_list(
             slide,
-            slide_spec.text_blocks[:5],
+            slide_spec.text_blocks[:4],
             self.Inches(0.96),
             self.Inches(2.88),
-            self.Inches(7.0),
+            bullet_width,
             self.Inches(2.85),
             size=14,
-            max_items=5,
+            max_items=4,
         )
 
-        if slide_spec.metric_blocks:
+        if has_metrics:
             self._render_metric_column(
                 slide,
                 slide_spec.metric_blocks[:4],
@@ -235,8 +239,6 @@ class PptxRenderer:
                 self.Inches(3.45),
                 self.Inches(4.75),
             )
-        else:
-            self._render_abstract_mark(slide, self.Inches(8.65), self.Inches(1.7), self.Inches(3.15), self.Inches(3.7))
 
         self._footer(slide, slide_index)
 
@@ -403,6 +405,7 @@ class PptxRenderer:
                     color=self.theme.muted,
                     font=self.theme.body_font,
                     max_lines=1,
+                    alignment=self.PP_ALIGN.CENTER,
                 )
 
     def _render_metric_band(self, slide, metrics: Sequence[MetricBlock], left, top, width, height) -> None:
@@ -461,10 +464,10 @@ class PptxRenderer:
         blocks = list(blocks)[:max_items]
         if not blocks:
             return
-        text = "\n".join(f"- {self._truncate(block.text, 86)}" for block in blocks)
+        text = "\n".join(f"- {self._truncate(block.text, 105)}" for block in blocks)
         self._add_text(slide, text, left, top, width, height, size=size, color=self.theme.ink, font=self.theme.body_font, max_lines=max_items)
 
-    def _add_text(self, slide, text: str, left, top, width, height, size: float, bold: bool = False, color=None, font: str | None = None, max_lines: int = 2):
+    def _add_text(self, slide, text: str, left, top, width, height, size: float, bold: bool = False, color=None, font: str | None = None, max_lines: int = 2, alignment=None):
         text = self._truncate_lines(text or "", max_lines=max_lines)
         box = slide.shapes.add_textbox(left, top, width, height)
         frame = box.text_frame
@@ -483,6 +486,8 @@ class PptxRenderer:
             p.font.bold = bold
             p.font.name = font or self.theme.body_font
             p.font.color.rgb = self._rgb(color or self.theme.ink)
+            if alignment is not None:
+                p.alignment = alignment
             p.space_after = self.Pt(5 if len(lines) > 1 else 0)
         return box
 

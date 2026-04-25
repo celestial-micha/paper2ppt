@@ -1,405 +1,257 @@
-<div align="center">
+# PaperCue
 
-<img src="assets/paper2slides_logo.png" alt="Paper2Slides Logo" width="200"/><br>
+[English](#english) | [中文](#中文)
 
-# Paper2Slides: From Paper to Presentation in One Click
+PaperCue turns academic PDFs into editable PowerPoint decks and matching speaker scripts. It is built for users who want a practical "PDF in, PPTX out" workflow without paying for image-generation models.
 
-[![Python](https://img.shields.io/badge/Python-3.12+-FCE7D6.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-C1E5F5.svg)](https://opensource.org/licenses/MIT/)
-[![Feishu](https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat&logo=wechat&logoColor=white)](./COMMUNICATION.md) 
-[![WeChat](https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat&logo=wechat&logoColor=white)](./COMMUNICATION.md)
+PaperCue is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). This fork keeps the document parsing, summarization, RAG-style extraction, and checkpoint pipeline ideas, then refactors the final generation path into a text-LLM-driven, native PPTX workflow.
 
-✨ **Never Build Slides from Scratch Again** ✨
+## English
 
-| 📄 **Universal File Support** &nbsp;|&nbsp; 🎯 **RAG-Powered Precision** &nbsp;|&nbsp; 🎨 **Custom Styling** &nbsp;|&nbsp; ⚡ **Lightning Speed** |
+### What It Does
 
-</div>
+- Parses a paper PDF and extracts text, tables, and original figures.
+- Uses text LLMs through LangChain/LangGraph to curate a presentation plan.
+- Generates an editable `.pptx` with native PowerPoint text, tables, shapes, and the paper's own figures.
+- Generates `speaker_script.md` alongside the deck.
+- Runs a lightweight PPTX layout QA pass and can repair risky slide specs before final output.
+- Does not call text-to-image or image-generation models for slide creation.
 
----
+### Output
 
-## 🎯 What is Paper2Slides?
+Each run creates an output folder containing files such as:
 
-Turns your **research papers**, **reports**, and **documents** into **professional slides & posters** in **minutes**.
-
-### ✨ Key Features
-- 📄 **Universal Document Support**<br>
-  Seamlessly process PDF, Word, Excel, PowerPoint, Markdown, and multiple file formats simultaneously.
-  
-- 🎯 **Comprehensive Content Extraction**<br>
-  RAG-powered mechanism ensures every critical insight, figure, and data point is captured with precision.
-  
-- 🔗 **Source-Linked Accuracy**<br>
-  Maintains direct traceability between generated content and original sources, eliminating information drift.
-  
-- 🎨 **Custom Styling Freedom**<br>
-  Choose from professional built-in themes or describe your vision in natural language for custom styling.
-  
-- ⚡ **Lightning-Fast Generation**<br>
-  Instant preview mode enables rapid experimentation and real-time refinements.
-  
-- 💾 **Seamless Session Management**<br>
-  Advanced checkpoint system preserves all progress—pause, resume, or switch themes instantly without loss.
-  
-- ✨ **Professional-Grade Visuals**<br>
-  Deliver polished, presentation-ready slides and posters with publication-quality design standards.
-
-### ⚡ Easy as One Command
-```bash
-# One command to generate slides from a paper
-python -m paper2slides --input paper.pdf --output slides --style doraemon --length medium --fast --parallel 2
+```text
+slides.pptx
+speaker_script.md
+layout_qa.json
+checkpoint_slide_spec.json
+checkpoint_slide_spec_llm_raw.txt
 ```
 
----
+### Installation
 
-## 🔥 News
-
-- **[2025.12.09]** Added parallel slide generation (`--parallel`) for faster processing
-- **[2025.12.08]** Paper2Slides is now open source!
-
----
-
-## 🎨 Custom Styling Showcase
-
-<div align="center">
-
-<table>
-<tr>
-<td align="center" width="290"><img src="assets/doraemon_poster.png?v=2" width="280"/><br/><code>doraemon</code></td>
-<td align="center" width="290"><img src="assets/academic_poster.png?v=2" width="280"/><br/><code>academic</code></td>
-<td align="center" width="290"><img src="assets/totoro_poster.png?v=2" width="280"/><br/><code>custom</code></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td align="center" width="290"><a href="assets/doraemon_slides.pdf"><img src="assets/doraemon_slides_preview.png?v=2" width="280"/></a><br/><code>doraemon</code></td>
-<td align="center" width="290"><a href="assets/academic_slides.pdf"><img src="assets/academic_slides_preview.png?v=2" width="280"/></a><br/><code>academic</code></td>
-<td align="center" width="290"><a href="assets/totoro_slides.pdf"><img src="assets/totoro_slides_preview.png?v=2" width="280"/></a><br/><code>custom</code></td>
-</tr>
-</table>
-
-<sub>✨ Multiple styles available — simply modify the <code>--style</code> parameter<br/>
-Examples from <a href="https://arxiv.org/abs/2512.02556">DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models</a></sub>
-
-</div>
-
-<details>
-<summary><b>💡 Custom Style Example: Totoro Theme</b></summary>
-
-```
---style "Studio Ghibli anime style with warm whimsical aesthetic. Use soft watercolor Morandi tones with light cream background, muted sage green and dusty pink accents. Totoro character can appear as a friendly guide relating to the content, with nature elements like soft clouds or leaves."
-```
-
-</details>
-
----
-
-### 🌐 Paper2Slides Web Interface
-
-<div align="center">
-<table>
-<tr>
-<td><img src="assets/ui_1.png" width="420"/></td>
-<td><img src="assets/ui_2.png" width="420"/></td>
-</tr>
-</table>
-</div>
-
----
-
-## 📋 Table of Contents
-
-- [🎯 Quick Start](#-quick-start)
-- [🏗️ Paper2Slides Framework](#%EF%B8%8F-paper2slides-framework)
-- [🔧 Configuration](#%EF%B8%8F-configuration)
-- [📁 Code Structure](#-code-structure)
-
----
-
-## 🏃 Quick Start
-
-### 1. Environment Setup
-
-```bash
-# Clone repository
-git clone https://github.com/HKUDS/Paper2Slides.git
-cd Paper2Slides
-
-# Create and activate conda environment
-conda create -n paper2slides python=3.12 -y
-conda activate paper2slides
-
-# Install dependencies
+```powershell
+conda create -n papercue python=3.12
+conda activate papercue
 pip install -r requirements.txt
 ```
 
-> [!NOTE]
-> Create a `.env` file in `paper2slides/` directory with your API keys. Refer to `paper2slides/.env.example` for the required variables.
+If you already use the local environment from development:
 
-### 2. Command Line Usage
-
-```bash
-# Basic usage - generate slides from a paper
-python -m paper2slides --input paper.pdf --output slides --length medium
-
-# Generate poster with custom style
-python -m paper2slides --input paper.pdf --output poster --style "minimalist with blue theme" --density medium
-
-# Fast mode
-python -m paper2slides --input paper.pdf --output slides --fast
-
-# Enable parallel generation (2 workers by default)
-python -m paper2slides --input paper.pdf --output slides --parallel 2
-
-# List all processed outputs
-python -m paper2slides --list
+```powershell
+conda activate paper2slides
+pip install -r requirements.txt
 ```
 
-For `--output slides`, the Phase 1 PPTX path now writes:
+### Configuration
 
-- `checkpoint_slide_spec.json`
-- `<timestamp>/slides.pptx`
+Create `paper2slides/.env` from the example file:
 
-Slides are generated with a LangGraph/LangChain text-model workflow. The
-pipeline does not call the image-generation provider for `--output slides`;
-instead, a deck-curation LLM node condenses the verbose paper plan into concise
-slide titles, takeaways, bullets, source-figure placements, and native tables.
-Source figures are reused from the parsed paper images and inserted into the
-editable PPTX.
-
-For `--output poster`, the existing image-generation output path is unchanged.
-
-**CLI Options**:
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--input, -i` | Input file(s) or directory | Required |
-| `--output` | Output type: `slides` or `poster` | `poster` |
-| `--content` | Content type: `paper` or `general` | `paper` |
-| `--style` | Style: `academic`, `doraemon`, or custom | `doraemon` |
-| `--length` | Slides length: `short`, `medium`, `long` | `short` |
-| `--density` | Poster density: `sparse`, `medium`, `dense` | `medium` |
-| `--fast` | Fast mode: skip RAG indexing | `false` |
-| `--parallel` | Enable parallel slide generation: `--parallel` uses 2 workers, `--parallel N` uses N workers | `1` (sequential without this option) |
-| `--from-stage` | Force restart from stage: `rag`, `summary`, `plan`, `generate` | Auto-detect |
-| `--debug` | Enable debug logging | `false` |
-
-**💾 Checkpoint & Resume**:
-
-Paper2Slides intelligently saves your progress at every key stage, allowing you to:
-
-| Scenario | Command |
-|----------|---------|
-| **Resume after interruption** | Just run the same command again — it auto-detects and continues |
-| **Change style only** | Add `--from-stage plan` to skip re-parsing |
-| **Regenerate images** | Add `--from-stage generate` to keep the same plan |
-| **Full restart** | Add `--from-stage rag` to start from scratch |
-
-> [!TIP]
-> Checkpoints are auto-saved. Just run the same command to resume. Use `--from-stage` only to **force** restart from a specific stage.
-
-### 3. Web Interface
-
-Launch both backend and frontend services:
-
-```bash
-./scripts/start.sh
+```powershell
+copy paper2slides\.env.example paper2slides\.env
 ```
 
-Or start services independently:
+Set your text-model API information:
 
-```bash
-# Terminal 1: Start backend API
-./scripts/start_backend.sh
-
-# Terminal 2: Start frontend
-./scripts/start_frontend.sh
+```env
+RAG_LLM_API_KEY=your_api_key_here
+RAG_LLM_BASE_URL=https://api.example.com/v1
+LLM_MODEL=gpt-4o-mini
 ```
 
-Access the web interface at `http://localhost:5173` (default)
+Optional figure understanding can use a vision-capable text model, but it still only analyzes original paper figures. It does not generate new images.
 
-<div align="center">
-<table>
-<tr>
-<td><img src="assets/ui_1.png" width="420"/></td>
-<td><img src="assets/ui_2.png" width="420"/></td>
-</tr>
-</table>
-</div>
-
----
-
-## 🏗️ Paper2Slides Framework
-
-Paper2Slides transforms documents through a 4-stage pipeline designed for **reliability** and **efficiency**:
-
-| Stage | Description | Checkpoint | Output |
-|-------|-------------|------------|------------|
-| **🔍 RAG** | Parse documents and construct intelligent retrieval index using RAG | `checkpoint_rag.json` | Searchable knowledge base|
-| **📊 Analysis** | Extract document structure, identify key figures, tables, and content hierarchy	| `checkpoint_summary.json` | Structured content map |
-| **📋 Planning** | Generate optimized content layout and slide/poster organization strategy | `checkpoint_plan.json` | Presentation blueprint|
-| **🎨 Creation** | Render final high-quality slides and poster visuals | Output directory | Polished presentation materials |
-
-### 💾 Smart Recovery System
-Each stage automatically saves progress checkpoints, enabling seamless resumption from any point if the process is interrupted—no need to start over.
-
-### Fast Mode vs Normal Mode
-
-| Mode | Processing Pipeline | Use Cases |
-|------|---------------------|-----------|
-| **Normal** | Complete RAG indexing with deep document analysis | Complex research papers, lengthy documents, multi-section content|
-| **Fast** | Skip RAG indexing, direct LLM query | Short documents, instant previews, quick revisions |
-
-Use `--fast` when:
-- Document (text + figures) is short enough to fit in LLM context
-- Quick preview/iteration needed
-- Don't want to wait for RAG indexing
-
-Use normal mode (default) when:
-- Document is long or has many figures
-- Multiple files to process together
-- Need retrieval for better context selection
-
----
-
-## ⚙️ Configuration
-
-### Output Directory Structure
-
+```env
+PPTX_ENABLE_FIGURE_ANALYSIS=1
+PPTX_VISION_MODEL=gpt-4o-mini
+PPTX_MAX_FIGURE_ANALYSIS=5
 ```
+
+### Usage
+
+```powershell
+python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast
+```
+
+Useful options:
+
+```text
+--input       PDF path
+--output      slides only
+--style       academic or custom text
+--length      short, medium, or long
+--fast        parse directly without full RAG indexing
+--from-stage  rag, summary, plan, or generate
+--list        list previous outputs
+```
+
+To rerun only the PPTX curation/rendering step from existing checkpoints:
+
+```powershell
+python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast --from-stage generate
+```
+
+### Architecture
+
+```text
+PDF
+ -> parsing and extraction
+ -> summary checkpoint
+ -> content plan checkpoint
+ -> LangGraph PPTX workflow
+    -> source packet
+    -> optional source-figure analysis
+    -> text LLM deck curation
+    -> slide spec validation
+    -> native PPTX rendering
+    -> layout QA and repair loop
+    -> speaker script
+```
+
+Important modules:
+
+```text
+paper2slides/core/stages/
+paper2slides/generator/content_planner.py
+paper2slides/generator/text_pptx_workflow.py
+paper2slides/generator/pptx_renderer.py
+paper2slides/generator/pptx_qa.py
+paper2slides/generator/slide_schema.py
+```
+
+### Safety Before Publishing
+
+Do not publish local secrets or generated private outputs. The repository ignores common sensitive files, including:
+
+```text
+paper2slides/.env
+shunyu_relay_demo.py
+test_api_config.py
 outputs/
-├── <project_name>/
-│   ├── <content_type>/                   # paper or general
-│   │   ├── <mode>/                       # fast or normal
-│   │   │   ├── checkpoint_rag.json       # RAG query results & parsed file paths
-│   │   │   ├── checkpoint_summary.json   # Extracted content, figures, tables
-│   │   │   ├── summary.md                # Human-readable summary
-│   │   │   └── <config_name>/            # e.g., slides_doraemon_medium
-│   │   │       ├── state.json            # Current pipeline state
-│   │   │       ├── checkpoint_plan.json  # Content plan for slides/poster
-│   │   │       └── <timestamp>/          # Generated outputs
-│   │   │           ├── slide_01.png
-│   │   │           ├── slide_02.png
-│   │   │           ├── ...
-│   │   │           └── slides.pdf        # Final PDF output
-│   │   └── rag_output/                   # RAG index storage
-│   └── ...
-└── ...
+test_papers/*.pdf
 ```
 
-**Checkpoint Files**:
-| File | Description | Reusable When |
-|------|-------------|---------------|
-| `checkpoint_rag.json` | Parsed document content | Same input files |
-| `checkpoint_summary.json` | Figures, tables, structure | Same input files |
-| `checkpoint_plan.json` | Content layout plan | Same style & length/density |
+Before pushing to GitHub, run:
 
-### Style Configuration
-
-| Style | Description |
-|-------|-------------|
-| `academic` | Clean, professional academic presentation style |
-| `doraemon` | Colorful, friendly style with illustrations |
-| `custom` | Any text description for LLM-generated style |
-
-### Image Generation Providers
-
-`--output slides` does not use these settings. They are only used by the poster
-path and by legacy image/PDF slide generation code.
-
-- Set `IMAGE_GEN_PROVIDER` in `paper2slides/.env` to choose the backend:
-  - `openrouter` (default): uses `IMAGE_GEN_API_KEY`, `IMAGE_GEN_BASE_URL`, and `IMAGE_GEN_MODEL` (default `google/gemini-3-pro-image-preview`)
-  - `google`: uses the official Gemini API at `GOOGLE_GENAI_BASE_URL` (default `https://generativelanguage.googleapis.com/v1beta`), `IMAGE_GEN_API_KEY`, `IMAGE_GEN_MODEL` (default `models/gemini-3-pro-image-preview`, must be image-capable), and `IMAGE_GEN_RESPONSE_MIME_TYPE` (default `text/plain`; use text types if your model does not support image responses)
-- Reference figures are sent as inline data when supported (Google) or as `image_url` attachments (OpenRouter).
-
-### Image Generation Notes
-
-> [!TIP]
-> By default Paper2Slides uses `gemini-3-pro-image-preview` (OpenRouter) for image generation; you can switch to an image-capable Google Gemini model (e.g., `models/gemini-1.5-flash`) via `IMAGE_GEN_PROVIDER=google`. Key findings:
-> 
-> - **Mood Keywords**: Words like "warm", "elegant", "vibrant" strongly influence the overall color palette
-> - **Layout vs Style**: Fine-grained *layout* instructions ground well; fine-grained *element styling* does not
-> - **Prompt Length**: Simple prompts generally outperform detailed ones
-> - **Multi-slide Generation**: Native multi-image output is story-like; for consistent slides, we use iterative single-image generation
-
----
-
-## 📁 Code Structure
-
-| Module | Description |
-|--------|-------------|
-| `paper2slides/core/` | Pipeline orchestration, 4-stage execution |
-| `paper2slides/raganything/` | Document parsing & RAG indexing |
-| `paper2slides/summary/` | Content extraction: figures, tables, paper structure |
-| `paper2slides/generator/` | Content planning & image generation |
-| `api/` | FastAPI backend for web interface |
-| `frontend/` | React frontend (Vite + TailwindCSS) |
-
-<details>
-<summary><b>Click to expand full project structure</b></summary>
-
-```
-Paper2Slides/
-├── paper2slides/                 # Core library
-│   ├── main.py                   # CLI entry point
-│   ├── core/
-│   │   ├── pipeline.py           # Main pipeline orchestration
-│   │   ├── state.py              # Checkpoint state management
-│   │   └── stages/
-│   │       ├── rag_stage.py      # Stage 1: Parse & index
-│   │       ├── summary_stage.py  # Stage 2: Extract content
-│   │       ├── plan_stage.py     # Stage 3: Plan layout
-│   │       └── generate_stage.py # Stage 4: Generate images
-│   │
-│   ├── raganything/
-│   │   ├── raganything.py        # RAG processor
-│   │   └── parser.py             # Document parser
-│   │
-│   ├── summary/
-│   │   ├── paper.py              # Paper structure extraction
-│   │   └── extractors/           # Figure/table extractors
-│   │
-│   ├── generator/
-│   │   ├── content_planner.py    # Slide/poster planning
-│   │   └── image_generator.py    # Image generation
-│   │
-│   ├── prompts/                  # LLM prompt templates
-│   └── utils/                    # Utilities
-│
-├── api/server.py                 # FastAPI backend
-├── frontend/src/                 # React frontend
-└── scripts/                      # Shell scripts (start/stop)
+```powershell
+git status --short
+git diff --check
 ```
 
-</details>
+### Tests
 
----
+```powershell
+python -m unittest test_phase1_pptx.py
+```
 
-## 🙏 Related Open-Sourced Projects
+### License and Attribution
 
-- **[LightRAG](https://github.com/HKUDS/LightRAG)**: Graph-Empowered RAG
-- **[RAG-Anything](https://github.com/HKUDS/RAG-Anything)**: Multi-Modal RAG
-- **[VideoRAG](https://github.com/HKUDS/VideoRAG)**: RAG with Extremely-Long Videos
+This project inherits from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). Keep the original license terms and attribution when redistributing this fork.
 
----
+## 中文
 
-<div align="center">
+### 这个项目做什么
 
-**🌟Found Paper2Slides helpful? Star us on GitHub!**
+PaperCue 可以把论文 PDF 一键生成可编辑的 PowerPoint，并同时生成对应的演讲稿或讲解稿。它的目标不是把论文原文搬进 PPT，而是用文本大模型做内容策展、重点提炼和版式规划，然后用论文中已经提取到的原图和表格生成展示稿。
 
-**🚀 Turn any document into professional presentations in minutes!**  
+本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。这个 fork 保留了原项目的解析、摘要、RAG/检查点流水线思路，并把最后生成部分改成了“文本模型 + 原生 PPTX”的工作流。
 
-</div>
+### 核心特点
 
----
+- 从 PDF 中提取正文、表格和论文原图。
+- 使用 LangChain/LangGraph 调用文本大模型进行 PPT 内容策展。
+- 输出真正可编辑的 `.pptx`，不是图片拼成的 PDF。
+- PPT 中的图片来自论文原始提取结果，不调用文生图模型。
+- 同步生成 `speaker_script.md`，便于汇报或讲解。
+- 自动生成 `layout_qa.json`，并在发现排版风险时尝试自动压缩和返修。
 
-## Star History
+### 安装
 
-[![Star History Chart](https://api.star-history.com/svg?repos=HKUDS/Paper2Slides&type=timeline&legend=top-left)](https://www.star-history.com/#HKUDS/Paper2Slides&type=timeline&legend=top-left)
+```powershell
+conda create -n papercue python=3.12
+conda activate papercue
+pip install -r requirements.txt
+```
 
----
+如果你沿用当前开发环境：
 
-<p align="center">
-  <em> ❤️ Thanks for visiting ✨ Paper2Slides!</em><br><br>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.Paper2Slides&style=for-the-badge&color=00d4ff" alt="Views">
-</p>
+```powershell
+conda activate paper2slides
+pip install -r requirements.txt
+```
+
+### 配置 API
+
+复制示例配置：
+
+```powershell
+copy paper2slides\.env.example paper2slides\.env
+```
+
+填写文本模型 API：
+
+```env
+RAG_LLM_API_KEY=your_api_key_here
+RAG_LLM_BASE_URL=https://api.example.com/v1
+LLM_MODEL=gpt-4o-mini
+```
+
+可选：如果希望模型理解论文原图，可以开启视觉模型分析。但这一步只是读论文原图，不生成新图片。
+
+```env
+PPTX_ENABLE_FIGURE_ANALYSIS=1
+PPTX_VISION_MODEL=gpt-4o-mini
+PPTX_MAX_FIGURE_ANALYSIS=5
+```
+
+### 运行
+
+```powershell
+python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast
+```
+
+如果已经有前面阶段的 checkpoint，只想重新调用大模型生成 PPTX：
+
+```powershell
+python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast --from-stage generate
+```
+
+### 输出文件
+
+```text
+slides.pptx                 可编辑 PPT
+speaker_script.md           演讲稿/讲解稿
+layout_qa.json              排版 QA 报告
+checkpoint_slide_spec.json  最终 slide spec
+checkpoint_slide_spec_llm_raw.txt  大模型原始策展输出
+```
+
+### 上传 GitHub 前注意
+
+不要上传本地 API key、私有论文或生成结果。以下文件已经在 `.gitignore` 中忽略：
+
+```text
+paper2slides/.env
+shunyu_relay_demo.py
+test_api_config.py
+outputs/
+test_papers/*.pdf
+```
+
+提交前建议检查：
+
+```powershell
+git status --short
+git diff --check
+```
+
+### 测试
+
+```powershell
+python -m unittest test_phase1_pptx.py
+```
+
+### 项目来源
+
+PaperCue 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。如果你公开发布这个 fork，请保留原项目的 license 和 attribution。

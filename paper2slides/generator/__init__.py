@@ -1,7 +1,7 @@
 """
 Generator module
 
-Generates poster images or slides from RAG summary content.
+Generates editable PPTX slides from RAG summary content.
 """
 from .config import (
     OutputType,

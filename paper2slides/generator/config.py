@@ -49,13 +49,13 @@ class GenerationConfig:
     User configuration for generation.
     
     Attributes:
-        output_type: Type of output (poster or slides)
+        output_type: Type of output. PaperCue uses slides/PPTX.
         poster_density: Content density for poster (sparse/medium/dense)
         slides_length: Page count level for slides (short/medium/long)
         style: Style type (academic/doraemon/custom)
         custom_style: User's custom style description (used when style=custom)
     """
-    output_type: OutputType = OutputType.POSTER
+    output_type: OutputType = OutputType.SLIDES
     
     # Poster specific
     poster_density: PosterDensity = PosterDensity.MEDIUM

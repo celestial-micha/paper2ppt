@@ -1,5 +1,5 @@
 """
-Generate Stage - Image generation
+Generate Stage - editable PPTX and speaker script generation.
 """
 import logging
 from pathlib import Path
@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 
 async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> Dict:
     """Stage 4: Generate final presentation artifacts."""
-    from paper2slides.summary import PaperContent, GeneralContent, TableInfo, FigureInfo, OriginalElements
-    from paper2slides.generator import GenerationConfig, GenerationInput
-    from paper2slides.generator.config import OutputType, PosterDensity, SlidesLength, StyleType
+    from paper2slides.summary import TableInfo, FigureInfo, OriginalElements
     from paper2slides.generator.content_planner import ContentPlan, Section, TableRef, FigureRef
     from paper2slides.generator import run_text_pptx_workflow
     from ...utils import save_json
@@ -66,87 +64,43 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
     )
 
     output_type = config.get("output_type", "slides")
-    if output_type == "slides":
-        logger.info("Building structured slide spec and rendering editable PPTX...")
-        output_subdir = get_output_dir(config_dir)
-        spec_checkpoint_path = config_dir / "checkpoint_slide_spec.json"
-        workflow_result = run_text_pptx_workflow(
-            plan=plan,
-            output_subdir=output_subdir,
-            spec_checkpoint_path=spec_checkpoint_path,
-            save_json=save_json,
-            title=plan.sections[0].title if plan.sections else "Paper2Slides Presentation",
-            source_plan_path=str(get_plan_checkpoint(config_dir)),
-        )
-        spec = workflow_result["spec"]
-        pptx_path = workflow_result["pptx_path"]
-        logger.info(f"  Saved: {spec_checkpoint_path}")
-        logger.info(f"  Saved: {pptx_path.name}")
-        if workflow_result.get("used_langgraph"):
-            logger.info("  Workflow: LangGraph")
-        if workflow_result.get("used_langchain"):
-            logger.info(f"  LLM: LangChain ({workflow_result.get('llm_model')})")
-        if workflow_result.get("qa_report_path"):
-            logger.info(f"  QA: {workflow_result.get('qa_report_path')}")
-        if workflow_result.get("speaker_script_path"):
-            logger.info(f"  Speaker script: {workflow_result.get('speaker_script_path')}")
-        warnings = workflow_result.get("validation_warnings") or []
-        for warning in warnings:
-            logger.warning(f"  {warning}")
-        logger.info("")
-        logger.info(f"Output: {output_subdir}")
+    if output_type != "slides":
+        raise ValueError("PaperCue only supports --output slides. Legacy image/poster generation was removed.")
 
-        return {
-            "output_dir": str(output_subdir),
-            "slide_spec_path": str(spec_checkpoint_path),
-            "pptx_path": str(pptx_path),
-            "speaker_script_path": workflow_result.get("speaker_script_path", ""),
-            "qa_report_path": workflow_result.get("qa_report_path", ""),
-            "num_slides": len(spec.slides),
-        }
-    
-    if content_type == "paper":
-        content = PaperContent(**summary_data["content"])
-    else:
-        content = GeneralContent(**summary_data["content"])
-    
-    gen_config = GenerationConfig(
-        output_type=OutputType(output_type),
-        poster_density=PosterDensity(config.get("poster_density", "medium")),
-        slides_length=SlidesLength(config.get("slides_length", "medium")),
-        style=StyleType(config.get("style", "academic")),
-        custom_style=config.get("custom_style"),
-    )
-    gen_input = GenerationInput(config=gen_config, content=content, origin=origin)
-    
-    logger.info("Generating images...")
-    from paper2slides.generator.image_generator import ImageGenerator, save_images_as_pdf
-    
-    # Prepare output directory
+    logger.info("Building structured slide spec and rendering editable PPTX...")
     output_subdir = get_output_dir(config_dir)
-    output_subdir.mkdir(parents=True, exist_ok=True)
-    ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
-    
-    # Save callback: save each image immediately after generation
-    def save_image_callback(img, index, total):
-        ext = ext_map.get(img.mime_type, ".png")
-        filepath = output_subdir / f"{img.section_id}{ext}"
-        with open(filepath, "wb") as f:
-            f.write(img.image_data)
-        logger.info(f"  [{index+1}/{total}] Saved: {filepath.name}")
-    
-    generator = ImageGenerator()
-    max_workers = config.get("max_workers", 1)
-    images = generator.generate(plan, gen_input, max_workers=max_workers, save_callback=save_image_callback)
-    logger.info(f"  Generated {len(images)} images")
-    
-    # Generate PDF for slides
-    if output_type == "slides" and len(images) > 1:
-        pdf_path = output_subdir / "slides.pdf"
-        save_images_as_pdf(images, str(pdf_path))
-        logger.info(f"  Saved: slides.pdf")
-    
+    spec_checkpoint_path = config_dir / "checkpoint_slide_spec.json"
+    workflow_result = run_text_pptx_workflow(
+        plan=plan,
+        output_subdir=output_subdir,
+        spec_checkpoint_path=spec_checkpoint_path,
+        save_json=save_json,
+        title=plan.sections[0].title if plan.sections else "Paper2Slides Presentation",
+        source_plan_path=str(get_plan_checkpoint(config_dir)),
+    )
+    spec = workflow_result["spec"]
+    pptx_path = workflow_result["pptx_path"]
+    logger.info(f"  Saved: {spec_checkpoint_path}")
+    logger.info(f"  Saved: {pptx_path.name}")
+    if workflow_result.get("used_langgraph"):
+        logger.info("  Workflow: LangGraph")
+    if workflow_result.get("used_langchain"):
+        logger.info(f"  LLM: LangChain ({workflow_result.get('llm_model')})")
+    if workflow_result.get("qa_report_path"):
+        logger.info(f"  QA: {workflow_result.get('qa_report_path')}")
+    if workflow_result.get("speaker_script_path"):
+        logger.info(f"  Speaker script: {workflow_result.get('speaker_script_path')}")
+    warnings = workflow_result.get("validation_warnings") or []
+    for warning in warnings:
+        logger.warning(f"  {warning}")
     logger.info("")
     logger.info(f"Output: {output_subdir}")
-    
-    return {"output_dir": str(output_subdir), "num_images": len(images)}
+
+    return {
+        "output_dir": str(output_subdir),
+        "slide_spec_path": str(spec_checkpoint_path),
+        "pptx_path": str(pptx_path),
+        "speaker_script_path": workflow_result.get("speaker_script_path", ""),
+        "qa_report_path": workflow_result.get("qa_report_path", ""),
+        "num_slides": len(spec.slides),
+    }

@@ -23,10 +23,7 @@ def get_config_name(config: Dict) -> str:
     output_type = config.get("output_type", "slides")
     style = config.get("style", "academic")
     
-    if output_type == "poster":
-        param = config.get("poster_density", "medium")
-    else:
-        param = config.get("slides_length", "medium")
+    param = config.get("slides_length", "medium")
     
     # Handle custom style. Use hash suffix
     if style == "custom":

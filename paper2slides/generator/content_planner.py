@@ -2,22 +2,17 @@
 Content Planner
 """
 import json
-import base64
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 from openai import OpenAI
 
-from .config import GenerationInput, OutputType
+from .config import GenerationInput
 from ..summary import FigureInfo, TableInfo
 from ..prompts.content_planning import (
     PAPER_SLIDES_PLANNING_PROMPT,
-    PAPER_POSTER_PLANNING_PROMPT,
-    PAPER_POSTER_DENSITY_GUIDELINES,
     GENERAL_SLIDES_PLANNING_PROMPT,
-    GENERAL_POSTER_PLANNING_PROMPT,
-    GENERAL_POSTER_DENSITY_GUIDELINES,
 )
 
 
@@ -114,8 +109,6 @@ class ContentPlanner:
     Slides are planned in text-only mode: figures are exposed to the model as
     IDs, captions, and file paths so the final PPTX can reuse the extracted
     source images without invoking a vision or image-generation model.
-    Posters keep the original multimodal planning path because the poster
-    renderer still uses image generation.
     """
     
     def __init__(
@@ -154,13 +147,8 @@ class ContentPlanner:
         summary = gen_input.get_summary_text()
         tables_md = gen_input.origin.get_tables_markdown()
         
-        # Plan based on output type
-        if gen_input.config.output_type == OutputType.POSTER:
-            figure_images = self._load_figure_images(gen_input.origin)
-            sections = self._plan_poster(gen_input, summary, tables_md, figure_images)
-        else:
-            figure_manifest = self._build_figure_manifest(gen_input.origin)
-            sections = self._plan_slides(gen_input, summary, tables_md, figure_manifest)
+        figure_manifest = self._build_figure_manifest(gen_input.origin)
+        sections = self._plan_slides(gen_input, summary, tables_md, figure_manifest)
         
         return ContentPlan(
             output_type=gen_input.config.output_type.value,
@@ -168,10 +156,7 @@ class ContentPlanner:
             tables_index=tables_index,
             figures_index=figures_index,
             metadata={
-                "density": gen_input.config.poster_density.value 
-                          if gen_input.config.output_type == OutputType.POSTER else None,
-                "page_range": gen_input.config.get_page_range()
-                             if gen_input.config.output_type == OutputType.SLIDES else None,
+                "page_range": gen_input.config.get_page_range(),
             },
         )
     
@@ -201,38 +186,6 @@ class ContentPlanner:
         
         result = self._call_text_llm(prompt)
         return self._parse_sections(result, is_slides=True)
-    
-    def _plan_poster(
-        self,
-        gen_input: GenerationInput,
-        summary: str,
-        tables_md: str,
-        figure_images: List[Dict],
-    ) -> List[Section]:
-        """Plan poster sections."""
-        density = gen_input.config.poster_density.value
-        
-        # Select density guidelines and prompt template based on content type
-        if gen_input.is_paper():
-            guidelines_map = PAPER_POSTER_DENSITY_GUIDELINES
-            template = PAPER_POSTER_PLANNING_PROMPT
-        else:
-            guidelines_map = GENERAL_POSTER_DENSITY_GUIDELINES
-            template = GENERAL_POSTER_PLANNING_PROMPT
-        
-        density_guidelines = guidelines_map.get(density, guidelines_map["medium"])
-        
-        # Build assets section based on available tables/figures
-        assets_section = self._build_assets_section(tables_md, bool(figure_images))
-        
-        prompt = template.format(
-            density_guidelines=density_guidelines,
-            summary=self._truncate(summary, 10000),
-            assets_section=assets_section,
-        )
-        
-        result = self._call_multimodal_llm(prompt, figure_images)
-        return self._parse_sections(result, is_slides=False)
     
     def _build_assets_section(self, tables_md: str, figures: Any) -> str:
         """Build the tables/figures section based on available assets."""
@@ -307,69 +260,12 @@ class ContentPlanner:
             logger.error(f"Model: {self.model}")
             raise
     
-    def _call_multimodal_llm(self, text_prompt: str, figure_images: List[Dict]) -> str:
-        """Call multimodal LLM with text and images inline."""
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        MARKER = "[FIGURE_IMAGES]"
-        content = []
-        
-        if MARKER in text_prompt and figure_images:
-            # Split prompt and insert images at marker position
-            before, after = text_prompt.split(MARKER, 1)
-            
-            if before.strip():
-                content.append({"type": "text", "text": before})
-            
-            # Insert caption + image for each figure
-            for fig in figure_images:
-                # Caption text
-                if fig['caption']:
-                    caption_text = f"**{fig['figure_id']}**: {fig['caption']}"
-                else:
-                    caption_text = f"**{fig['figure_id']}**"
-                content.append({"type": "text", "text": caption_text})
-                
-                # Base64 image
-                content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:{fig['mime_type']};base64,{fig['base64']}",
-                        # "detail": "auto",
-                    }
-                })
-            
-            if after.strip():
-                content.append({"type": "text", "text": after})
-            logger.info(f"Calling LLM with {len(figure_images)} images")
-        else:
-            # No marker or no images: text only
-            content.append({"type": "text", "text": text_prompt})
-            logger.info("Calling LLM with text only (no images)")
-        
-        try:
-            logger.info(f"Calling {self.model} with max_tokens={self.max_tokens}")
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": content}],
-                max_tokens=self.max_tokens,
-            )
-            result = response.choices[0].message.content or ""
-            logger.info(f"LLM returned {len(result)} characters")
-            return result
-        except Exception as e:
-            logger.error(f"LLM API call failed: {e}")
-            logger.error(f"Model: {self.model}, Content items: {len(content)}")
-            raise
-    
     def _parse_sections(self, llm_response: str, is_slides: bool = True) -> List[Section]:
         """Parse LLM response into Section objects.
         
         Args:
             llm_response: The LLM response containing JSON
             is_slides: If True, auto-determine section_type based on position (opening/content/ending).
-                       If False (poster), all sections are "content".
         """
         # Debug: Log the raw LLM response
         import logging
@@ -481,40 +377,6 @@ class ContentPlanner:
             Section(id="section_01", title="Title", section_type="opening", content=""),
             Section(id="section_02", title="Content", section_type="content", content=""),
         ]
-    
-    def _load_figure_images(self, origin) -> List[Dict]:
-        """Load figure images as base64 with caption."""
-        images = []
-        for fig in origin.figures:
-            # Build full path
-            if origin.base_path:
-                img_path = Path(origin.base_path) / fig.image_path
-            else:
-                img_path = Path(fig.image_path)
-            
-            if not img_path.exists():
-                continue
-            
-            # Determine mime type
-            suffix = img_path.suffix.lower()
-            mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", 
-                       ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif"}
-            mime_type = mime_map.get(suffix, "image/jpeg")
-            
-            # Read and encode
-            try:
-                with open(img_path, "rb") as f:
-                    img_data = base64.b64encode(f.read()).decode("utf-8")
-                images.append({
-                    "figure_id": fig.figure_id,
-                    "caption": fig.caption,
-                    "base64": img_data,
-                    "mime_type": mime_type,
-                })
-            except Exception:
-                continue
-        
-        return images
     
     def _truncate(self, text: str, max_len: int) -> str:
         """Truncate text to max length."""
