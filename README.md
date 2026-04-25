@@ -1,25 +1,125 @@
-# PaperCue
+# paper2ppt
 
-[English](#english) | [中文](#中文)
+[English](README.md) | [中文](README.zh-CN.md)
 
-PaperCue turns academic PDFs into editable PowerPoint decks and matching speaker scripts. It is built for users who want a practical "PDF in, PPTX out" workflow without paying for image-generation models.
+paper2ppt converts academic PDF papers into editable PowerPoint decks and matching speaker scripts. It is designed for a practical workflow: give it a PDF, let a text LLM curate the story, reuse the paper's original figures, and receive a native `.pptx` plus a readable narration draft.
 
-PaperCue is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). This fork keeps the document parsing, summarization, RAG-style extraction, and checkpoint pipeline ideas, then refactors the final generation path into a text-LLM-driven, native PPTX workflow.
+paper2ppt is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). This project keeps the upstream parsing, extraction, checkpoint, and paper-processing ideas, while replacing the final image-generation slide path with a text-model-driven native PPTX workflow.
 
-## English
+## Features
 
-### What It Does
+- Convert a PDF paper into an editable PowerPoint file.
+- Generate a matching `speaker_script.md` for presentation narration.
+- Reuse figures and tables extracted from the original paper.
+- Use LangChain/LangGraph for text-LLM deck curation and workflow orchestration.
+- Avoid text-to-image generation for slide creation.
+- Run lightweight PPTX layout QA and automatic repair before final output.
+- Save intermediate checkpoints so later runs can resume from a selected stage.
 
-- Parses a paper PDF and extracts text, tables, and original figures.
-- Uses text LLMs through LangChain/LangGraph to curate a presentation plan.
-- Generates an editable `.pptx` with native PowerPoint text, tables, shapes, and the paper's own figures.
-- Generates `speaker_script.md` alongside the deck.
-- Runs a lightweight PPTX layout QA pass and can repair risky slide specs before final output.
-- Does not call text-to-image or image-generation models for slide creation.
+## How It Works
 
-### Output
+```text
+PDF
+ -> paper parsing and asset extraction
+ -> summary checkpoint
+ -> content plan checkpoint
+ -> LangGraph PPTX workflow
+    -> source packet
+    -> optional source-figure understanding
+    -> text LLM deck curation
+    -> slide spec validation
+    -> native PPTX rendering
+    -> layout QA and repair loop
+    -> speaker script generation
+```
 
-Each run creates an output folder containing files such as:
+The generated deck is not a set of screenshots. It uses native PowerPoint text boxes, shapes, tables, and inserted source images, so you can keep editing it in PowerPoint.
+
+## Requirements
+
+- Windows, macOS, or Linux
+- Python 3.10 or newer, Python 3.12 recommended
+- Conda or another Python environment manager
+- A text-model API compatible with the OpenAI chat-completions interface
+
+The project was developed and tested in a conda environment named `paper2slides`, but the environment name is not important.
+
+## Installation
+
+Clone the repository, enter the project directory, then create an environment:
+
+```powershell
+conda create -n paper2ppt python=3.12
+conda activate paper2ppt
+pip install -r requirements.txt
+```
+
+If you already have an environment, install the dependencies inside it:
+
+```powershell
+pip install -r requirements.txt
+```
+
+## Configure the API
+
+paper2ppt reads API settings from `paper2slides/.env`.
+
+Create it from the public template:
+
+```powershell
+copy paper2slides\.env.example paper2slides\.env
+```
+
+Then edit `paper2slides/.env`:
+
+```env
+RAG_LLM_API_KEY=your_api_key_here
+RAG_LLM_BASE_URL=https://api.example.com/v1
+LLM_MODEL=gpt-5-mini
+```
+
+Optional figure understanding can be enabled with a vision-capable text model. This step analyzes the original paper figures; it does not generate new images.
+
+```env
+PPTX_ENABLE_FIGURE_ANALYSIS=1
+PPTX_VISION_MODEL=gpt-5-mini
+PPTX_MAX_FIGURE_ANALYSIS=5
+```
+
+The committed file is `paper2slides/.env.example`. Your real `paper2slides/.env` should remain local.
+
+## Run Your First Conversion
+
+Use any local PDF path:
+
+```powershell
+python -m paper2slides --input path\to\paper.pdf --output slides --style academic --length medium --fast
+```
+
+Example with a local test paper:
+
+```powershell
+python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast
+```
+
+Main options:
+
+```text
+--input       PDF file path
+--output      slides
+--style       academic or a custom style description
+--length      short, medium, or long
+--fast        use direct parsing/query flow instead of full indexing
+--from-stage  rag, summary, plan, or generate
+--list        list previous outputs
+--debug       print more logs
+```
+
+## Output Files
+
+After a successful run, paper2ppt creates a timestamped output folder under `outputs/`.
+
+Typical files:
 
 ```text
 slides.pptx
@@ -29,229 +129,84 @@ checkpoint_slide_spec.json
 checkpoint_slide_spec_llm_raw.txt
 ```
 
-### Installation
+What they mean:
+
+- `slides.pptx`: the editable PowerPoint deck.
+- `speaker_script.md`: slide-by-slide narration draft.
+- `layout_qa.json`: lightweight layout QA result.
+- `checkpoint_slide_spec.json`: the final structured slide specification.
+- `checkpoint_slide_spec_llm_raw.txt`: raw deck-curation output from the LLM.
+
+## Resume From a Later Stage
+
+If the PDF has already been parsed and you only want to regenerate the PPTX and script, run:
 
 ```powershell
-conda create -n papercue python=3.12
-conda activate papercue
-pip install -r requirements.txt
+python -m paper2slides --input path\to\paper.pdf --output slides --style academic --length medium --fast --from-stage generate
 ```
 
-If you already use the local environment from development:
+This reuses previous extraction, summary, and planning checkpoints, then reruns the LangGraph PPTX workflow.
 
-```powershell
-conda activate paper2slides
-pip install -r requirements.txt
-```
-
-### Configuration
-
-Create `paper2slides/.env` from the example file:
-
-```powershell
-copy paper2slides\.env.example paper2slides\.env
-```
-
-Set your text-model API information:
-
-```env
-RAG_LLM_API_KEY=your_api_key_here
-RAG_LLM_BASE_URL=https://api.example.com/v1
-LLM_MODEL=gpt-4o-mini
-```
-
-Optional figure understanding can use a vision-capable text model, but it still only analyzes original paper figures. It does not generate new images.
-
-```env
-PPTX_ENABLE_FIGURE_ANALYSIS=1
-PPTX_VISION_MODEL=gpt-4o-mini
-PPTX_MAX_FIGURE_ANALYSIS=5
-```
-
-### Usage
-
-```powershell
-python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast
-```
-
-Useful options:
+## Project Structure
 
 ```text
---input       PDF path
---output      slides only
---style       academic or custom text
---length      short, medium, or long
---fast        parse directly without full RAG indexing
---from-stage  rag, summary, plan, or generate
---list        list previous outputs
+paper2slides/
+  core/                 pipeline stages, paths, checkpoint flow
+  generator/            slide planning, LangGraph workflow, PPTX renderer, QA
+  prompts/              paper planning and extraction prompts
+  rag/                  RAG client/query helpers inherited from upstream
+  raganything/          document parsing layer inherited from upstream
+  summary/              paper/general summarization and asset models
+  utils/                logging and file helpers
+
+README.md
+README.zh-CN.md
+DEVELOPMENT_HISTORY.zh-CN.md
+requirements.txt
+test_phase1_pptx.py
 ```
 
-To rerun only the PPTX curation/rendering step from existing checkpoints:
-
-```powershell
-python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast --from-stage generate
-```
-
-### Architecture
+Important implementation files:
 
 ```text
-PDF
- -> parsing and extraction
- -> summary checkpoint
- -> content plan checkpoint
- -> LangGraph PPTX workflow
-    -> source packet
-    -> optional source-figure analysis
-    -> text LLM deck curation
-    -> slide spec validation
-    -> native PPTX rendering
-    -> layout QA and repair loop
-    -> speaker script
-```
-
-Important modules:
-
-```text
-paper2slides/core/stages/
-paper2slides/generator/content_planner.py
 paper2slides/generator/text_pptx_workflow.py
 paper2slides/generator/pptx_renderer.py
 paper2slides/generator/pptx_qa.py
 paper2slides/generator/slide_schema.py
+paper2slides/generator/content_planner.py
 ```
 
-### Safety Before Publishing
-
-Do not publish local secrets or generated private outputs. The repository ignores common sensitive files, including:
-
-```text
-paper2slides/.env
-shunyu_relay_demo.py
-test_api_config.py
-outputs/
-test_papers/*.pdf
-```
-
-Before pushing to GitHub, run:
-
-```powershell
-git status --short
-git diff --check
-```
-
-### Tests
+## Test
 
 ```powershell
 python -m unittest test_phase1_pptx.py
 ```
 
-### License and Attribution
-
-This project inherits from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). Keep the original license terms and attribution when redistributing this fork.
-
-## 中文
-
-### 这个项目做什么
-
-PaperCue 可以把论文 PDF 一键生成可编辑的 PowerPoint，并同时生成对应的演讲稿或讲解稿。它的目标不是把论文原文搬进 PPT，而是用文本大模型做内容策展、重点提炼和版式规划，然后用论文中已经提取到的原图和表格生成展示稿。
-
-本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。这个 fork 保留了原项目的解析、摘要、RAG/检查点流水线思路，并把最后生成部分改成了“文本模型 + 原生 PPTX”的工作流。
-
-### 核心特点
-
-- 从 PDF 中提取正文、表格和论文原图。
-- 使用 LangChain/LangGraph 调用文本大模型进行 PPT 内容策展。
-- 输出真正可编辑的 `.pptx`，不是图片拼成的 PDF。
-- PPT 中的图片来自论文原始提取结果，不调用文生图模型。
-- 同步生成 `speaker_script.md`，便于汇报或讲解。
-- 自动生成 `layout_qa.json`，并在发现排版风险时尝试自动压缩和返修。
-
-### 安装
+You can also check the CLI:
 
 ```powershell
-conda create -n papercue python=3.12
-conda activate papercue
-pip install -r requirements.txt
+python -m paper2slides --help
 ```
 
-如果你沿用当前开发环境：
+## Troubleshooting
 
-```powershell
-conda activate paper2slides
-pip install -r requirements.txt
-```
+If the API call fails:
 
-### 配置 API
+- Check `paper2slides/.env`.
+- Check `RAG_LLM_BASE_URL`.
+- Check whether your selected model supports the needed context length.
 
-复制示例配置：
+If the deck is too sparse or too dense:
 
-```powershell
-copy paper2slides\.env.example paper2slides\.env
-```
+- Try a different `--length`.
+- Regenerate from `--from-stage generate`.
+- Adjust the LLM model in `.env`.
 
-填写文本模型 API：
+If a slide looks crowded:
 
-```env
-RAG_LLM_API_KEY=your_api_key_here
-RAG_LLM_BASE_URL=https://api.example.com/v1
-LLM_MODEL=gpt-4o-mini
-```
+- Inspect `layout_qa.json`.
+- Increase `PPTX_QA_MAX_REPAIR_ATTEMPTS` in `.env`.
 
-可选：如果希望模型理解论文原图，可以开启视觉模型分析。但这一步只是读论文原图，不生成新图片。
+## Attribution
 
-```env
-PPTX_ENABLE_FIGURE_ANALYSIS=1
-PPTX_VISION_MODEL=gpt-4o-mini
-PPTX_MAX_FIGURE_ANALYSIS=5
-```
-
-### 运行
-
-```powershell
-python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast
-```
-
-如果已经有前面阶段的 checkpoint，只想重新调用大模型生成 PPTX：
-
-```powershell
-python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast --from-stage generate
-```
-
-### 输出文件
-
-```text
-slides.pptx                 可编辑 PPT
-speaker_script.md           演讲稿/讲解稿
-layout_qa.json              排版 QA 报告
-checkpoint_slide_spec.json  最终 slide spec
-checkpoint_slide_spec_llm_raw.txt  大模型原始策展输出
-```
-
-### 上传 GitHub 前注意
-
-不要上传本地 API key、私有论文或生成结果。以下文件已经在 `.gitignore` 中忽略：
-
-```text
-paper2slides/.env
-shunyu_relay_demo.py
-test_api_config.py
-outputs/
-test_papers/*.pdf
-```
-
-提交前建议检查：
-
-```powershell
-git status --short
-git diff --check
-```
-
-### 测试
-
-```powershell
-python -m unittest test_phase1_pptx.py
-```
-
-### 项目来源
-
-PaperCue 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。如果你公开发布这个 fork，请保留原项目的 license 和 attribution。
+paper2ppt is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). Please keep the upstream attribution and license terms when redistributing or extending this project.
