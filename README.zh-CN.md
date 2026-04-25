@@ -6,6 +6,10 @@ paper2ppt 可以把学术论文 PDF 转换成可编辑的 PowerPoint，并同步
 
 paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。本项目保留了上游项目的论文解析、内容提取、检查点流水线和部分 RAG 思路，同时把最后的图片生成式幻灯片路径改造成了“文本大模型 + 原生 PPTX”的生成流程。
 
+## 效果预览
+
+![paper2ppt 生成的 PPTX 预览](paper2ppt_preview.png)
+
 ## 功能特点
 
 - 从 PDF 论文生成可编辑 PowerPoint。

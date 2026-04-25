@@ -6,6 +6,10 @@ paper2ppt converts academic PDF papers into editable PowerPoint decks and matchi
 
 paper2ppt is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). This project keeps the upstream parsing, extraction, checkpoint, and paper-processing ideas, while replacing the final image-generation slide path with a text-model-driven native PPTX workflow.
 
+## Preview
+
+![paper2ppt generated PPTX preview](paper2ppt_preview.png)
+
 ## Features
 
 - Convert a PDF paper into an editable PowerPoint file.
