@@ -1,0 +1,95 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment files
+.env
+.env.*
+!.env.example
+paper2slides/.env
+paper2slides/.env.*
+
+# Local API/key demos
+shunyu_relay_demo.py
+*_relay_demo.py
+test_api_config.py
+
+# Editor and IDE
+.cursor/
+.vscode/*
+!.vscode/extensions.json
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Runtime data
+sources/
+outputs/
+rag_output/
+
+# Temporary and test files
+debug.*
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# Local paper fixtures and bulky source documents
+test_papers/*.pdf
+sources/**/*.pdf
+uploads/
+
+# Generated presentation/document artifacts
+*.pptx
+*.ppt
+*.pdf
+!assets/*.pdf
+!docs/*.pdf
