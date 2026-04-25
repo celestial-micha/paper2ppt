@@ -88,6 +88,8 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
             logger.info(f"  LLM: LangChain ({workflow_result.get('llm_model')})")
         if workflow_result.get("qa_report_path"):
             logger.info(f"  QA: {workflow_result.get('qa_report_path')}")
+        if workflow_result.get("speaker_script_path"):
+            logger.info(f"  Speaker script: {workflow_result.get('speaker_script_path')}")
         warnings = workflow_result.get("validation_warnings") or []
         for warning in warnings:
             logger.warning(f"  {warning}")
@@ -98,6 +100,8 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
             "output_dir": str(output_subdir),
             "slide_spec_path": str(spec_checkpoint_path),
             "pptx_path": str(pptx_path),
+            "speaker_script_path": workflow_result.get("speaker_script_path", ""),
+            "qa_report_path": workflow_result.get("qa_report_path", ""),
             "num_slides": len(spec.slides),
         }
     

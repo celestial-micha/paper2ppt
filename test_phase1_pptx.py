@@ -6,7 +6,9 @@ from paper2slides.generator.config import GenerationConfig, GenerationInput, Out
 from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
 from paper2slides.generator.pptx_renderer import PptxRenderer
+from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _qa_repair_node
 from paper2slides.generator.spec_builder import build_presentation_spec
+from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
 
 
@@ -95,6 +97,56 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertEqual(len(plan.sections), 1)
         self.assertIn("Source image: images/pipeline.png", captured["prompt"])
         self.assertNotIn("[FIGURE_IMAGES]", captured["prompt"])
+
+    def test_qa_repair_compacts_risky_slide(self):
+        long_text = " ".join(["overflow"] * 30)
+        spec = PresentationSpec(
+            title="QA Repair",
+            slides=[
+                SlideSpec(
+                    slide_id="slide_01",
+                    title="This title is intentionally much too long for a normal presentation header",
+                    layout="statement",
+                    takeaway=long_text,
+                    text_blocks=[TextBlock(text=long_text) for _ in range(5)],
+                    metric_blocks=[MetricBlock(label="Very long label", value="1234567890") for _ in range(4)],
+                )
+            ],
+        )
+
+        repaired = _qa_repair_node(
+            {
+                "spec": spec,
+                "qa_warnings": ["slide 1: long title/subtitle may wrap or clip"],
+                "validation_warnings": [],
+            }
+        )
+        slide = repaired["spec"].slides[0]
+        self.assertEqual(repaired["qa_attempt"], 1)
+        self.assertLessEqual(len(slide.text_blocks), 3)
+        self.assertLessEqual(len(slide.title.split()), 8)
+        self.assertLessEqual(len(slide.takeaway.split()), 12)
+
+    def test_builds_speaker_script_from_final_spec(self):
+        spec = PresentationSpec(
+            title="Script Test",
+            slides=[
+                SlideSpec(
+                    slide_id="slide_01",
+                    title="Opening",
+                    takeaway="The method fails visually.",
+                    text_blocks=[TextBlock(text="Screenshots drive most errors.")],
+                    metric_blocks=[MetricBlock(label="Success rate", value="5.36%")],
+                    notes=["Referenced figures: Figure 1"],
+                )
+            ],
+        )
+
+        script = _build_speaker_script(spec, ["attempt 1: slide 1 compressed"])
+        self.assertIn("# Script Test", script)
+        self.assertIn("## Slide 1: Opening", script)
+        self.assertIn("Suggested narration", script)
+        self.assertIn("Success rate: 5.36%", script)
 
 
 if __name__ == "__main__":

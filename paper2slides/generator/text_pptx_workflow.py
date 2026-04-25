@@ -44,7 +44,11 @@ class _PptxWorkflowState(TypedDict, total=False):
     figure_analyses: Dict[str, Any]
     spec: PresentationSpec
     qa_report_path: str
+    qa_attempt: int
+    qa_warnings: List[str]
+    qa_repair_log: List[str]
     pptx_path: Path
+    speaker_script_path: str
     validation_warnings: List[str]
     used_langgraph: bool
     used_langchain: bool
@@ -82,7 +86,12 @@ def run_text_pptx_workflow(
         state = _analyze_figures_node(state)
         state = _curate_spec_node(state)
         state = _validate_node(state)
-        final_state = _render_node(state, save_json)
+        while True:
+            state = _render_node(state, save_json)
+            if _route_after_render(state) != "repair_spec":
+                break
+            state = _qa_repair_node(state)
+        final_state = _speaker_script_node(state)
 
     spec = final_state["spec"]
     pptx_path = final_state["pptx_path"]
@@ -94,6 +103,7 @@ def run_text_pptx_workflow(
         "used_langchain": final_state.get("used_langchain", False),
         "llm_model": final_state.get("llm_model", ""),
         "qa_report_path": final_state.get("qa_report_path", ""),
+        "speaker_script_path": final_state.get("speaker_script_path", ""),
     }
 
 
@@ -117,18 +127,32 @@ def _build_langgraph_runner(save_json: SaveJsonFunc) -> Optional[Callable[[_Pptx
     def render_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         return _render_node(state, save_json)
 
+    def speaker_script_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
+        return _speaker_script_node(state)
+
     graph = StateGraph(_PptxWorkflowState)
     graph.add_node("prepare_packet", _prepare_packet_node)
     graph.add_node("analyze_figures", _analyze_figures_node)
     graph.add_node("curate_spec", _curate_spec_node)
     graph.add_node("validate", _validate_node)
     graph.add_node("render", render_node)
+    graph.add_node("repair_spec", _qa_repair_node)
+    graph.add_node("speaker_script", speaker_script_node)
     graph.set_entry_point("prepare_packet")
     graph.add_edge("prepare_packet", "analyze_figures")
     graph.add_edge("analyze_figures", "curate_spec")
     graph.add_edge("curate_spec", "validate")
     graph.add_edge("validate", "render")
-    graph.add_edge("render", END)
+    graph.add_conditional_edges(
+        "render",
+        _route_after_render,
+        {
+            "repair_spec": "repair_spec",
+            "speaker_script": "speaker_script",
+        },
+    )
+    graph.add_edge("repair_spec", "render")
+    graph.add_edge("speaker_script", END)
     app = graph.compile()
 
     def _runner(state: _PptxWorkflowState) -> _PptxWorkflowState:
@@ -280,7 +304,182 @@ def _render_node(state: _PptxWorkflowState, save_json: SaveJsonFunc) -> _PptxWor
         for warning in qa_result.warnings[:12]:
             logger.warning(f"  QA: {warning}")
 
-    return {**state, "pptx_path": pptx_path, "qa_report_path": str(qa_path)}
+    return {
+        **state,
+        "pptx_path": pptx_path,
+        "qa_report_path": str(qa_path),
+        "qa_warnings": qa_result.warnings,
+    }
+
+
+def _route_after_render(state: _PptxWorkflowState) -> str:
+    max_attempts = int(os.getenv("PPTX_QA_MAX_REPAIR_ATTEMPTS", "2"))
+    warnings = state.get("qa_warnings", [])
+    attempt = state.get("qa_attempt", 0)
+    if warnings and attempt < max_attempts:
+        return "repair_spec"
+    return "speaker_script"
+
+
+def _qa_repair_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
+    """Shrink risky slide content or switch layouts based on PPTX QA feedback."""
+    spec = state["spec"]
+    warnings = state.get("qa_warnings", [])
+    attempt = state.get("qa_attempt", 0) + 1
+    repair_log = list(state.get("qa_repair_log", []))
+
+    affected_slides = _slides_from_qa_warnings(warnings)
+    if not affected_slides:
+        affected_slides = set(range(1, len(spec.slides) + 1))
+
+    for slide_index in sorted(affected_slides):
+        if slide_index < 1 or slide_index > len(spec.slides):
+            continue
+        slide = spec.slides[slide_index - 1]
+        before_layout = slide.layout
+        before_bullets = len(slide.text_blocks)
+
+        slide.title = _limit_words(slide.title, 8)
+        slide.takeaway = _limit_words(slide.takeaway, 12)
+        slide.text_blocks = [
+            TextBlock(text=_limit_words(block.text, 10), role=block.role, bullet_level=block.bullet_level)
+            for block in slide.text_blocks[:3]
+        ]
+        slide.metric_blocks = [
+            MetricBlock(
+                label=_limit_words(metric.label, 3),
+                value=_limit_words(metric.value, 3),
+                note=_limit_words(metric.note, 5),
+            )
+            for metric in slide.metric_blocks[:3]
+        ]
+        slide.table_blocks = [_compact_table_block(slide.table_blocks[0])] if slide.table_blocks else []
+        for image in slide.image_blocks:
+            image.caption = _limit_words(image.caption, 10)
+            image.placeholder_text = _limit_words(image.placeholder_text, 8)
+
+        if slide.layout in {"visual_left", "visual_right"} and len(slide.image_blocks) > 1:
+            slide.image_blocks = slide.image_blocks[:1]
+        if slide.layout in {"statement", "metric_focus"} and not slide.metric_blocks and slide.image_blocks:
+            slide.layout = "visual_right"
+        if slide.layout == "table_focus" and not slide.table_blocks and slide.image_blocks:
+            slide.layout = "visual_right"
+
+        repair_log.append(
+            f"attempt {attempt}: slide {slide_index} compressed "
+            f"({before_layout}->{slide.layout}, bullets {before_bullets}->{len(slide.text_blocks)})"
+        )
+
+    warnings = list(state.get("validation_warnings", []))
+    warnings.append(f"PPTX QA repair attempt {attempt}: adjusted {len(affected_slides)} slide(s).")
+    spec.metadata = {
+        **(spec.metadata or {}),
+        "qa_repair_attempts": attempt,
+        "qa_repair_log": repair_log,
+    }
+    return {
+        **state,
+        "spec": spec,
+        "qa_attempt": attempt,
+        "qa_repair_log": repair_log,
+        "validation_warnings": warnings,
+    }
+
+
+def _speaker_script_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
+    output_subdir = state["output_subdir"]
+    script_path = output_subdir / "speaker_script.md"
+    script = _build_speaker_script(state["spec"], state.get("qa_repair_log", []))
+    script_path.write_text(script, encoding="utf-8")
+    logger.info(f"  Speaker script: {script_path}")
+    return {**state, "speaker_script_path": str(script_path)}
+
+
+def _slides_from_qa_warnings(warnings: List[str]) -> set[int]:
+    slide_numbers: set[int] = set()
+    for warning in warnings:
+        match = re.search(r"slide\s+(\d+)", warning, flags=re.IGNORECASE)
+        if match:
+            slide_numbers.add(int(match.group(1)))
+    return slide_numbers
+
+
+def _compact_table_block(table: TableBlock) -> TableBlock:
+    rows = table.rows[:5]
+    compact_rows = []
+    for row in rows:
+        compact_rows.append([_limit_words(str(cell), 6) for cell in row[:4]])
+    return TableBlock(
+        title=_limit_words(table.title, 5),
+        rows=compact_rows,
+        caption=_limit_words(table.caption, 12),
+    )
+
+
+def _build_speaker_script(spec: PresentationSpec, repair_log: List[str]) -> str:
+    lines = [
+        f"# {spec.title or 'Paper2Slides Presentation'}",
+        "",
+        "> This speaking script is generated from the final repaired slide specification.",
+        "",
+    ]
+    if repair_log:
+        lines.extend(["## Layout QA adjustments", ""])
+        lines.extend(f"- {item}" for item in repair_log)
+        lines.append("")
+
+    for index, slide in enumerate(spec.slides, start=1):
+        title = _clean_text(slide.title) or f"Slide {index}"
+        lines.extend([f"## Slide {index}: {title}", ""])
+        if slide.takeaway:
+            lines.extend([f"**Key message:** {_clean_text(slide.takeaway)}", ""])
+
+        script_parts = []
+        if slide.takeaway:
+            script_parts.append(_as_sentence(_clean_text(slide.takeaway)))
+        if slide.text_blocks:
+            script_parts.append(
+                "The main points are "
+                + "; ".join(_clean_text(block.text).rstrip(".") for block in slide.text_blocks[:3])
+                + "."
+            )
+        if slide.metric_blocks:
+            metric_text = "; ".join(
+                f"{_clean_text(metric.label) or 'metric'}: {_clean_text(metric.value)}" for metric in slide.metric_blocks[:3]
+            )
+            script_parts.append(f"The numbers to emphasize are {metric_text}.")
+        if slide.image_blocks:
+            visual_text = "; ".join(
+                _clean_text(image.title or image.caption or "source figure") for image in slide.image_blocks[:2]
+            )
+            script_parts.append(f"Use the visual evidence on this slide to point to {visual_text}.")
+        if slide.table_blocks:
+            table = slide.table_blocks[0]
+            table_title = _clean_text(table.title) or "the table"
+            script_parts.append(f"Walk through {table_title} only at the level needed to support the message.")
+
+        if not script_parts:
+            script_parts.append("Briefly state the slide message and move on.")
+
+        lines.extend(["**Suggested narration:**", ""])
+        lines.append(" ".join(part for part in script_parts if part))
+        lines.append("")
+
+        if slide.notes:
+            lines.extend(["**Source trace:**", ""])
+            lines.extend(f"- {_clean_text(note)}" for note in slide.notes)
+            lines.append("")
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def _as_sentence(text: str) -> str:
+    text = _clean_text(text).strip()
+    if not text:
+        return ""
+    if text[-1] in ".!?":
+        return text
+    return text + "."
 
 
 def _build_curation_prompt(packet: Dict[str, Any]) -> str:
@@ -664,6 +863,12 @@ def _clean_text(text: str) -> str:
         "鈫?": "->",
         "鈫扽": "->Y",
         "鈫扜": "->G",
+        "鈮?": "~",
+        "鈫抯uccess": "->success",
+        "鈫扽ellow": "->Yellow",
+        "鈫扜reen": "->Green",
+        "Gray鈫扽ellow": "Gray->Yellow",
+        "Gray鈫扜reen": "Gray->Green",
     }
     for old, new in replacements.items():
         cleaned = cleaned.replace(old, new)
