@@ -86,6 +86,8 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
             logger.info("  Workflow: LangGraph")
         if workflow_result.get("used_langchain"):
             logger.info(f"  LLM: LangChain ({workflow_result.get('llm_model')})")
+        if workflow_result.get("qa_report_path"):
+            logger.info(f"  QA: {workflow_result.get('qa_report_path')}")
         warnings = workflow_result.get("validation_warnings") or []
         for warning in warnings:
             logger.warning(f"  {warning}")

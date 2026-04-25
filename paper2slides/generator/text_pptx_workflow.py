@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, List, Optional, TypedDict
 
 from .content_planner import ContentPlan
 from .pptx_renderer import PptxRenderer
+from .pptx_qa import inspect_pptx_layout
 from .slide_schema import ImageBlock, MetricBlock, PresentationSpec, SlideSpec, TableBlock, TextBlock
 from .spec_builder import build_presentation_spec
 
@@ -42,6 +43,7 @@ class _PptxWorkflowState(TypedDict, total=False):
     raw_llm_response: str
     figure_analyses: Dict[str, Any]
     spec: PresentationSpec
+    qa_report_path: str
     pptx_path: Path
     validation_warnings: List[str]
     used_langgraph: bool
@@ -91,6 +93,7 @@ def run_text_pptx_workflow(
         "used_langgraph": final_state.get("used_langgraph", False),
         "used_langchain": final_state.get("used_langchain", False),
         "llm_model": final_state.get("llm_model", ""),
+        "qa_report_path": final_state.get("qa_report_path", ""),
     }
 
 
@@ -270,7 +273,14 @@ def _render_node(state: _PptxWorkflowState, save_json: SaveJsonFunc) -> _PptxWor
     renderer = PptxRenderer()
     renderer.render(spec, pptx_path)
 
-    return {**state, "pptx_path": pptx_path}
+    qa_result = inspect_pptx_layout(pptx_path)
+    qa_path = output_subdir / "layout_qa.json"
+    save_json(qa_path, qa_result.to_dict())
+    if qa_result.warnings:
+        for warning in qa_result.warnings[:12]:
+            logger.warning(f"  QA: {warning}")
+
+    return {**state, "pptx_path": pptx_path, "qa_report_path": str(qa_path)}
 
 
 def _build_curation_prompt(packet: Dict[str, Any]) -> str:
