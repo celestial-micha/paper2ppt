@@ -1,0 +1,11 @@
+# Folder
+test/
+design_doc/
+reference/
+__pycache__/
+models/
+blog/
+
+# Files
+api-key
+.env

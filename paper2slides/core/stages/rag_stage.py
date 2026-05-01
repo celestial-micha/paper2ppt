@@ -122,7 +122,7 @@ async def _run_fast_queries_by_category(
     markdown_content: str,
     markdown_paths: List[str],
     queries_by_category: Dict[str, List[str]],
-    model: str = "gpt-4o",
+    model: str = "gpt-5-mini",
     max_concurrency: int = 10,
 ) -> Dict[str, List[Dict]]:
     """
@@ -317,7 +317,8 @@ async def run_rag_stage(base_dir: Path, config: Dict) -> Dict:
         
         # Use OpenAI to query markdown content directly
         logger.info("")
-        logger.info(f"Running queries with GPT-4o and images ({content_type})...")
+        model = os.getenv("LLM_MODEL", "gpt-5-mini")
+        logger.info(f"Running queries with {model} and images ({content_type})...")
         
         from openai import OpenAI
         
@@ -332,6 +333,7 @@ async def run_rag_stage(base_dir: Path, config: Dict) -> Dict:
                 markdown_content="",  # Not used anymore, content is processed inside
                 markdown_paths=markdown_paths,
                 queries_by_category=RAG_PAPER_QUERIES,
+                model=model,
             )
         else:
             raise ValueError("Fast mode currently only supports content_type='paper'")

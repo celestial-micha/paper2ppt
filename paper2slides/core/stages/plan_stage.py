@@ -52,6 +52,7 @@ async def run_plan_stage(base_dir: Path, config_dir: Path, config: Dict) -> Dict
         slides_length=SlidesLength(config.get("slides_length", "medium")),
         style=StyleType(config.get("style", "academic")),
         custom_style=config.get("custom_style"),
+        target_slides=config.get("target_slides"),
     )
     
     gen_input = GenerationInput(config=gen_config, content=content, origin=origin)
@@ -59,7 +60,7 @@ async def run_plan_stage(base_dir: Path, config_dir: Path, config: Dict) -> Dict
     logger.info("Planning content...")
     api_key = os.getenv("RAG_LLM_API_KEY", "")
     base_url = os.getenv("RAG_LLM_BASE_URL")
-    model = os.getenv("LLM_MODEL", "gpt-4o")
+    model = os.getenv("LLM_MODEL", "gpt-5-mini")
 
     planner = ContentPlanner(api_key=api_key, base_url=base_url, model=model)
     plan = planner.plan(gen_input)
@@ -80,4 +81,3 @@ async def run_plan_stage(base_dir: Path, config_dir: Path, config: Dict) -> Dict
     save_json(checkpoint_path, result)
     logger.info(f"  Saved: {checkpoint_path}")
     return result
-

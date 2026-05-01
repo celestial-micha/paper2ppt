@@ -1,0 +1,95 @@
+\PassOptionsToPackage{export}{adjustbox}
+\documentclass[
+	11pt,
+	aspectratio=169,
+]{beamer}
+
+\graphicspath{{supplement/}{./}}
+
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows,positioning}
+\usepackage{standalone}
+\usepackage{colortbl}
+\usepackage[export]{adjustbox} % For max width/height in includegraphics
+
+% Global Image Constraints
+\setkeys{Gin}{max width=0.9\textwidth, max height=0.75\textheight, keepaspectratio}
+
+% Global List Spacing
+\setbeamertemplate{itemize/enumerate body begin}{\small}
+\setbeamertemplate{itemize/enumerate subbody begin}{\footnotesize}
+\setlength{\leftmargini}{1.5em}
+\setlength{\leftmarginii}{1.2em}
+\setlength{\itemsep}{0.3em} 
+
+% Theme
+\usetheme{Boadilla}
+\usecolortheme{seahorse}
+
+% Custom Colors
+\definecolor{mathblue}{RGB}{0,51,102}
+\definecolor{mathgray}{RGB}{64,64,64}
+\definecolor{lightgray}{RGB}{240,240,240}
+
+\setbeamercolor{structure}{fg=mathblue}
+\setbeamercolor{frametitle}{fg=mathblue,bg=white}
+\setbeamercolor{title}{fg=mathblue}
+\setbeamercolor{author}{fg=mathgray}
+
+% Fonts
+\usefonttheme{default}
+\usepackage{palatino}
+\usepackage[default]{opensans}
+
+% Custom Frametitle
+\let\oldframetitle\frametitle
+\renewcommand{\frametitle}[1]{%
+    \ifx\insertsection\empty%
+        \oldframetitle{#1}%
+    \else%
+        \oldframetitle{%
+            {\small\color{mathblue}\textbf{\thesection. \insertsection}}%
+            \hspace{0.4em}{\color{gray!50}|}\hspace{0.4em}%
+            #1%
+        }%
+    \fi%
+}
+
+\title[\VAR{short_title}]{\VAR{title}}
+\subtitle{\VAR{subtitle}}
+\author{\VAR{authors}}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}{Overview}
+	\tableofcontents
+\end{frame}
+
+\BLOCK{for slide in slides}
+\BLOCK{if slide.section}
+\section{\VAR{slide.section}}
+\BLOCK{endif}
+\begin{frame}{\VAR{slide.title}}
+    \VAR{slide.content}
+\end{frame}
+\BLOCK{endfor}
+
+\begin{frame}
+    \centering
+    \Huge \color{mathblue} Thank You!
+\end{frame}
+
+\end{document}

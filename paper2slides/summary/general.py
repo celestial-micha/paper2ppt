@@ -73,7 +73,7 @@ def merge_answers(
 async def extract_general(
     rag_results: List[RAGQueryResult],
     llm_client=None,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-5-mini",
     clean_refs: bool = True,
     skip_llm: bool = True,
 ) -> GeneralContent:

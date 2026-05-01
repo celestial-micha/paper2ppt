@@ -63,19 +63,32 @@ class PptxRenderer:
         prs.slide_height = Inches(7.5)
 
         blank_layout = prs.slide_layouts[6]
-        for slide_index, slide_spec in enumerate(spec.slides, start=1):
+        render_index = 1
+        last_section = ""
+        for slide_spec in spec.slides:
+            section = (slide_spec.section_label or "").strip()
+            if section and section != last_section and slide_spec.section_type != "opening":
+                divider = prs.slides.add_slide(blank_layout)
+                self._paint_background(divider, prs)
+                self._render_section_divider(divider, section, render_index)
+                render_index += 1
+                last_section = section
+            elif section:
+                last_section = section
+
             slide = prs.slides.add_slide(blank_layout)
             self._paint_background(slide, prs)
 
             layout = self._normalized_layout(slide_spec)
             if layout == "cover":
-                self._render_cover(slide, slide_spec, slide_index)
+                self._render_cover(slide, slide_spec, render_index)
             elif layout in {"statement", "metric_focus", "closing"} and not slide_spec.image_blocks and not slide_spec.table_blocks:
-                self._render_statement(slide, slide_spec, slide_index, closing=(layout == "closing"))
+                self._render_statement(slide, slide_spec, render_index, closing=(layout == "closing"))
             elif layout == "table_focus":
-                self._render_table_focus(slide, slide_spec, slide_index)
+                self._render_table_focus(slide, slide_spec, render_index)
             else:
-                self._render_visual_or_mixed(slide, slide_spec, slide_index, visual_left=(layout == "visual_left"))
+                self._render_visual_or_mixed(slide, slide_spec, render_index, visual_left=(layout == "visual_left"))
+            render_index += 1
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         prs.save(str(output_path))
@@ -183,6 +196,38 @@ class PptxRenderer:
 
         self._footer(slide, slide_index)
 
+    def _render_section_divider(self, slide, section: str, slide_index: int) -> None:
+        t = self.theme
+        self._add_text(
+            slide,
+            "Next section",
+            self.Inches(0.94),
+            self.Inches(1.72),
+            self.Inches(3.0),
+            self.Inches(0.28),
+            size=12,
+            bold=True,
+            color=t.primary,
+            font=t.body_font,
+            max_lines=1,
+        )
+        self._add_text(
+            slide,
+            section,
+            self.Inches(0.9),
+            self.Inches(2.15),
+            self.Inches(10.8),
+            self.Inches(0.9),
+            size=self._fit_title_size(section, base=34, min_size=26),
+            bold=True,
+            color=t.ink,
+            font=t.title_font,
+            max_lines=1,
+        )
+        self._rounded_rect(slide, self.Inches(0.92), self.Inches(3.25), self.Inches(5.8), self.Inches(0.09), t.primary, t.primary)
+        self._rounded_rect(slide, self.Inches(6.85), self.Inches(3.25), self.Inches(4.0), self.Inches(0.09), t.secondary, t.secondary)
+        self._footer(slide, slide_index)
+
     def _render_statement(self, slide, slide_spec: SlideSpec, slide_index: int, closing: bool = False) -> None:
         t = self.theme
         title = self._clean_title(slide_spec.title)
@@ -193,7 +238,7 @@ class PptxRenderer:
             self.Inches(0.52),
             self.Inches(11.85),
             self.Inches(0.58),
-            size=self._fit_title_size(title, base=23, min_size=18),
+            size=self._fit_title_size(title, base=24, min_size=18),
             bold=True,
             color=t.ink,
             font=t.title_font,
@@ -211,8 +256,8 @@ class PptxRenderer:
             self.Inches(0.86),
             self.Inches(1.42),
             claim_width,
-            self.Inches(1.05),
-            size=self._fit_title_size(claim, base=22 if not closing else 24, min_size=17),
+            self.Inches(1.2),
+            size=self._fit_title_size(claim, base=21 if not closing else 24, min_size=16),
             bold=True,
             color=t.primary if not closing else t.secondary,
             font=t.title_font,
@@ -221,13 +266,13 @@ class PptxRenderer:
 
         self._add_bullet_list(
             slide,
-            slide_spec.text_blocks[:4],
+            slide_spec.text_blocks[:5],
             self.Inches(0.96),
-            self.Inches(2.88),
+            self.Inches(2.72),
             bullet_width,
-            self.Inches(2.85),
-            size=14,
-            max_items=4,
+            self.Inches(3.65),
+            size=15,
+            max_items=5,
         )
 
         if has_metrics:
@@ -265,13 +310,13 @@ class PptxRenderer:
 
         self._add_bullet_list(
             slide,
-            slide_spec.text_blocks[:4],
+            slide_spec.text_blocks[:5],
             text_left,
-            self.Inches(1.65),
+            self.Inches(1.55),
             text_width,
-            self.Inches(3.1 if has_table else 3.85),
-            size=13,
-            max_items=4,
+            self.Inches(3.35 if has_table else 4.15),
+            size=14,
+            max_items=5,
         )
 
         if has_table:
@@ -288,7 +333,7 @@ class PptxRenderer:
                 slide,
                 slide_spec.metric_blocks[:3],
                 text_left,
-                self.Inches(5.55),
+                self.Inches(5.72),
                 text_width,
                 self.Inches(0.66),
             )
@@ -350,7 +395,7 @@ class PptxRenderer:
             self.Inches(0.34),
             self.Inches(11.85),
             self.Inches(0.52),
-            size=self._fit_title_size(title, base=22, min_size=17),
+            size=self._fit_title_size(title, base=24, min_size=18),
             bold=True,
             color=t.ink,
             font=t.title_font,
@@ -363,8 +408,8 @@ class PptxRenderer:
                 self.Inches(0.74),
                 self.Inches(0.92),
                 self.Inches(11.45),
-                self.Inches(0.38),
-                size=11.5,
+                self.Inches(0.52),
+                size=13.0,
                 bold=True,
                 color=t.primary,
                 font=t.body_font,
@@ -458,13 +503,13 @@ class PptxRenderer:
                 cell.fill.fore_color.rgb = self._rgb(self.theme.pale_primary if row_index == 0 else self.theme.surface if row_index % 2 else self.theme.surface_alt)
 
         if table_block.caption:
-            self._add_text(slide, self._truncate(table_block.caption, 110), table_left, int(table_top + table_height + self.Pt(5)), table_width, self.Pt(20), 8.5, False, self.theme.muted, self.theme.body_font, 1)
+            self._add_text(slide, self._truncate(table_block.caption, 120), table_left, int(table_top + table_height + self.Pt(5)), table_width, self.Pt(32), 8.5, False, self.theme.muted, self.theme.body_font, 1)
 
     def _add_bullet_list(self, slide, blocks: Sequence[TextBlock], left, top, width, height, size: float, max_items: int) -> None:
         blocks = list(blocks)[:max_items]
         if not blocks:
             return
-        text = "\n".join(f"- {self._truncate(block.text, 105)}" for block in blocks)
+        text = "\n".join(f"- {self._truncate(block.text, 145)}" for block in blocks)
         self._add_text(slide, text, left, top, width, height, size=size, color=self.theme.ink, font=self.theme.body_font, max_lines=max_items)
 
     def _add_text(self, slide, text: str, left, top, width, height, size: float, bold: bool = False, color=None, font: str | None = None, max_lines: int = 2, alignment=None):
@@ -538,7 +583,9 @@ class PptxRenderer:
         return min_size
 
     def _clean_title(self, text: str) -> str:
-        return self._truncate((text or "").replace(" - Cover", ""), 82)
+        cleaned = (text or "").replace(" - Cover", "")
+        cleaned = cleaned.replace("**", "")
+        return self._truncate(cleaned, 82)
 
     def _truncate_lines(self, text: str, max_lines: int) -> str:
         lines = [line.strip() for line in str(text).split("\n") if line.strip()]

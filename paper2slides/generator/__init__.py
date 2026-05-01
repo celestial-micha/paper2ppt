@@ -29,6 +29,7 @@ from .slide_schema import (
 )
 from .spec_builder import build_presentation_spec
 from .pptx_renderer import PptxRenderer
+from .detailed_tex import generate_detailed_tex_deck
 from .text_pptx_workflow import run_text_pptx_workflow
 
 
@@ -56,5 +57,6 @@ __all__ = [
     "PresentationSpec",
     "build_presentation_spec",
     "PptxRenderer",
+    "generate_detailed_tex_deck",
     "run_text_pptx_workflow",
 ]

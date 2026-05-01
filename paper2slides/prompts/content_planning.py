@@ -12,6 +12,7 @@ PAPER_SLIDES_PLANNING_PROMPT = """Organize the document into {min_pages}-{max_pa
 ## Output Fields
 - **id**: Slide identifier
 - **title**: A concise title suitable for this slide, such as paper title, method name, or topic name
+- **section**: A high-level chapter label, such as Overview, Motivation, Method, Architecture, Experiments, Results, Conclusion
 - **content**: The main text for this slide. This is the MOST IMPORTANT field. Requirements:
   - **DETAILED METHOD DESCRIPTION**: For method slides, describe each step/component in detail. If there are multiple steps, explain each one (what it does, how it works, what's the input/output). Don't compress into one vague sentence.
   - **PRESERVE KEY FORMULAS**: If the source has formulas, include 1-2 relevant ones in LaTeX (\\( ... \\) or \\[ ... \\]) with variable meanings.
@@ -64,6 +65,7 @@ Distribute content across {min_pages}-{max_pages} slides covering these areas:
   "slides": [
     {{
       "id": "slide_01",
+      "section": "Overview",
       "title": "[Paper/Method name]",
       "content": "[All authors with affiliations]",
       "tables": [],
@@ -71,6 +73,7 @@ Distribute content across {min_pages}-{max_pages} slides covering these areas:
     }},
     {{
       "id": "slide_02",
+      "section": "Method",
       "title": "[Method/Framework name]",
       "content": "[Detailed description: The framework consists of X components. Component A does... Component B handles... The process flow is...]",
       "tables": [],
@@ -78,6 +81,7 @@ Distribute content across {min_pages}-{max_pages} slides covering these areas:
     }},
     {{
       "id": "slide_03",
+      "section": "Results",
       "title": "[Results/Evaluation]",
       "content": "[Full results: Evaluated on Dataset (size, categories). Metrics include X, Y, Z. Main results show... Compared to baselines...]",
       "tables": [{{"table_id": "Table X", "extract": "<table><tr><th>Method</th><th>Metric</th></tr><tr><td>Ours</td><td>XX.X</td></tr><tr><td>Baseline</td><td>XX.X</td></tr></table>", "focus": "[comparison]"}}],
@@ -93,6 +97,7 @@ Distribute content across {min_pages}-{max_pages} slides covering these areas:
 3. **SPECIFIC NUMBERS**: Use precise values from source.
 4. **TABLE DATA**: Extract tables with actual numerical values from the original.
 5. **SOURCE FIGURES ONLY**: Reference original figures by exact figure_id only. Do not request or describe generated images.
+6. **CHAPTER STRUCTURE**: Reuse section labels across related slides so the renderer can insert chapter divider pages.
 """
 
 # Paper poster density guidelines
@@ -211,6 +216,7 @@ GENERAL_SLIDES_PLANNING_PROMPT = """Organize the document into {min_pages}-{max_
 ## Output Fields
 - **id**: Slide identifier
 - **title**: A concise title for this slide, such as document title or topic name
+- **section**: A high-level chapter label reused across related slides
 - **content**: The main text for this slide. This is the MOST IMPORTANT field. Requirements:
   - **DETAILED DESCRIPTIONS**: If there are multiple points/steps, describe each one. Don't compress into vague summaries.
   - **PRESERVE KEY FORMULAS**: If present, include relevant mathematical or technical formulas.
@@ -249,6 +255,7 @@ Distribute content across {min_pages}-{max_pages} slides. Identify the document'
   "slides": [
     {{
       "id": "slide_01",
+      "section": "Overview",
       "title": "[Document title]",
       "content": "[Authors/source if available]",
       "tables": [],
@@ -256,6 +263,7 @@ Distribute content across {min_pages}-{max_pages} slides. Identify the document'
     }},
     {{
       "id": "slide_02",
+      "section": "Main Content",
       "title": "[Topic name]",
       "content": "[Detailed description: This section covers X, Y, Z. The key aspects include... Specific data shows...]",
       "tables": [],
@@ -263,6 +271,7 @@ Distribute content across {min_pages}-{max_pages} slides. Identify the document'
     }},
     {{
       "id": "slide_03",
+      "section": "Key Data",
       "title": "[Key Data/Statistics]",
       "content": "[Full details with specific numbers, statistics, and comparisons...]",
       "tables": [{{"table_id": "Table X", "extract": "<table><tr><th>Item</th><th>Value</th></tr><tr><td>A</td><td>XX.X</td></tr></table>", "focus": "[key point]"}}],
@@ -278,6 +287,7 @@ Distribute content across {min_pages}-{max_pages} slides. Identify the document'
 3. **SPECIFIC NUMBERS**: Use precise values from source.
 4. **TABLE DATA**: Extract tables with actual numerical values from the original.
 5. **SOURCE FIGURES ONLY**: Reference original figures by exact figure_id only. Do not request or describe generated images.
+6. **CHAPTER STRUCTURE**: Reuse section labels across related slides so the renderer can insert chapter divider pages.
 """
 
 # General poster density guidelines

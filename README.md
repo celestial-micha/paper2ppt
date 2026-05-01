@@ -14,6 +14,7 @@ paper2ppt is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Sl
 
 - Convert a PDF paper into an editable PowerPoint file.
 - Generate a matching `speaker_script.md` for presentation narration.
+- Generate an additional content-rich Beamer/TeX sidecar deck for longer, more detailed talks.
 - Reuse figures and tables extracted from the original paper.
 - Use LangChain/LangGraph for text-LLM deck curation and workflow orchestration.
 - Avoid text-to-image generation for slide creation.
@@ -35,6 +36,7 @@ PDF
     -> native PPTX rendering
     -> layout QA and repair loop
     -> speaker script generation
+    -> detailed Beamer/TeX sidecar generation
 ```
 
 The generated deck is not a set of screenshots. It uses native PowerPoint text boxes, shapes, tables, and inserted source images, so you can keep editing it in PowerPoint.
@@ -112,7 +114,8 @@ Main options:
 --input       PDF file path
 --output      slides
 --style       academic or a custom style description
---length      short, medium, or long
+--length      short, medium, or long (roughly 8-12, 14-22, or 24-36 content slides)
+--slides      exact target content-slide count, overriding --length
 --fast        use direct parsing/query flow instead of full indexing
 --from-stage  rag, summary, plan, or generate
 --list        list previous outputs
@@ -128,6 +131,8 @@ Typical files:
 ```text
 slides.pptx
 speaker_script.md
+detailed_slides.tex
+detailed_slides.pdf
 layout_qa.json
 checkpoint_slide_spec.json
 checkpoint_slide_spec_llm_raw.txt
@@ -137,6 +142,8 @@ What they mean:
 
 - `slides.pptx`: the editable PowerPoint deck.
 - `speaker_script.md`: slide-by-slide narration draft.
+- `detailed_slides.tex`: a more detailed Beamer deck generated from the same checkpoints.
+- `detailed_slides.pdf`: compiled Beamer output, created automatically when `pdflatex` is installed.
 - `layout_qa.json`: lightweight layout QA result.
 - `checkpoint_slide_spec.json`: the final structured slide specification.
 - `checkpoint_slide_spec_llm_raw.txt`: raw deck-curation output from the LLM.
@@ -203,6 +210,7 @@ If the API call fails:
 If the deck is too sparse or too dense:
 
 - Try a different `--length`.
+- Use `--slides 24` or another explicit count for long papers that need fuller coverage.
 - Regenerate from `--from-stage generate`.
 - Adjust the LLM model in `.env`.
 
@@ -210,6 +218,10 @@ If a slide looks crowded:
 
 - Inspect `layout_qa.json`.
 - Increase `PPTX_QA_MAX_REPAIR_ATTEMPTS` in `.env`.
+
+If the LLM endpoint is temporarily unstable:
+
+- Set `PPTX_FORCE_DETERMINISTIC=1` to reuse parsed checkpoints and generate a fallback PPTX/TeX deck without extra LLM calls.
 
 ## Attribution
 

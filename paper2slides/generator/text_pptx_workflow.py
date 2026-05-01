@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, TypedDict
 
 from .content_planner import ContentPlan
+from .detailed_tex import generate_detailed_tex_deck
 from .pptx_renderer import PptxRenderer
 from .pptx_qa import inspect_pptx_layout
 from .slide_schema import ImageBlock, MetricBlock, PresentationSpec, SlideSpec, TableBlock, TextBlock
@@ -95,6 +96,17 @@ def run_text_pptx_workflow(
 
     spec = final_state["spec"]
     pptx_path = final_state["pptx_path"]
+    detailed_result: Dict[str, str] = {}
+    try:
+        detailed_result = generate_detailed_tex_deck(
+            plan=plan,
+            spec=spec,
+            output_dir=output_subdir,
+            title=spec.title or title,
+        )
+    except Exception as exc:
+        logger.warning(f"Detailed TeX sidecar generation failed; continuing with PPTX output: {exc}")
+
     return {
         "pptx_path": pptx_path,
         "spec": spec,
@@ -104,6 +116,8 @@ def run_text_pptx_workflow(
         "llm_model": final_state.get("llm_model", ""),
         "qa_report_path": final_state.get("qa_report_path", ""),
         "speaker_script_path": final_state.get("speaker_script_path", ""),
+        "detailed_tex_path": detailed_result.get("detailed_tex_path", ""),
+        "detailed_pdf_path": detailed_result.get("detailed_pdf_path", ""),
     }
 
 
@@ -184,6 +198,9 @@ def _prepare_packet_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
 
 def _analyze_figures_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
     """Optionally ask a vision-capable text model to describe source figures."""
+    if os.getenv("PPTX_FORCE_DETERMINISTIC", "").strip().lower() in {"1", "true", "yes"}:
+        return {**state, "figure_analyses": {}}
+
     enabled = os.getenv("PPTX_ENABLE_FIGURE_ANALYSIS", "1").strip().lower() not in {"0", "false", "no"}
     if not enabled:
         return {**state, "figure_analyses": {}}
@@ -210,14 +227,35 @@ def _analyze_figures_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
 def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
     packet = state["source_packet"]
     prompt = _build_curation_prompt(packet)
-    raw_response, used_langchain, model = _call_deck_curator_llm(prompt)
-    spec = _parse_llm_spec(raw_response, state["plan"], state.get("source_plan_path", ""))
+    warnings = list(state.get("validation_warnings", []))
+    if os.getenv("PPTX_FORCE_DETERMINISTIC", "").strip().lower() in {"1", "true", "yes"}:
+        warnings.append("PPTX_FORCE_DETERMINISTIC=1; used deterministic fallback slide spec.")
+        return {
+            **state,
+            "raw_llm_response": "",
+            "spec": _fallback_compact_spec(state["plan"], state.get("source_plan_path", "")),
+            "used_langchain": False,
+            "llm_model": os.getenv("LLM_MODEL", ""),
+            "validation_warnings": warnings,
+        }
+
+    try:
+        raw_response, used_langchain, model = _call_deck_curator_llm(prompt)
+        spec = _parse_llm_spec(raw_response, state["plan"], state.get("source_plan_path", ""))
+    except Exception as exc:
+        logger.warning(f"Deck curator LLM failed; using deterministic fallback spec: {exc}")
+        raw_response = ""
+        used_langchain = False
+        model = os.getenv("LLM_MODEL", "")
+        spec = _fallback_compact_spec(state["plan"], state.get("source_plan_path", ""))
+        warnings.append("Deck curator LLM failed; used deterministic fallback slide spec.")
     return {
         **state,
         "raw_llm_response": raw_response,
         "spec": spec,
         "used_langchain": used_langchain,
         "llm_model": model,
+        "validation_warnings": warnings,
     }
 
 
@@ -243,6 +281,7 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
 
         slide.text_blocks = _compact_text_blocks(slide.text_blocks)
         slide.metric_blocks = _compact_metric_blocks(slide.metric_blocks)
+        slide.section_label = slide.section_label or _infer_slide_section(slide)
         if not slide.metric_blocks:
             slide.metric_blocks = _extract_metrics_from_slide(slide)[:4]
 
@@ -515,6 +554,7 @@ Return JSON only, no markdown fences:
       "title": "short title",
       "layout": "cover|section|visual_right|visual_left|table_focus|quote|closing",
       "section_type": "opening|content|ending",
+      "section": "Overview|Motivation|Method|Experiments|Results|Conclusion",
       "takeaway": "one-sentence message",
       "bullets": ["short bullet", "short bullet"],
       "metrics": [
@@ -541,7 +581,7 @@ Source packet:
 def _call_deck_curator_llm(prompt: str) -> tuple[str, bool, str]:
     api_key = os.getenv("RAG_LLM_API_KEY", "")
     base_url = os.getenv("RAG_LLM_BASE_URL") or None
-    model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    model = os.getenv("LLM_MODEL", "gpt-5-mini")
     max_tokens = int(os.getenv("PPTX_LLM_MAX_TOKENS", os.getenv("RAG_LLM_MAX_TOKENS", "8000")))
 
     if not api_key:
@@ -583,7 +623,7 @@ def _call_figure_analysis_llm(figures: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     api_key = os.getenv("RAG_LLM_API_KEY", "")
     base_url = os.getenv("RAG_LLM_BASE_URL") or None
-    model = os.getenv("PPTX_VISION_MODEL", os.getenv("LLM_MODEL", "gpt-4o-mini"))
+    model = os.getenv("PPTX_VISION_MODEL", os.getenv("LLM_MODEL", "gpt-5-mini"))
     if not api_key:
         return {}
 
@@ -703,6 +743,7 @@ def _parse_llm_spec(raw_response: str, plan: ContentPlan, source_plan_path: str)
                 metric_blocks=metric_blocks,
                 notes=item.get("speaker_notes", []),
                 section_type=item.get("section_type", "content"),
+                section_label=item.get("section", "") or item.get("section_label", ""),
             )
         )
 
@@ -730,6 +771,7 @@ def _section_to_packet(section) -> Dict[str, Any]:
         "id": section.id,
         "title": section.title,
         "type": section.section_type,
+        "section": getattr(section, "section_label", ""),
         "content": _clean_text(section.content)[:1400],
         "tables": [ref.__dict__ for ref in section.tables],
         "figures": [ref.__dict__ for ref in section.figures],
@@ -792,7 +834,7 @@ def _compact_metric_blocks(blocks: List[MetricBlock]) -> List[MetricBlock]:
         note = _limit_words(_clean_text(metric.note), 8)
         if not value:
             value = _first_metric_value(" ".join([label, note]))
-        if not value:
+        if not value or _looks_like_year(value) or _looks_like_noise_number(value):
             continue
         compact.append(MetricBlock(label=label or "Key metric", value=value, note=note))
     return compact
@@ -805,6 +847,8 @@ def _extract_metrics_from_slide(slide: SlideSpec) -> List[MetricBlock]:
     seen = set()
     for value in candidates:
         clean_value = value.replace(" ", "")
+        if _looks_like_year(clean_value) or _looks_like_noise_number(clean_value):
+            continue
         if clean_value in seen:
             continue
         seen.add(clean_value)
@@ -817,7 +861,16 @@ def _extract_metrics_from_slide(slide: SlideSpec) -> List[MetricBlock]:
 
 def _first_metric_value(text: str) -> str:
     match = re.search(r"(?<![A-Za-z0-9])(?:\d+(?:\.\d+)?%|r\s*=\s*-?\d+(?:\.\d+)?|p\s*=\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?)", text or "")
-    return match.group(0).replace(" ", "") if match else ""
+    value = match.group(0).replace(" ", "") if match else ""
+    return "" if _looks_like_year(value) else value
+
+
+def _looks_like_year(value: str) -> bool:
+    return bool(re.fullmatch(r"(?:19|20)\d{2}", value or ""))
+
+
+def _looks_like_noise_number(value: str) -> bool:
+    return bool(re.fullmatch(r"[1-9]", value or ""))
 
 
 def _metric_label_for_value(value: str, context: str) -> str:
@@ -874,6 +927,8 @@ def _limit_words(text: str, max_words: int) -> str:
 
 def _clean_text(text: str) -> str:
     cleaned = str(text or "")
+    cleaned = re.sub(r"\*\*(.*?)\*\*", r"\1", cleaned)
+    cleaned = re.sub(r"(?m)^\s*[-*]\s*", "", cleaned)
     replacements = {
         "→": "->",
         "↔": "<->",
@@ -896,7 +951,24 @@ def _clean_text(text: str) -> str:
     }
     for old, new in replacements.items():
         cleaned = cleaned.replace(old, new)
-    return re.sub(r"\s+", " ", cleaned).strip()
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    labels = (
+        "RESEARCH PROBLEM",
+        "LIMITATIONS OF EXISTING METHODS",
+        "RESEARCH GAP",
+        "FRAMEWORK OVERVIEW",
+        "DATASET / BENCHMARK",
+        "MAIN RESULTS",
+        "COMPARISON ANALYSIS",
+        "NOVELTY & INNOVATIONS",
+        "FUTURE DIRECTIONS",
+        "LIMITATIONS",
+    )
+    for label in labels:
+        if cleaned.upper().startswith(label):
+            cleaned = cleaned[len(label):].strip(" -:")
+            break
+    return cleaned
 
 
 def _infer_layout(slide: SlideSpec) -> str:
@@ -911,3 +983,18 @@ def _infer_layout(slide: SlideSpec) -> str:
     if slide.metric_blocks:
         return "metric_focus"
     return "statement"
+
+
+def _infer_slide_section(slide: SlideSpec) -> str:
+    text = " ".join([slide.title, slide.takeaway] + [block.text for block in slide.text_blocks]).lower()
+    if slide.section_type == "opening":
+        return "Overview"
+    if slide.section_type == "ending":
+        return "Conclusion"
+    if any(word in text for word in ("motivation", "problem", "background", "challenge", "limitation")):
+        return "Motivation"
+    if any(word in text for word in ("method", "approach", "architecture", "algorithm", "training", "model")):
+        return "Method"
+    if any(word in text for word in ("experiment", "evaluation", "benchmark", "ablation", "result")):
+        return "Results"
+    return "Core Ideas"

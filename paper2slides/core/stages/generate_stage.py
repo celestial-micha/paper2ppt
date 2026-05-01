@@ -53,6 +53,7 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
             content=s.get("content", ""),
             tables=[TableRef(**t) for t in s.get("tables", [])],
             figures=[FigureRef(**f) for f in s.get("figures", [])],
+            section_label=s.get("section", ""),
         ))
     
     plan = ContentPlan(
@@ -90,6 +91,10 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
         logger.info(f"  QA: {workflow_result.get('qa_report_path')}")
     if workflow_result.get("speaker_script_path"):
         logger.info(f"  Speaker script: {workflow_result.get('speaker_script_path')}")
+    if workflow_result.get("detailed_tex_path"):
+        logger.info(f"  Detailed TeX deck: {workflow_result.get('detailed_tex_path')}")
+    if workflow_result.get("detailed_pdf_path"):
+        logger.info(f"  Detailed TeX PDF: {workflow_result.get('detailed_pdf_path')}")
     warnings = workflow_result.get("validation_warnings") or []
     for warning in warnings:
         logger.warning(f"  {warning}")
@@ -102,5 +107,7 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
         "pptx_path": str(pptx_path),
         "speaker_script_path": workflow_result.get("speaker_script_path", ""),
         "qa_report_path": workflow_result.get("qa_report_path", ""),
+        "detailed_tex_path": workflow_result.get("detailed_tex_path", ""),
+        "detailed_pdf_path": workflow_result.get("detailed_pdf_path", ""),
         "num_slides": len(spec.slides),
     }

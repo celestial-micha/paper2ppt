@@ -37,7 +37,7 @@ class APIConfig:
     """Optional. If None, uses OpenAI official API. Set via RAG_LLM_BASE_URL env var."""
     
     llm_model: str = field(
-        default_factory=lambda: os.getenv("LLM_MODEL", "gpt-4o-mini")
+        default_factory=lambda: os.getenv("LLM_MODEL", "gpt-5-mini")
     )
     
     embedding_model: str = field(

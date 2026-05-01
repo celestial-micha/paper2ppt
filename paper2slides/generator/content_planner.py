@@ -2,6 +2,7 @@
 Content Planner
 """
 import json
+import logging
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -14,6 +15,9 @@ from ..prompts.content_planning import (
     PAPER_SLIDES_PLANNING_PROMPT,
     GENERAL_SLIDES_PLANNING_PROMPT,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -40,12 +44,14 @@ class Section:
     content: str
     tables: List[TableRef] = field(default_factory=list)
     figures: List[FigureRef] = field(default_factory=list)
+    section_label: str = ""
     
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "id": self.id,
             "title": self.title,
             "type": self.section_type,
+            "section": self.section_label,
             "content": self.content,
         }
         
@@ -115,7 +121,7 @@ class ContentPlanner:
         self,
         api_key: str = None,
         base_url: str = None,
-        model: str = "gpt-4o",
+        model: str = "gpt-5-mini",
         max_tokens: int = None,
     ):
         import os
@@ -184,8 +190,16 @@ class ContentPlanner:
             assets_section=assets_section,
         )
         
-        result = self._call_text_llm(prompt)
-        return self._parse_sections(result, is_slides=True)
+        if self._force_deterministic():
+            logger.warning("PPTX_FORCE_DETERMINISTIC=1; using deterministic fallback plan.")
+            return self._fallback_sections_from_summary(gen_input, summary, min_pages, max_pages)
+
+        try:
+            result = self._call_text_llm(prompt)
+            return self._parse_sections(result, is_slides=True)
+        except Exception as exc:
+            logger.warning(f"LLM planning failed; using deterministic fallback plan: {exc}")
+            return self._fallback_sections_from_summary(gen_input, summary, min_pages, max_pages)
     
     def _build_assets_section(self, tables_md: str, figures: Any) -> str:
         """Build the tables/figures section based on available assets."""
@@ -358,6 +372,7 @@ class ContentPlanner:
                     content=item.get("content", ""),
                     tables=tables,
                     figures=figures,
+                    section_label=item.get("section", "") or item.get("chapter", ""),
                 ))
             return sections
             
@@ -377,9 +392,184 @@ class ContentPlanner:
             Section(id="section_01", title="Title", section_type="opening", content=""),
             Section(id="section_02", title="Content", section_type="content", content=""),
         ]
+
+    def _fallback_sections_from_summary(
+        self,
+        gen_input: GenerationInput,
+        summary: str,
+        min_pages: int,
+        max_pages: int,
+    ) -> List[Section]:
+        """Build a usable slide plan from the existing summary when the LLM is unavailable."""
+        chapters = self._split_summary_chapters(summary)
+        target = self._choose_target_slides(
+            summary=summary,
+            min_pages=min_pages,
+            max_pages=max_pages,
+            figure_count=len(getattr(gen_input.origin, "figures", []) or []),
+            table_count=len(getattr(gen_input.origin, "tables", []) or []),
+            explicit=getattr(gen_input.config, "target_slides", None),
+        )
+        slide_plan = self._expand_chapters_to_slide_plan(chapters, target)
+        figures = list(getattr(gen_input.origin, "figures", []) or [])
+        tables = list(getattr(gen_input.origin, "tables", []) or [])
+
+        sections: List[Section] = []
+        table_cursor = 0
+        for idx, item in enumerate(slide_plan):
+            title = item["title"]
+            content = item["content"]
+            section_type = "opening" if idx == 0 else "ending" if idx == len(slide_plan) - 1 else "content"
+            section_figures = []
+            section_tables = []
+            chapter = item["chapter"]
+            if figures and chapter in {"Method", "Architecture", "Results"} and idx % 2 == 0:
+                fig = figures[min(idx // 2, len(figures) - 1)]
+                section_figures.append(FigureRef(figure_id=fig.figure_id, focus=fig.caption or title))
+            if tables and chapter in {"Evaluation", "Results"}:
+                table = tables[min(table_cursor, len(tables) - 1)]
+                table_cursor += 1
+                section_tables.append(TableRef(table_id=table.table_id, focus=table.caption or title))
+            sections.append(
+                Section(
+                    id=f"section_{idx + 1:02d}",
+                    title=title,
+                    section_type=section_type,
+                    content=content,
+                    tables=section_tables,
+                    figures=section_figures,
+                    section_label=chapter,
+                )
+            )
+        return sections
+
+    def _split_summary_chapters(self, summary: str) -> List[Dict[str, Any]]:
+        raw = summary or ""
+        matches = list(re.finditer(r"(?m)^#\s+(.+?)\s*$", raw))
+        chapters: List[Dict[str, Any]] = []
+        if matches:
+            for idx, match in enumerate(matches):
+                start = match.end()
+                end = matches[idx + 1].start() if idx + 1 < len(matches) else len(raw)
+                heading = match.group(1).strip()
+                content = raw[start:end].strip()
+                if content:
+                    chapters.append({"chapter": self._normalize_chapter(heading), "heading": heading, "content": content})
+        if not chapters:
+            chapters.append({"chapter": "Core Ideas", "heading": "Core Ideas", "content": raw})
+        return chapters
+
+    def _normalize_chapter(self, heading: str) -> str:
+        lower = heading.lower()
+        if "paper" in lower or "title" in lower:
+            return "Overview"
+        if "motivation" in lower or "problem" in lower or "background" in lower:
+            return "Motivation"
+        if "solution" in lower or "method" in lower or "architecture" in lower:
+            return "Method"
+        if "result" in lower or "experiment" in lower or "evaluation" in lower:
+            return "Results"
+        if "contribution" in lower or "conclusion" in lower:
+            return "Conclusion"
+        return heading[:32] or "Core Ideas"
+
+    def _choose_target_slides(
+        self,
+        summary: str,
+        min_pages: int,
+        max_pages: int,
+        figure_count: int,
+        table_count: int,
+        explicit: int | None,
+    ) -> int:
+        if explicit:
+            return max(4, int(explicit))
+        estimated = round(len(summary or "") / 1500) + min(figure_count, 6) // 2 + min(table_count, 6) // 3
+        return max(min_pages, min(max_pages, estimated))
+
+    def _expand_chapters_to_slide_plan(self, chapters: List[Dict[str, Any]], target: int) -> List[Dict[str, str]]:
+        weights = [max(1, len(chapter["content"])) for chapter in chapters]
+        total_weight = sum(weights) or 1
+        counts = [max(1, round(target * weight / total_weight)) for weight in weights]
+        while sum(counts) < target:
+            counts[weights.index(max(weights))] += 1
+        while sum(counts) > target and max(counts) > 1:
+            idx = counts.index(max(counts))
+            counts[idx] -= 1
+
+        slides: List[Dict[str, str]] = []
+        for chapter, count in zip(chapters, counts):
+            chunks = self._chunk_chapter_content(chapter["content"], count)
+            for chunk_index, chunk in enumerate(chunks):
+                title = self._fallback_slide_title(chapter["chapter"], chunk, chunk_index, len(chunks))
+                slides.append({"chapter": chapter["chapter"], "title": title, "content": chunk})
+        return slides[:target]
+
+    def _chunk_chapter_content(self, content: str, count: int) -> List[str]:
+        points = self._summary_points(content)
+        if not points:
+            return [content[:1200]]
+        chunk_size = max(2, round(len(points) / max(1, count)))
+        chunks = []
+        for start in range(0, len(points), chunk_size):
+            chunks.append(" ".join(points[start:start + chunk_size]))
+            if len(chunks) >= count:
+                break
+        while len(chunks) < count:
+            chunks.append(chunks[-1] if chunks else content[:1000])
+        return chunks
+
+    def _summary_points(self, content: str) -> List[str]:
+        cleaned = self._clean_markdown_text(content)
+        parts = re.split(r"(?:\n\s*[-*]\s+|\n\s*\d+\.\s+|(?<=[.!?])\s+(?=[A-Z0-9]))", cleaned)
+        return [part.strip(" -:") for part in parts if len(part.strip(" -:")) > 35]
+
+    def _fallback_slide_title(self, chapter: str, content: str, index: int, total: int) -> str:
+        first = self._summary_points(content)
+        if first:
+            point = self._strip_leading_label(first[0])
+            words = point.split()
+            candidate = " ".join(words[:6]).strip(" ,;:-")
+            if 8 <= len(candidate) <= 58:
+                return candidate
+        if total <= 1:
+            return chapter
+        return f"{chapter} {index + 1}"
+
+    def _clean_markdown_text(self, text: str) -> str:
+        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text or "")
+        text = re.sub(r"(?m)^#+\s*", "", text)
+        text = re.sub(r"(?m)^\s*[-*]\s*", "", text)
+        text = re.sub(r"\s+", " ", text)
+        return self._strip_leading_label(text.strip())
+
+    def _strip_leading_label(self, text: str) -> str:
+        labels = [
+            "RESEARCH PROBLEM",
+            "LIMITATIONS OF EXISTING METHODS",
+            "RESEARCH GAP",
+            "FRAMEWORK OVERVIEW",
+            "DATASET / BENCHMARK",
+            "MAIN RESULTS",
+            "COMPARISON ANALYSIS",
+            "NOVELTY & INNOVATIONS",
+            "FUTURE DIRECTIONS",
+            "LIMITATIONS",
+        ]
+        cleaned = text.strip(" -:")
+        for label in labels:
+            if cleaned.upper().startswith(label):
+                cleaned = cleaned[len(label):].strip(" -:")
+                break
+        return cleaned
     
     def _truncate(self, text: str, max_len: int) -> str:
         """Truncate text to max length."""
         if len(text) <= max_len:
             return text
         return text[:max_len] + "\n\n[Content truncated...]"
+
+    def _force_deterministic(self) -> bool:
+        import os
+
+        return os.getenv("PPTX_FORCE_DETERMINISTIC", "").strip().lower() in {"1", "true", "yes"}

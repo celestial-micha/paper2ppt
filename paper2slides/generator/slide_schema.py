@@ -113,6 +113,7 @@ class SlideSpec:
     metric_blocks: List[MetricBlock] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
     section_type: str = "content"
+    section_label: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -121,6 +122,7 @@ class SlideSpec:
             "layout": self.layout,
             "takeaway": self.takeaway,
             "section_type": self.section_type,
+            "section_label": self.section_label,
             "text_blocks": [block.to_dict() for block in self.text_blocks],
             "image_blocks": [block.to_dict() for block in self.image_blocks],
             "table_blocks": [block.to_dict() for block in self.table_blocks],
@@ -141,6 +143,7 @@ class SlideSpec:
             table_blocks=[TableBlock.from_dict(item) for item in data.get("table_blocks", [])],
             metric_blocks=[MetricBlock.from_dict(item) for item in data.get("metric_blocks", [])],
             notes=data.get("notes", []),
+            section_label=data.get("section_label", ""),
         )
 
 

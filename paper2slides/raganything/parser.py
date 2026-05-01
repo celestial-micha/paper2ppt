@@ -15,7 +15,9 @@ from __future__ import annotations
 import json
 import argparse
 import base64
+import shutil
 import subprocess
+import sys
 import tempfile
 import logging
 from pathlib import Path
@@ -30,6 +32,28 @@ from typing import (
 )
 
 T = TypeVar("T")
+
+
+def _resolve_cli_command(command: str) -> str:
+    """Resolve a console script, including scripts installed beside sys.executable."""
+    found = shutil.which(command)
+    if found:
+        return found
+
+    suffixes = [".exe", ".bat", ".cmd", ""]
+    roots = [
+        Path(sys.executable).parent,
+        Path(sys.prefix) / "Scripts",
+        Path(sys.prefix) / "bin",
+        Path(sys.executable).parent / "Scripts",
+        Path(sys.executable).parent.parent / "Scripts",
+    ]
+    for root in roots:
+        for suffix in suffixes:
+            candidate = root / f"{command}{suffix}"
+            if candidate.exists():
+                return str(candidate)
+    return command
 
 
 class MineruExecutionError(Exception):
@@ -617,7 +641,7 @@ class MineruParser(Parser):
             vlm_url: When the backend is `vlm-sglang-client`, you need to specify the server_url
         """
         cmd = [
-            "mineru",
+            _resolve_cli_command("mineru"),
             "-p",
             str(input_path),
             "-o",
@@ -1209,7 +1233,7 @@ class MineruParser(Parser):
             if platform.system() == "Windows":
                 subprocess_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
 
-            result = subprocess.run(["mineru", "--version"], **subprocess_kwargs)
+            result = subprocess.run([_resolve_cli_command("mineru"), "--version"], **subprocess_kwargs)
             logging.debug(f"MinerU version: {result.stdout.strip()}")
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):

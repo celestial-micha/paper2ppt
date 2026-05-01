@@ -2,6 +2,7 @@ import unittest
 import uuid
 from pathlib import Path
 
+from paper2slides.generator.detailed_tex import generate_detailed_tex_deck
 from paper2slides.generator.config import GenerationConfig, GenerationInput, OutputType, SlidesLength, StyleType
 from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
@@ -157,6 +158,46 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         compact = _compact_metric_blocks(metrics)
         self.assertEqual(len(compact), 1)
         self.assertEqual(compact[0].value, "5.36%")
+
+    def test_generates_detailed_tex_sidecar(self):
+        plan = ContentPlan(
+            output_type="slides",
+            sections=[
+                Section(
+                    id="slide_01",
+                    title="Detailed Companion",
+                    section_type="opening",
+                    content="This slide keeps more context for a longer academic explanation. It cites the table evidence.",
+                    tables=[TableRef(table_id="Table 1", focus="Evidence")],
+                )
+            ],
+            tables_index={
+                "Table 1": TableInfo(
+                    table_id="Table 1",
+                    caption="Example detailed table",
+                    html_content="<table><tr><th>Metric</th><th>Value</th></tr><tr><td>Accuracy</td><td>92%</td></tr></table>",
+                )
+            },
+        )
+        spec = PresentationSpec(
+            title="Detailed Test",
+            slides=[
+                SlideSpec(
+                    slide_id="slide_01",
+                    title="Detailed Companion",
+                    takeaway="Detailed sidecar preserves extra context.",
+                    text_blocks=[TextBlock(text="More evidence is shown than in the compact deck.")],
+                )
+            ],
+        )
+        temp_root = Path(__file__).parent / "outputs" / "tmp" / f"tex_{uuid.uuid4().hex}"
+        result = generate_detailed_tex_deck(plan, spec, temp_root, compile_pdf=False)
+        tex_path = Path(result["detailed_tex_path"])
+        self.assertTrue(tex_path.exists())
+        tex = tex_path.read_text(encoding="utf-8")
+        self.assertIn("\\documentclass", tex)
+        self.assertIn("Detailed sidecar preserves extra context.", tex)
+        self.assertIn("Accuracy", tex)
 
 
 if __name__ == "__main__":

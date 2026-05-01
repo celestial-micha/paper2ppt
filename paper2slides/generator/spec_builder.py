@@ -42,12 +42,30 @@ def build_slide_spec(section: Section, plan: ContentPlan) -> SlideSpec:
         table_blocks=table_blocks,
         notes=notes,
         section_type=section.section_type,
+        section_label=section.section_label or _infer_section_label(section),
     )
+
+
+def _infer_section_label(section: Section) -> str:
+    title = (section.title or "").lower()
+    content = (section.content or "").lower()[:600]
+    text = f"{title} {content}"
+    if section.section_type == "opening":
+        return "Overview"
+    if section.section_type == "ending":
+        return "Conclusion"
+    if any(word in text for word in ["motivation", "problem", "background", "limitation", "challenge"]):
+        return "Motivation"
+    if any(word in text for word in ["method", "approach", "architecture", "algorithm", "training", "model"]):
+        return "Method"
+    if any(word in text for word in ["experiment", "evaluation", "result", "benchmark", "ablation"]):
+        return "Results"
+    return "Core Ideas"
 
 
 def _content_to_blocks(content: str) -> List[str]:
     """Split long plan content into editable paragraph-sized blocks."""
-    normalized = re.sub(r"\s+", " ", (content or "").strip())
+    normalized = _clean_plan_text(content)
     if not normalized:
         return []
 
@@ -160,3 +178,26 @@ def _clean_cell_text(value: str) -> str:
     text = html.unescape(text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
+
+
+def _clean_plan_text(content: str) -> str:
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", content or "")
+    text = re.sub(r"(?m)^#+\s*", "", text)
+    text = re.sub(r"(?m)^\s*[-*]\s*", "", text)
+    text = re.sub(r"\s+", " ", text)
+    text = text.strip()
+    for label in (
+        "RESEARCH PROBLEM",
+        "LIMITATIONS OF EXISTING METHODS",
+        "RESEARCH GAP",
+        "FRAMEWORK OVERVIEW",
+        "DATASET / BENCHMARK",
+        "MAIN RESULTS",
+        "COMPARISON ANALYSIS",
+        "NOVELTY & INNOVATIONS",
+        "FUTURE DIRECTIONS",
+        "LIMITATIONS",
+    ):
+        if text.upper().startswith(label):
+            return text[len(label):].strip(" -:")
+    return text

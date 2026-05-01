@@ -48,6 +48,8 @@ def main():
                         help="Style: academic, doraemon, or custom description")
     parser.add_argument("--length", choices=["short", "medium", "long"], default="medium",
                         help="Slides length (default: medium)")
+    parser.add_argument("--slides", type=int,
+                        help="Target slide count. Overrides --length when provided.")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
                         help=f"Output directory (default: {DEFAULT_OUTPUT_DIR})")
     parser.add_argument("--from-stage", choices=STAGES,
@@ -95,6 +97,7 @@ def main():
         "style": style_type,
         "custom_style": custom_style,
         "slides_length": args.length,
+        "target_slides": args.slides,
         "fast_mode": args.fast,
         "max_workers": args.parallel if args.parallel else 1,
     }

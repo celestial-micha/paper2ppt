@@ -14,6 +14,7 @@ paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)�
 
 - 从 PDF 论文生成可编辑 PowerPoint。
 - 同步生成 `speaker_script.md`，方便准备汇报讲稿。
+- 额外生成信息更充分的 Beamer/TeX 详细版汇报，适合更长时间的讲解。
 - 复用论文中提取到的原始图片和表格。
 - 使用 LangChain/LangGraph 进行文本大模型策展和工作流编排。
 - 生成 PPT 时不调用文生图模型。
@@ -35,6 +36,7 @@ PDF
     -> 原生 PPTX 渲染
     -> 排版 QA 和自动返修
     -> 演讲稿生成
+    -> 详细版 Beamer/TeX 旁路生成
 ```
 
 生成的 PPT 不是网页截图，也不是图片拼接。它使用 PowerPoint 原生文本框、形状、表格和论文原始图片，因此可以继续在 PowerPoint 中编辑。
@@ -112,7 +114,8 @@ python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output sli
 --input       PDF 文件路径
 --output      slides
 --style       academic 或自定义风格描述
---length      short、medium 或 long
+--length      short、medium 或 long（大约对应 8-12、14-22、24-36 页内容页）
+--slides      精确指定目标内容页数，会覆盖 --length
 --fast        使用直接解析/查询流程，不跑完整索引
 --from-stage  rag、summary、plan 或 generate
 --list        查看历史输出
@@ -128,6 +131,8 @@ python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output sli
 ```text
 slides.pptx
 speaker_script.md
+detailed_slides.tex
+detailed_slides.pdf
 layout_qa.json
 checkpoint_slide_spec.json
 checkpoint_slide_spec_llm_raw.txt
@@ -137,6 +142,8 @@ checkpoint_slide_spec_llm_raw.txt
 
 - `slides.pptx`：可编辑 PowerPoint。
 - `speaker_script.md`：逐页讲稿草稿。
+- `detailed_slides.tex`：从同一批检查点生成的详细版 Beamer/TeX 汇报。
+- `detailed_slides.pdf`：如果本机安装了 `pdflatex`，会自动编译得到这份 PDF。
 - `layout_qa.json`：轻量排版 QA 结果。
 - `checkpoint_slide_spec.json`：最终结构化 slide spec。
 - `checkpoint_slide_spec_llm_raw.txt`：大模型策展阶段的原始输出。
@@ -203,6 +210,7 @@ python -m paper2slides --help
 如果 PPT 太空或太密：
 
 - 尝试不同的 `--length`。
+- 对长论文可以用 `--slides 24` 这类显式页数，让覆盖更充分。
 - 使用 `--from-stage generate` 重新生成。
 - 在 `.env` 中切换更适合的文本模型。
 
@@ -210,6 +218,10 @@ python -m paper2slides --help
 
 - 查看 `layout_qa.json`。
 - 在 `.env` 中适当提高 `PPTX_QA_MAX_REPAIR_ATTEMPTS`。
+
+如果 LLM 接口临时不稳定：
+
+- 可以设置 `PPTX_FORCE_DETERMINISTIC=1`，复用已解析的检查点，并在不继续调用 LLM 的情况下生成 fallback PPTX/TeX。
 
 ## 项目来源
 

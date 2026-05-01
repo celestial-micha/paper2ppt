@@ -23,9 +23,9 @@ class PosterDensity(str, Enum):
 
 class SlidesLength(str, Enum):
     """Page count level for slides."""
-    SHORT = "short"      # 5-8 pages
-    MEDIUM = "medium"    # 8-12 pages
-    LONG = "long"        # 12-15 pages
+    SHORT = "short"      # 8-12 pages
+    MEDIUM = "medium"    # 14-22 pages
+    LONG = "long"        # 24-36 pages
 
 
 class StyleType(str, Enum):
@@ -37,9 +37,9 @@ class StyleType(str, Enum):
 
 # Page count ranges for each slides length
 SLIDES_PAGE_RANGES: Dict[str, tuple[int, int]] = {
-    "short": (5, 8),
-    "medium": (8, 12),
-    "long": (12, 15),
+    "short": (8, 12),
+    "medium": (14, 22),
+    "long": (24, 36),
 }
 
 
@@ -66,9 +66,13 @@ class GenerationConfig:
     # Style
     style: StyleType = StyleType.ACADEMIC
     custom_style: Optional[str] = None
+    target_slides: Optional[int] = None
     
     def get_page_range(self) -> tuple[int, int]:
         """Get page count range for slides."""
+        if self.target_slides:
+            target = max(4, int(self.target_slides))
+            return (target, target)
         return SLIDES_PAGE_RANGES.get(self.slides_length.value, (8, 12))
     
     def to_dict(self) -> Dict[str, Any]:
@@ -78,6 +82,7 @@ class GenerationConfig:
             "slides_length": self.slides_length.value,
             "style": self.style.value,
             "custom_style": self.custom_style,
+            "target_slides": self.target_slides,
         }
 
 

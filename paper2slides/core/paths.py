@@ -24,6 +24,8 @@ def get_config_name(config: Dict) -> str:
     style = config.get("style", "academic")
     
     param = config.get("slides_length", "medium")
+    if config.get("target_slides"):
+        param = f"{param}_{int(config['target_slides'])}slides"
     
     # Handle custom style. Use hash suffix
     if style == "custom":
