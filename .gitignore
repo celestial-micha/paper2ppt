@@ -75,6 +75,9 @@ sources/
 outputs/
 rag_output/
 
+# Local reference clones; not part of the main paper2ppt runtime
+Paper2PPT-main/
+
 # Temporary and test files
 debug.*
 tmp/

@@ -1,6 +1,6 @@
 # paper2ppt 开发历史与接力说明
 
-这份文档用于帮助新的对话快速理解当前项目状态。它记录了 `paper2ppt` 从上游 Paper2Slides 项目演进到“纯文本大模型生成可编辑 PPTX + 演讲稿 + 详细 TeX/PDF 附件”的过程，也说明下一步如果要按 ReAct Agent / Plan-and-Solve 继续改，应该从哪里入手。
+这份文档用于帮助新的对话快速理解当前项目状态。它记录了 `paper2ppt` 从上游 Paper2Slides 项目演进到“纯文本大模型生成可编辑 PPTX + 演讲稿”的过程，也说明下一步如果要按 ReAct Agent / Plan-and-Solve 继续改，应该从哪里入手。
 
 ## 1. 项目起点
 
@@ -127,9 +127,9 @@ prepare_packet
 
 这条约定非常重要，后续开发不要因为示例代码、默认配置或第三方项目习惯而回退到更贵模型。
 
-## 6. 第五阶段：融合 Paper2PPT 的详细 TeX 思路
+## 6. 第五阶段：借鉴 Paper2PPT 的章节化和 TeX 思路
 
-用户额外下载了一个参考项目：
+用户曾额外下载一个参考项目：
 
 ```text
 D:\coding\agent_paper_to_slider\Paper2Slides-main\Paper2PPT-main
@@ -141,20 +141,22 @@ D:\coding\agent_paper_to_slider\Paper2Slides-main\Paper2PPT-main
 - 使用 TeX / Beamer 路径生成较详细的 slide PDF。
 - 章节结构感更强。
 
-本项目没有替换原来的 PPTX 生成路径，而是在现有输出基础上额外融合了详细稿能力。
+这个参考项目只是用来研究思路，不是当前项目的主线依赖。本项目没有替换原来的 PPTX 生成路径，也不会 import 或运行 `Paper2PPT-main` 内部代码。
 
-当前输出中，除了原生 PPTX 和演讲稿，还会生成：
+当前项目的主交付物是：
 
 ```text
-detailed_slides.tex
-detailed_slides.pdf
+slides.pptx
+speaker_script.md
 ```
 
 设计目标：
 
 - `slides.pptx`：可编辑、适合正式汇报和后期修改。
 - `speaker_script.md`：配套演讲稿。
-- `detailed_slides.tex` / `detailed_slides.pdf`：更详细的论文讲解附件，适合作为补充材料或备课稿。
+- `detailed_slides.tex` / `detailed_slides.pdf`：如果启用旁路且本机有 `pdflatex`，可以由本项目自己的轻量 sidecar 代码生成，作为参考/备份材料；它不是主交付物，也不依赖 `Paper2PPT-main`。
+
+因此，上传 GitHub 时不建议保留 `Paper2PPT-main/`。如果本地仍想留作参考，可以用 `git rm -r --cached Paper2PPT-main` 取消 Git 跟踪，再把它加入 `.gitignore`。
 
 ## 7. 第六阶段：DeepSeek_V4.pdf 与动态页数
 
@@ -233,11 +235,11 @@ outputs\DeepSeek_V4\paper\fast\slides_academic_medium_24slides\20260510_174945
 ```text
 slides.pptx
 speaker_script.md
-detailed_slides.tex
-detailed_slides.pdf
 layout_qa.json
 previews
 ```
+
+部分运行还可能包含 `detailed_slides.tex` 和 `detailed_slides.pdf`，但它们只是可选参考产物。
 
 该次 `layout_qa.json` 显示：
 
@@ -346,6 +348,8 @@ Generate slide spec
 新开对话时，可以直接把下面这段发给 Codex：
 
 ```text
+这是一个从 HKUDS/Paper2Slides 魔改来的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT-main 只是曾经用于参考的本地项目，不应该当作运行路径的一部分。
+
 请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
 
 然后从当前 paper2ppt 项目状态继续。现在优先实现 ReAct / Plan-and-Solve 闭环来改进 PPT 生成：
@@ -365,9 +369,11 @@ Generate slide spec
 可以提交：
 
 ```text
+.gitignore
 README.md
 README.zh-CN.md
 DEVELOPMENT_HISTORY.zh-CN.md
+paper2ppt_preview.jpg
 paper2slides/generator/pptx_renderer.py
 paper2slides/generator/text_pptx_workflow.py
 ```
@@ -378,6 +384,15 @@ paper2slides/generator/text_pptx_workflow.py
 paper2slides\.env
 outputs\
 __pycache__\
+Paper2PPT-main\
 ```
 
 如果需要把生成好的 PPT 单独备份，可以手动复制或 release，不建议默认纳入源码提交。
+
+如果 `Paper2PPT-main/` 已经被 Git 跟踪，但希望本地保留它、GitHub 不再上传它，推荐使用：
+
+```powershell
+git rm -r --cached Paper2PPT-main
+```
+
+这只会从 Git 索引里移除它，不会删除本地文件。配合 `.gitignore` 里的 `Paper2PPT-main/`，后续它不会再被误提交。

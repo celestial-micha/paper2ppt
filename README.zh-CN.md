@@ -8,13 +8,15 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint、配套演
 
 本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。我们保留了上游项目的 PDF 解析、素材抽取、checkpoint 和论文处理思路，但把最后的图片生成式幻灯片路径替换成了原生 PPTX 工作流。
 
+![paper2ppt 效果预览](paper2ppt_preview.jpg)
+
 ## 当前状态
 
 项目现在支持：
 
 - 可编辑 PowerPoint 输出：`slides.pptx`。
 - 配套讲稿：`speaker_script.md`。
-- 详细版 Beamer/TeX 旁路：`detailed_slides.tex`，如果本机安装了 `pdflatex`，还会生成 `detailed_slides.pdf`。
+- 可选的轻量 Beamer/TeX 旁路，由本仓库自己的代码生成。它是参考/备份路径，不是主交付物。
 - 基于 LangChain/LangGraph 的文本大模型工作流。
 - 默认文本模型配置使用 `gpt-5-mini`。
 - 使用 `--slides` 精确指定目标页数。
@@ -51,10 +53,17 @@ outputs/DeepSeek_V4/paper/fast/slides_academic_medium_24slides/
 ```text
 slides.pptx
 speaker_script.md
-detailed_slides.tex
-detailed_slides.pdf
 layout_qa.json
 ```
+
+部分运行还可能包含：
+
+```text
+detailed_slides.tex
+detailed_slides.pdf
+```
+
+这些 TeX/PDF 文件是可选参考产物。项目的主交付物仍然是 `slides.pptx` 和 `speaker_script.md`。
 
 ## 工作流程
 
@@ -71,7 +80,7 @@ PDF
     -> 原生 PPTX 渲染
     -> layout QA 和修复循环
     -> 生成 speaker script
-    -> 生成详细版 Beamer/TeX 旁路
+    -> 可选生成详细版 Beamer/TeX 旁路
 ```
 
 生成的 PPTX 不是截图，也不是整页图片。它使用 PowerPoint 原生文本框、形状、表格和插入的论文原图，因此可以继续在 PowerPoint 里编辑。
@@ -204,8 +213,6 @@ outputs/<project_name>/paper/fast/slides_academic_medium_24slides/<timestamp>/
 ```text
 slides.pptx
 speaker_script.md
-detailed_slides.tex
-detailed_slides.pdf
 layout_qa.json
 checkpoint_slide_spec.json
 checkpoint_slide_spec_llm_raw.txt
@@ -215,8 +222,7 @@ checkpoint_slide_spec_llm_raw.txt
 
 - `slides.pptx`：可编辑 PowerPoint。
 - `speaker_script.md`：逐页讲稿草稿。
-- `detailed_slides.tex`：详细版 Beamer/TeX 汇报。
-- `detailed_slides.pdf`：如果有 `pdflatex`，会自动编译得到 PDF。
+- `detailed_slides.tex` / `detailed_slides.pdf`：可选参考产物；启用旁路且本机有 `pdflatex` 时由本项目代码生成。
 - `layout_qa.json`：轻量排版 QA 结果。
 - `checkpoint_slide_spec.json`：最终结构化 slide spec。
 - `checkpoint_slide_spec_llm_raw.txt`：如果调用了 curator LLM，会保存原始输出。
@@ -234,13 +240,13 @@ paper2slides/core/stages/generate_stage.py
 paper2slides/core/paths.py
 ```
 
-用户还在本地下载了另一个参考项目：
+开发过程中，用户还在本地下载了另一个项目作为参考：
 
 ```text
 Paper2PPT-main/
 ```
 
-它可以作为灵感来源，尤其是详细 TeX 输出方面，但不应该替换当前 paper2ppt 的主生成路径。
+这个文件夹只是用来研究 `gejifeng/Paper2PPT` 的思路，尤其是章节化汇报和 TeX/Beamer 风格。它不是当前 paper2ppt 主流程的一部分，代码不会 import 它，运行时也不需要它。GitHub 仓库应该保留基于 `paper2slides/` 的魔改实现，不应该把 `Paper2PPT-main/` 作为内置项目提交进去。
 
 ## 测试
 
@@ -282,6 +288,8 @@ Plan-and-Solve
 新开对话时建议这样说：
 
 ```text
+这是一个从 HKUDS/Paper2Slides 魔改来的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT-main 只是曾经用于参考的本地项目，不应该当作运行路径的一部分。
+
 请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
 
 然后从当前 paper2ppt 项目状态继续。现在优先实现 ReAct / Plan-and-Solve 闭环来改进 PPT 生成：
