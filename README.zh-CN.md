@@ -278,46 +278,6 @@ $env:PYTHONDONTWRITEBYTECODE="1"
 python -c "import ast, pathlib; ast.parse(pathlib.Path('paper2slides/generator/pptx_renderer.py').read_text(encoding='utf-8')); print('AST OK')"
 ```
 
-## 下一阶段方向：ReAct / Plan-and-Solve
-
-当前 PPT 视觉已经明显变好，但内容质量还需要更强的闭环。下一阶段计划从一次性生成 slide spec，升级为评估驱动的 agent 循环：
-
-```text
-Plan-and-Solve
- -> 生成结构化 slide plan
- -> 要求每条 point 包含 claim、detail、evidence
- -> 渲染 PPTX
- -> 用 ReAct 风格 QA 批判检查
- -> 只修复失败页面
- -> 重新渲染并再次检查
-```
-
-目标检查项：
-
-- 不出现空视觉组件。
-- 不出现没有意义的装饰元素。
-- 交付文本不出现被截断的省略句。
-- 编号要点尽量有短 claim 和完整 detail 说明句。
-- 指标卡必须有有意义的 label 和 value。
-- 标题页、目录页、章节页的视觉元素必须承载真实信息。
-- 所有模型调用都使用 `gpt-5-mini`。
-
-新开对话时建议这样说：
-
-```text
-这是一个基于 HKUDS/Paper2Slides 改造、并参考 gejifeng/Paper2PPT 设计思路的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT 只是外部设计参考，不是运行时依赖。
-
-请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
-
-然后从当前 paper2ppt 项目状态继续。现在优先实现 ReAct / Plan-and-Solve 闭环来改进 PPT 生成：
-1. 生成或修复 slide spec，让每个 numbered point 都有 claim、detail、evidence 字段。
-2. 增加 evaluator，检查空组件、无意义装饰、截断省略句、缺少 claim/detail、metric label/value 质量和 layout QA。
-3. 增加 repair loop，只修改失败页面并重新渲染。
-4. 所有模型调用保持使用 gpt-5-mini。
-5. 用 DeepSeek_V4.pdf 作为主要测试 PDF，尽量从 --from-stage generate 重跑。
-
-注意：保留当前 PPT 的视觉风格，不要暴力删掉封面 summary tiles、目录进度线或章节分隔页横线；要在保留这些版式美感的基础上做语义化和 QA 闭环。
-```
 
 ## 常见问题
 

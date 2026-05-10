@@ -278,47 +278,6 @@ $env:PYTHONDONTWRITEBYTECODE="1"
 python -c "import ast, pathlib; ast.parse(pathlib.Path('paper2slides/generator/pptx_renderer.py').read_text(encoding='utf-8')); print('AST OK')"
 ```
 
-## Next Development Direction: ReAct / Plan-and-Solve
-
-The current deck is visually much better, but content quality still needs a stronger closed loop. The next planned upgrade is to move from one-pass slide curation to an evaluation-driven agent loop:
-
-```text
-Plan-and-Solve
- -> generate structured slide plan
- -> require each point to contain claim, detail, evidence
- -> render PPTX
- -> critique with ReAct-style QA
- -> repair only failed slides
- -> rerender and recheck
-```
-
-Target checks:
-
-- No empty visual components.
-- No meaningless decorative elements.
-- No clipped ellipses in deliverable text.
-- Each numbered point should have a short claim and a complete explanatory sentence when possible.
-- Metrics should have meaningful labels and values.
-- Section/contents/title visual elements must carry real information.
-- All model calls should use `gpt-5-mini`.
-
-Suggested prompt for a new conversation:
-
-```text
-This is a modified paper2ppt project derived from HKUDS/Paper2Slides and inspired by gejifeng/Paper2PPT. The main workflow lives under paper2slides/: it parses a paper PDF, uses text-only LLM calls to plan a native editable PPTX, and generates a matching speaker script. The current main deliverables are slides.pptx and speaker_script.md. Paper2PPT is only an external design reference, not a runtime dependency.
-
-Please read README.md, README.zh-CN.md, and DEVELOPMENT_HISTORY.zh-CN.md first.
-
-Then continue from the current paper2ppt project state. The current priority is to implement a ReAct / Plan-and-Solve closed loop for PPT generation:
-1. Generate or repair slide specs so each numbered point has claim, detail, and evidence fields.
-2. Add an evaluator that checks empty components, meaningless decorative marks, clipped ellipses, missing claim/detail pairs, metric label/value quality, and layout QA.
-3. Add a repair loop that edits only failed slides and rerenders.
-4. Keep all model calls on gpt-5-mini.
-5. Use DeepSeek_V4.pdf as the main test PDF and rerun from --from-stage generate whenever possible.
-
-Important: preserve the current visual style. Do not aggressively delete the cover summary tiles, contents progress lines, or section-divider bars; keep those layouts and make them more semantic through QA and repair.
-```
-
 ## Troubleshooting
 
 If the API call fails:
