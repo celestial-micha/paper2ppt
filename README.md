@@ -2,13 +2,38 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-paper2ppt converts academic PDF papers into editable PowerPoint decks, matching speaker scripts, and an optional detailed Beamer/TeX sidecar deck.
+paper2ppt converts academic PDF papers into editable PowerPoint decks and matching speaker scripts.
 
 The current project goal is practical paper presentation generation: reuse the paper's original figures and tables, use only text LLMs for planning and writing, render native editable `.pptx` slides, and keep a lightweight QA/repair loop around the output.
 
-This project is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). It keeps the upstream PDF parsing, extraction, checkpoint, and paper-processing ideas, while replacing the final image-generation slide path with a native PPTX workflow.
+This project is built on ideas and code paths from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides), and it also borrows presentation-structuring inspiration from [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT). The main implementation in this repository is still the `paper2slides/`-based workflow, heavily modified for text-only LLM calls and native PPTX generation.
 
 ![paper2ppt preview](paper2ppt_preview.jpg)
+
+## Project Lineage And Changes
+
+From HKUDS/Paper2Slides, this project keeps the useful paper-processing foundation:
+
+- PDF parsing and source asset extraction.
+- Summary, content planning, and checkpoint-style reruns.
+- A command-line workflow for turning a paper into presentation material.
+
+The main change is the generation path. The original image-style slide path has been replaced with a lower-cost, text-only LLM workflow:
+
+- The model plans structured slide specs instead of generating slide images.
+- `python-pptx` renders native editable PowerPoint objects: text boxes, shapes, tables, and inserted source figures.
+- All model calls are configured to use `gpt-5-mini`.
+- The workflow generates a matching `speaker_script.md`.
+- Layout QA and repair logic check for empty components, clipped text, weak metric cards, and decorative elements that do not carry information.
+- The deck now has presentation structure: title page, contents page, section dividers, key-message blocks, numbered claim/detail points, source figures, and compact metric cards.
+
+From gejifeng/Paper2PPT, this project mainly borrows product ideas rather than runtime code:
+
+- Stronger section-aware paper storytelling.
+- A more detailed companion-material mindset for long technical papers.
+- Optional lightweight Beamer/TeX sidecar generation implemented inside this repository.
+
+This repository does not vendor Paper2PPT and does not depend on it at runtime.
 
 ## Current Status
 
@@ -128,7 +153,7 @@ If setting up a new clone, create the local env file from the template:
 copy paper2slides\.env.example paper2slides\.env
 ```
 
-In this local workspace, `paper2slides/.env` already exists and should not be uploaded.
+Do not commit the local `paper2slides/.env` file.
 
 Typical configuration:
 
@@ -240,14 +265,6 @@ paper2slides/core/stages/generate_stage.py
 paper2slides/core/paths.py
 ```
 
-During development, the user also downloaded another project locally as a reference:
-
-```text
-Paper2PPT-main/
-```
-
-That folder was only used to study ideas from `gejifeng/Paper2PPT`, especially its section-aware and TeX/Beamer presentation style. It is not part of the main paper2ppt workflow, is not imported by the code, and is not required at runtime. The GitHub repository should keep the `paper2slides/`-based implementation and should not vendor `Paper2PPT-main/`.
-
 ## Test
 
 ```powershell
@@ -288,7 +305,7 @@ Target checks:
 Suggested prompt for a new conversation:
 
 ```text
-This is a modified paper2ppt project derived from HKUDS/Paper2Slides. The main workflow lives under paper2slides/: it parses a paper PDF, uses text-only LLM calls to plan a native editable PPTX, and generates a matching speaker script. The current main deliverables are slides.pptx and speaker_script.md. Paper2PPT-main was only a local reference project and should not be treated as part of the runtime path.
+This is a modified paper2ppt project derived from HKUDS/Paper2Slides and inspired by gejifeng/Paper2PPT. The main workflow lives under paper2slides/: it parses a paper PDF, uses text-only LLM calls to plan a native editable PPTX, and generates a matching speaker script. The current main deliverables are slides.pptx and speaker_script.md. Paper2PPT is only an external design reference, not a runtime dependency.
 
 Please read README.md, README.zh-CN.md, and DEVELOPMENT_HISTORY.zh-CN.md first.
 
@@ -299,7 +316,7 @@ Then continue from the current paper2ppt project state. The current priority is 
 4. Keep all model calls on gpt-5-mini.
 5. Use DeepSeek_V4.pdf as the main test PDF and rerun from --from-stage generate whenever possible.
 
-Important: the user was very happy with the current visual style. Do not aggressively delete the cover summary tiles, contents progress lines, or section-divider bars; keep those layouts and make them more semantic through QA and repair.
+Important: preserve the current visual style. Do not aggressively delete the cover summary tiles, contents progress lines, or section-divider bars; keep those layouts and make them more semantic through QA and repair.
 ```
 
 ## Troubleshooting
@@ -327,4 +344,4 @@ If a slide looks crowded or clipped:
 
 ## Attribution
 
-paper2ppt is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides). Keep the upstream attribution and license terms when redistributing or extending this project.
+paper2ppt is derived from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides) and takes presentation-design inspiration from [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT). Keep the upstream attribution and license terms when redistributing or extending this project.

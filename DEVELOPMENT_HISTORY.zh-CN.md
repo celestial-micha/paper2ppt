@@ -1,12 +1,12 @@
 # paper2ppt 开发历史与接力说明
 
-这份文档用于帮助新的对话快速理解当前项目状态。它记录了 `paper2ppt` 从上游 Paper2Slides 项目演进到“纯文本大模型生成可编辑 PPTX + 演讲稿”的过程，也说明下一步如果要按 ReAct Agent / Plan-and-Solve 继续改，应该从哪里入手。
+这份文档用于帮助新的对话快速理解当前项目状态。它记录了 `paper2ppt` 如何在 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides) 的基础上改造成“纯文本大模型生成可编辑 PPTX + 演讲稿”的系统，也记录了从 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT) 借鉴到的章节化和 TeX/Beamer 思路。下一步如果要按 ReAct Agent / Plan-and-Solve 继续改，可以从本文末尾的接力说明开始。
 
 ## 1. 项目起点
 
-本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。
+本项目主要继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)，同时参考了 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT)。
 
-上游项目的核心能力包括：
+Paper2Slides 提供了很有价值的基础能力：
 
 - 解析论文 PDF。
 - 提取正文、表格和图片。
@@ -25,6 +25,14 @@
 ```text
 不使用文生图模型，只使用文本大模型和论文原始素材，生成真正可编辑的 PPTX，并同步生成演讲稿。
 ```
+
+Paper2PPT 对本项目的影响主要在产品设计层面：
+
+- 让论文汇报有更清晰的章节结构。
+- 对长论文生成更详略得当的补充材料。
+- 用 TeX / Beamer 作为详细稿或参考稿的生成思路。
+
+本仓库没有内置 Paper2PPT，也不在运行时依赖 Paper2PPT。
 
 ## 2. 第一阶段：跑通原项目并建立检查点
 
@@ -129,19 +137,13 @@ prepare_packet
 
 ## 6. 第五阶段：借鉴 Paper2PPT 的章节化和 TeX 思路
 
-用户曾额外下载一个参考项目：
-
-```text
-D:\coding\agent_paper_to_slider\Paper2Slides-main\Paper2PPT-main
-```
-
-参考项目 `gejifeng/Paper2PPT` 的优点是：
+参考项目 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT) 的优点是：
 
 - 能生成更详略得当的论文讲解材料。
 - 使用 TeX / Beamer 路径生成较详细的 slide PDF。
 - 章节结构感更强。
 
-这个参考项目只是用来研究思路，不是当前项目的主线依赖。本项目没有替换原来的 PPTX 生成路径，也不会 import 或运行 `Paper2PPT-main` 内部代码。
+这个参考项目主要用于启发本项目的章节组织和详细稿思路，不是当前项目的主线依赖。本项目没有替换原来的 PPTX 生成路径，也不会 import 或运行 Paper2PPT 的代码。
 
 当前项目的主交付物是：
 
@@ -154,9 +156,9 @@ speaker_script.md
 
 - `slides.pptx`：可编辑、适合正式汇报和后期修改。
 - `speaker_script.md`：配套演讲稿。
-- `detailed_slides.tex` / `detailed_slides.pdf`：如果启用旁路且本机有 `pdflatex`，可以由本项目自己的轻量 sidecar 代码生成，作为参考/备份材料；它不是主交付物，也不依赖 `Paper2PPT-main`。
+- `detailed_slides.tex` / `detailed_slides.pdf`：如果启用旁路且本机有 `pdflatex`，可以由本项目自己的轻量 sidecar 代码生成，作为参考/备份材料；它不是主交付物，也不依赖 Paper2PPT。
 
-因此，上传 GitHub 时不建议保留 `Paper2PPT-main/`。如果本地仍想留作参考，可以用 `git rm -r --cached Paper2PPT-main` 取消 Git 跟踪，再把它加入 `.gitignore`。
+因此，上传 GitHub 时不建议把外部参考项目作为 vendored folder 放进仓库。如果本地仍想留作参考，可以让 `.gitignore` 忽略 `Paper2PPT-main/`，并用 `git rm -r --cached Paper2PPT-main` 取消 Git 跟踪。
 
 ## 7. 第六阶段：DeepSeek_V4.pdf 与动态页数
 
@@ -348,7 +350,7 @@ Generate slide spec
 新开对话时，可以直接把下面这段发给 Codex：
 
 ```text
-这是一个从 HKUDS/Paper2Slides 魔改来的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT-main 只是曾经用于参考的本地项目，不应该当作运行路径的一部分。
+这是一个基于 HKUDS/Paper2Slides 改造、并参考 gejifeng/Paper2PPT 设计思路的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT 只是外部设计参考，不是运行时依赖。
 
 请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
 

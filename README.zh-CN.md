@@ -2,13 +2,38 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint、配套演讲稿，以及可选的详细版 Beamer/TeX 旁路汇报。
+paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套演讲稿。
 
 当前项目目标是服务真实论文汇报：复用论文原始图片和表格，只使用文本大模型做规划和写作，渲染原生可编辑 `.pptx`，并围绕输出做轻量 QA 和自动修复。
 
-本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。我们保留了上游项目的 PDF 解析、素材抽取、checkpoint 和论文处理思路，但把最后的图片生成式幻灯片路径替换成了原生 PPTX 工作流。
+本项目基于 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides) 的论文处理思路和部分代码路径继续改造，同时也参考了 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT) 在章节化讲解和 TeX/Beamer 汇报上的设计思路。当前仓库的主实现仍然是基于 `paper2slides/` 的工作流，只是已经被重度改造成“纯文本大模型调用 + 原生 PPTX 生成”的路线。
 
 ![paper2ppt 效果预览](paper2ppt_preview.jpg)
+
+## 项目来源与主要改造
+
+从 HKUDS/Paper2Slides 中，本项目保留了有价值的论文处理基础：
+
+- PDF 解析和论文原始素材抽取。
+- 摘要、内容规划和 checkpoint 式重跑。
+- 从论文生成汇报材料的命令行工作流。
+
+本项目最核心的变化是生成路径：原先偏图片式的幻灯片生成路线，被替换成了成本更低、可编辑性更强的纯文本大模型工作流：
+
+- 由模型规划结构化 slide spec，而不是生成整页幻灯片图片。
+- 使用 `python-pptx` 渲染原生可编辑 PowerPoint 对象，包括文本框、形状、表格和论文原图。
+- 所有模型调用统一配置为 `gpt-5-mini`。
+- 同步生成配套的 `speaker_script.md` 演讲稿。
+- 增加轻量 layout QA 和修复逻辑，检查空组件、截断文本、指标卡质量和无意义装饰元素。
+- 增加更像正式汇报的结构：标题页、目录页、章节分隔页、key message、编号 claim/detail 要点、论文原图和紧凑指标卡。
+
+从 gejifeng/Paper2PPT 中，本项目主要借鉴产品思路，而不是运行时依赖它的代码：
+
+- 更强的章节化论文讲解方式。
+- 面向长技术论文的详细补充材料思路。
+- 可选的轻量 Beamer/TeX 旁路生成能力，该能力由本仓库自己的代码实现。
+
+本仓库不内置 Paper2PPT，也不在运行时依赖 Paper2PPT。
 
 ## 当前状态
 
@@ -128,7 +153,7 @@ paper2slides/.env.example
 copy paper2slides\.env.example paper2slides\.env
 ```
 
-当前本地工作区里，`paper2slides/.env` 已经存在，不需要再复制，也不要上传。
+不要提交本地的 `paper2slides/.env` 文件。
 
 典型配置：
 
@@ -240,14 +265,6 @@ paper2slides/core/stages/generate_stage.py
 paper2slides/core/paths.py
 ```
 
-开发过程中，用户还在本地下载了另一个项目作为参考：
-
-```text
-Paper2PPT-main/
-```
-
-这个文件夹只是用来研究 `gejifeng/Paper2PPT` 的思路，尤其是章节化汇报和 TeX/Beamer 风格。它不是当前 paper2ppt 主流程的一部分，代码不会 import 它，运行时也不需要它。GitHub 仓库应该保留基于 `paper2slides/` 的魔改实现，不应该把 `Paper2PPT-main/` 作为内置项目提交进去。
-
 ## 测试
 
 ```powershell
@@ -288,7 +305,7 @@ Plan-and-Solve
 新开对话时建议这样说：
 
 ```text
-这是一个从 HKUDS/Paper2Slides 魔改来的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT-main 只是曾经用于参考的本地项目，不应该当作运行路径的一部分。
+这是一个基于 HKUDS/Paper2Slides 改造、并参考 gejifeng/Paper2PPT 设计思路的 paper2ppt 项目。主线代码在 paper2slides/ 里：它会解析论文 PDF，只用文本大模型规划原生可编辑 PPTX，并生成配套演讲稿。当前主交付物是 slides.pptx 和 speaker_script.md。Paper2PPT 只是外部设计参考，不是运行时依赖。
 
 请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
 
@@ -299,7 +316,7 @@ Plan-and-Solve
 4. 所有模型调用保持使用 gpt-5-mini。
 5. 用 DeepSeek_V4.pdf 作为主要测试 PDF，尽量从 --from-stage generate 重跑。
 
-注意：上一轮用户已经非常满意当前 PPT 的视觉风格，不要暴力删掉封面 summary tiles、目录进度线或章节分隔页横线；要在保留这些版式美感的基础上做语义化和 QA 闭环。
+注意：保留当前 PPT 的视觉风格，不要暴力删掉封面 summary tiles、目录进度线或章节分隔页横线；要在保留这些版式美感的基础上做语义化和 QA 闭环。
 ```
 
 ## 常见问题
@@ -327,4 +344,4 @@ Plan-and-Solve
 
 ## 项目来源
 
-paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。如果继续分发或扩展本项目，请保留上游来源说明和许可证要求。
+paper2ppt 基于 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides) 改造，并参考了 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT) 的汇报组织思路。如果继续分发或扩展本项目，请保留上游来源说明和许可证要求。
