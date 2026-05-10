@@ -766,7 +766,7 @@ class PptxRenderer:
         for index, block in enumerate(blocks, start=1):
             y = int(top + (index - 1) * (slot_height + int(gap)))
             accent = palette[(index - 1) % len(palette)]
-            lead, detail = self._split_point(block.text)
+            lead, detail = self._point_parts(block)
             text_top = y + int(slot_height * 0.15)
             number_size = min(self.Inches(0.36), int(slot_height * 0.62))
 
@@ -816,6 +816,13 @@ class PptxRenderer:
                     t.body_font,
                     2,
                 )
+
+    def _point_parts(self, block: TextBlock) -> tuple[str, str]:
+        claim = self._headline_text(getattr(block, "claim", "") or "", 54)
+        detail = self._body_sentence(getattr(block, "detail", "") or "", 170)
+        if claim and detail:
+            return claim, detail
+        return self._split_point(block.text)
 
     def _add_text(self, slide, text: str, left, top, width, height, size: float, bold: bool = False, color=None, font: str | None = None, max_lines: int = 2, alignment=None):
         text = self._truncate_lines(text or "", max_lines=max_lines)

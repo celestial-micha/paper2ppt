@@ -4,7 +4,7 @@
 
 paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套演讲稿。
 
-当前项目目标是服务真实论文汇报：复用论文原始图片和表格，只使用文本大模型做规划和写作，渲染原生可编辑 `.pptx`，并围绕输出做轻量 QA 和自动修复。
+当前项目目标是服务真实论文汇报：复用论文原始图片和表格，只使用文本大模型做规划和写作，渲染原生可编辑 `.pptx`，并围绕输出做面向 slide spec 和版式的 QA / 自动修复。
 
 本项目基于 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides) 的论文处理思路和部分代码路径继续改造，同时也参考了 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT) 在章节化讲解和 TeX/Beamer 汇报上的设计思路。当前仓库的主实现仍然是基于 `paper2slides/` 的工作流，只是已经被重度改造成“纯文本大模型调用 + 原生 PPTX 生成”的路线。
 
@@ -24,8 +24,9 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 使用 `python-pptx` 渲染原生可编辑 PowerPoint 对象，包括文本框、形状、表格和论文原图。
 - 所有模型调用统一配置为 `gpt-5-mini`。
 - 同步生成配套的 `speaker_script.md` 演讲稿。
-- 增加轻量 layout QA 和修复逻辑，检查空组件、截断文本、指标卡质量和无意义装饰元素。
-- 增加更像正式汇报的结构：标题页、目录页、章节分隔页、key message、编号 claim/detail 要点、论文原图和紧凑指标卡。
+- 增加 slide spec evaluator 和 layout QA，检查空组件、截断文本、指标卡质量、缺失结构化字段和无意义装饰元素。
+- numbered point 在渲染前会被规范化为 `claim`、`detail`、`evidence` 三个字段。
+- 增加更像正式汇报的结构：标题页、目录页、章节分隔页、key message、编号 claim/detail/evidence 要点、论文原图和紧凑指标卡。
 
 从 gejifeng/Paper2PPT 中，本项目主要借鉴产品思路，而不是运行时依赖它的代码：
 
@@ -45,8 +46,9 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 基于 LangChain/LangGraph 的文本大模型工作流。
 - 默认文本模型配置使用 `gpt-5-mini`。
 - 使用 `--slides` 精确指定目标页数。
-- 带章节意识的 PPT：标题页、目录页、章节分隔页、key message、编号要点、紧凑指标卡、论文原图和表格。
-- 轻量 PPTX 排版 QA 和自动修复。
+- 带章节意识的 PPT：标题页、目录页、章节分隔页、key message、结构化编号要点、紧凑指标卡、论文原图和表格。
+- slide spec evaluator 和 PPTX 排版 QA。
+- 有上限的修复循环，只修改失败页面的 slide spec，并重新渲染。
 - 使用 `PPTX_FORCE_DETERMINISTIC=1` 从已有 checkpoint 低成本重跑 deterministic fallback。
 
 最近一轮视觉迭代重点是让生成结果更像正式 PPT：
@@ -54,10 +56,11 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 增加正式标题页，包含标题、作者、上下文/日期和右下角信息块。
 - 增加目录页，并把右侧横线改成有意义的章节进度线。
 - 增加章节分隔页。
-- 普通页改成“标题栏 + Key message + 编号要点”。
+- 普通页改成“标题栏 + Key message + 结构化编号要点”。
 - 删除编号要点旁边无意义的小横杠。
 - 恢复有价值的装饰横线和信息块，但让它们承载真实信息。
-- 改进 bullet 渲染，使每条尽量呈现“短 claim + 完整 detail 句子”，而不是被截断的省略句。
+- 改进 bullet 渲染，使每条呈现“短 claim + 完整 detail 句子”，并保留 evidence 字段用于 QA 和讲稿。
+- 增加 evaluator 驱动的修复逻辑，覆盖缺失要点字段、低质量 metric label/value、空组件和严重版式缺陷。
 
 ## 推荐测试 PDF
 
@@ -101,9 +104,10 @@ PDF
     -> source packet
     -> 可选的论文原图理解
     -> 文本大模型策划 deck spec
-    -> slide spec 校验
+    -> slide spec 校验和 numbered point 规范化
     -> 原生 PPTX 渲染
-    -> layout QA 和修复循环
+    -> spec evaluator + layout QA
+    -> 失败页面修复循环
     -> 生成 speaker script
     -> 可选生成详细版 Beamer/TeX 旁路
 ```
@@ -248,8 +252,8 @@ checkpoint_slide_spec_llm_raw.txt
 - `slides.pptx`：可编辑 PowerPoint。
 - `speaker_script.md`：逐页讲稿草稿。
 - `detailed_slides.tex` / `detailed_slides.pdf`：可选参考产物；启用旁路且本机有 `pdflatex` 时由本项目代码生成。
-- `layout_qa.json`：轻量排版 QA 结果。
-- `checkpoint_slide_spec.json`：最终结构化 slide spec。
+- `layout_qa.json`：spec 和排版 QA 结果，包含 warnings 和失败页面索引。
+- `checkpoint_slide_spec.json`：最终结构化 slide spec，编号要点包含 `claim`、`detail`、`evidence` 字段。
 - `checkpoint_slide_spec_llm_raw.txt`：如果调用了 curator LLM，会保存原始输出。
 
 ## 重要实现文件

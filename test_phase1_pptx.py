@@ -6,8 +6,9 @@ from paper2slides.generator.detailed_tex import generate_detailed_tex_deck
 from paper2slides.generator.config import GenerationConfig, GenerationInput, OutputType, SlidesLength, StyleType
 from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
+from paper2slides.generator.pptx_qa import evaluate_presentation_spec
 from paper2slides.generator.pptx_renderer import PptxRenderer
-from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _qa_repair_node
+from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _qa_repair_node
 from paper2slides.generator.spec_builder import build_presentation_spec
 from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
@@ -158,6 +159,41 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         compact = _compact_metric_blocks(metrics)
         self.assertEqual(len(compact), 1)
         self.assertEqual(compact[0].value, "5.36%")
+
+    def test_structures_numbered_points_for_evaluator(self):
+        slide = SlideSpec(
+            slide_id="slide_01",
+            title="Result",
+            takeaway="The new model improves inference quality.",
+            text_blocks=[TextBlock(text="Accuracy improves because the model uses stronger supervision.")],
+            section_label="Results",
+        )
+        slide.text_blocks = _ensure_structured_points(slide.text_blocks, slide)
+
+        point = slide.text_blocks[0]
+        self.assertTrue(point.claim)
+        self.assertTrue(point.detail)
+        self.assertTrue(point.evidence)
+        report = evaluate_presentation_spec(PresentationSpec(title="Eval", slides=[slide]))
+        self.assertTrue(report["passed"])
+
+    def test_evaluator_flags_missing_point_fields_and_bad_metric(self):
+        spec = PresentationSpec(
+            title="Eval",
+            slides=[
+                SlideSpec(
+                    slide_id="slide_01",
+                    title="Weak point",
+                    text_blocks=[TextBlock(text="Incomplete...")],
+                    metric_blocks=[MetricBlock(label="Key number", value="large")],
+                )
+            ],
+        )
+        report = evaluate_presentation_spec(spec)
+        self.assertFalse(report["passed"])
+        self.assertIn(1, report["failed_slides"])
+        self.assertTrue(any("missing claim" in warning for warning in report["warnings"]))
+        self.assertTrue(any("meaningless label" in warning for warning in report["warnings"]))
 
     def test_generates_detailed_tex_sidecar(self):
         plan = ContentPlan(

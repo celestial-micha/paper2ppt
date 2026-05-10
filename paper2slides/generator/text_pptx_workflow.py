@@ -24,11 +24,12 @@ from typing import Any, Callable, Dict, List, Optional, TypedDict
 from .content_planner import ContentPlan
 from .detailed_tex import generate_detailed_tex_deck
 from .pptx_renderer import PptxRenderer
-from .pptx_qa import inspect_pptx_layout
+from .pptx_qa import evaluate_presentation_spec, inspect_pptx_layout
 from .slide_schema import ImageBlock, MetricBlock, PresentationSpec, SlideSpec, TableBlock, TextBlock
 from .spec_builder import build_presentation_spec
 
 logger = logging.getLogger(__name__)
+PPTX_LLM_MODEL = "gpt-5-mini"
 
 
 SaveJsonFunc = Callable[[Path, Dict[str, Any]], None]
@@ -45,8 +46,10 @@ class _PptxWorkflowState(TypedDict, total=False):
     figure_analyses: Dict[str, Any]
     spec: PresentationSpec
     qa_report_path: str
+    qa_passed: bool
     qa_attempt: int
     qa_warnings: List[str]
+    failed_slides: List[int]
     qa_repair_log: List[str]
     pptx_path: Path
     speaker_script_path: str
@@ -235,7 +238,7 @@ def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
             "raw_llm_response": "",
             "spec": _fallback_compact_spec(state["plan"], state.get("source_plan_path", "")),
             "used_langchain": False,
-            "llm_model": os.getenv("LLM_MODEL", ""),
+            "llm_model": PPTX_LLM_MODEL,
             "validation_warnings": warnings,
         }
 
@@ -246,7 +249,7 @@ def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         logger.warning(f"Deck curator LLM failed; using deterministic fallback spec: {exc}")
         raw_response = ""
         used_langchain = False
-        model = os.getenv("LLM_MODEL", "")
+        model = PPTX_LLM_MODEL
         spec = _fallback_compact_spec(state["plan"], state.get("source_plan_path", ""))
         warnings.append("Deck curator LLM failed; used deterministic fallback slide spec.")
     return {
@@ -279,7 +282,10 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         slide.takeaway = _limit_words(_clean_text(slide.takeaway), 22)
         slide.layout = slide.layout or _infer_layout(slide)
 
-        slide.text_blocks = _compact_text_blocks(slide.text_blocks)
+        slide.text_blocks = _ensure_structured_points(
+            _compact_text_blocks(slide.text_blocks),
+            slide,
+        )
         slide.metric_blocks = _compact_metric_blocks(slide.metric_blocks)
         slide.section_label = slide.section_label or _infer_slide_section(slide)
         if not slide.metric_blocks:
@@ -291,7 +297,10 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
                 slide.image_blocks.append(cover_image)
 
         if not slide.text_blocks and not slide.image_blocks and not slide.table_blocks:
-            slide.text_blocks = [TextBlock(text="Key idea unavailable.", role="bullet")]
+            slide.text_blocks = _ensure_structured_points(
+                [TextBlock(text="Key idea unavailable.", role="bullet")],
+                slide,
+            )
             warnings.append(f"{slide.slide_id} had no content; inserted placeholder.")
 
         repaired_images = []
@@ -337,39 +346,41 @@ def _render_node(state: _PptxWorkflowState, save_json: SaveJsonFunc) -> _PptxWor
     renderer.render(spec, pptx_path)
 
     qa_result = inspect_pptx_layout(pptx_path)
+    spec_evaluation = evaluate_presentation_spec(spec, qa_result)
     qa_path = output_subdir / "layout_qa.json"
-    save_json(qa_path, qa_result.to_dict())
-    if qa_result.warnings:
-        for warning in qa_result.warnings[:12]:
+    save_json(qa_path, spec_evaluation)
+    if spec_evaluation["warnings"]:
+        for warning in spec_evaluation["warnings"][:12]:
             logger.warning(f"  QA: {warning}")
 
     return {
         **state,
         "pptx_path": pptx_path,
         "qa_report_path": str(qa_path),
-        "qa_warnings": qa_result.warnings,
+        "qa_warnings": spec_evaluation["warnings"],
+        "failed_slides": spec_evaluation["failed_slides"],
+        "qa_passed": spec_evaluation["passed"],
     }
 
 
 def _route_after_render(state: _PptxWorkflowState) -> str:
     max_attempts = int(os.getenv("PPTX_QA_MAX_REPAIR_ATTEMPTS", "2"))
-    warnings = state.get("qa_warnings", [])
     attempt = state.get("qa_attempt", 0)
-    if warnings and attempt < max_attempts:
+    if not state.get("qa_passed", True) and attempt < max_attempts:
         return "repair_spec"
     return "speaker_script"
 
 
 def _qa_repair_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
-    """Shrink risky slide content or switch layouts based on PPTX QA feedback."""
+    """Repair only failed slide specs based on evaluator and PPTX QA feedback."""
     spec = state["spec"]
     warnings = state.get("qa_warnings", [])
     attempt = state.get("qa_attempt", 0) + 1
     repair_log = list(state.get("qa_repair_log", []))
 
-    affected_slides = _slides_from_qa_warnings(warnings)
+    affected_slides = set(state.get("failed_slides", [])) or _slides_from_qa_warnings(warnings)
     if not affected_slides:
-        affected_slides = set(range(1, len(spec.slides) + 1))
+        affected_slides = set()
 
     for slide_index in sorted(affected_slides):
         if slide_index < 1 or slide_index > len(spec.slides):
@@ -377,21 +388,21 @@ def _qa_repair_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         slide = spec.slides[slide_index - 1]
         before_layout = slide.layout
         before_bullets = len(slide.text_blocks)
+        slide_warnings = [warning for warning in warnings if f"slide {slide_index}:" in warning.lower()]
 
         slide.title = _limit_words(slide.title, 8)
         slide.takeaway = _limit_words(slide.takeaway, 12)
-        slide.text_blocks = [
-            TextBlock(text=_limit_words(block.text, 10), role=block.role, bullet_level=block.bullet_level)
-            for block in slide.text_blocks[:3]
-        ]
+        slide.text_blocks = _repair_point_blocks(slide, slide.text_blocks[:3], compact_layout=bool(slide_warnings))
         slide.metric_blocks = [
             MetricBlock(
-                label=_limit_words(metric.label, 3),
+                label=_repair_metric_label(metric, slide),
                 value=_limit_words(metric.value, 3),
                 note=_limit_words(metric.note, 5),
             )
             for metric in _compact_metric_blocks(slide.metric_blocks)[:3]
         ]
+        if not slide.metric_blocks:
+            slide.metric_blocks = _extract_metrics_from_slide(slide)[:3]
         slide.table_blocks = [_compact_table_block(slide.table_blocks[0])] if slide.table_blocks else []
         for image in slide.image_blocks:
             image.caption = _limit_words(image.caption, 10)
@@ -479,7 +490,7 @@ def _build_speaker_script(spec: PresentationSpec, repair_log: List[str]) -> str:
         if slide.text_blocks:
             script_parts.append(
                 "The main points are "
-                + "; ".join(_clean_text(block.text).rstrip(".") for block in slide.text_blocks[:3])
+                + "; ".join(_point_script_text(block).rstrip(".") for block in slide.text_blocks[:3])
                 + "."
             )
         if slide.metric_blocks:
@@ -512,6 +523,17 @@ def _build_speaker_script(spec: PresentationSpec, repair_log: List[str]) -> str:
     return "\n".join(lines).strip() + "\n"
 
 
+def _point_script_text(block: TextBlock) -> str:
+    claim = _clean_text(getattr(block, "claim", "") or "")
+    detail = _clean_text(getattr(block, "detail", "") or "")
+    evidence = _clean_text(getattr(block, "evidence", "") or "")
+    if claim and detail and evidence:
+        return f"{claim}: {detail} Evidence: {evidence}"
+    if claim and detail:
+        return f"{claim}: {detail}"
+    return _clean_text(block.text)
+
+
 def _as_sentence(text: str) -> str:
     text = _clean_text(text).strip()
     if not text:
@@ -532,8 +554,11 @@ Rules:
 - Do NOT create or request generated images.
 - Prefer source figures/tables as the center of a slide. Text explains the visual.
 - Each slide must have one message.
-- Use 2-4 bullets per slide depending on importance.
-- Each bullet must be <= 18 words.
+- Use 2-4 numbered_points per slide depending on importance.
+- Every numbered_point must include claim, detail, and evidence.
+- claim is the short bold idea, <= 8 words.
+- detail is one complete explanatory sentence, <= 22 words.
+- evidence names the source section, figure/table, metric, or paper result supporting the point.
 - Do not paste paragraphs from the source.
 - Use a short but complete takeaway, <= 22 words.
 - Vary density: section/closing slides can be sparse; method/results slides should include enough context to be self-explanatory.
@@ -556,7 +581,13 @@ Return JSON only, no markdown fences:
       "section_type": "opening|content|ending",
       "section": "Overview|Motivation|Method|Experiments|Results|Conclusion",
       "takeaway": "one-sentence message",
-      "bullets": ["short bullet", "short bullet"],
+      "numbered_points": [
+        {{
+          "claim": "short claim",
+          "detail": "complete sentence explaining the claim.",
+          "evidence": "Figure 1, Table 2, section name, or metric"
+        }}
+      ],
       "metrics": [
         {{"label": "Success rate", "value": "5.36%", "note": "overall"}}
       ],
@@ -581,7 +612,7 @@ Source packet:
 def _call_deck_curator_llm(prompt: str) -> tuple[str, bool, str]:
     api_key = os.getenv("RAG_LLM_API_KEY", "")
     base_url = os.getenv("RAG_LLM_BASE_URL") or None
-    model = os.getenv("LLM_MODEL", "gpt-5-mini")
+    model = PPTX_LLM_MODEL
     max_tokens = int(os.getenv("PPTX_LLM_MAX_TOKENS", os.getenv("RAG_LLM_MAX_TOKENS", "8000")))
 
     if not api_key:
@@ -623,7 +654,7 @@ def _call_figure_analysis_llm(figures: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     api_key = os.getenv("RAG_LLM_API_KEY", "")
     base_url = os.getenv("RAG_LLM_BASE_URL") or None
-    model = os.getenv("PPTX_VISION_MODEL", os.getenv("LLM_MODEL", "gpt-5-mini"))
+    model = PPTX_LLM_MODEL
     if not api_key:
         return {}
 
@@ -686,12 +717,7 @@ def _parse_llm_spec(raw_response: str, plan: ContentPlan, source_plan_path: str)
     figure_index = plan.figures_index
     slides: List[SlideSpec] = []
     for index, item in enumerate(data.get("slides", []), start=1):
-        bullets = item.get("bullets") or item.get("text_blocks") or []
-        text_blocks = [
-            TextBlock(text=_limit_words(str(bullet), 18), role="bullet", bullet_level=0)
-            for bullet in bullets
-            if _clean_text(str(bullet))
-        ][:4]
+        text_blocks = _parse_point_blocks(item)
 
         metric_blocks = []
         for metric in item.get("metrics", [])[:4]:
@@ -764,7 +790,7 @@ def _fallback_compact_spec(plan: ContentPlan, source_plan_path: str = "") -> Pre
     for slide in base.slides:
         slide.layout = _infer_layout(slide)
         slide.takeaway = _limit_words(slide.text_blocks[0].text if slide.text_blocks else slide.title, 22)
-        slide.text_blocks = _compact_text_blocks(slide.text_blocks)
+        slide.text_blocks = _ensure_structured_points(_compact_text_blocks(slide.text_blocks), slide)
         slide.metric_blocks = _extract_metrics_from_slide(slide)[:4]
     base.metadata = {**(base.metadata or {}), "curation": "fallback_compact"}
     return base
@@ -839,6 +865,143 @@ def _extract_json(text: str) -> Dict[str, Any]:
         return {}
 
 
+def _parse_point_blocks(item: Dict[str, Any]) -> List[TextBlock]:
+    raw_points = item.get("numbered_points") or item.get("points") or item.get("bullets") or item.get("text_blocks") or []
+    blocks: List[TextBlock] = []
+    for point in raw_points:
+        if isinstance(point, dict):
+            claim = _limit_words(point.get("claim", ""), 8)
+            detail = _complete_point(point.get("detail", "") or point.get("text", ""), 24)
+            evidence = _limit_words(point.get("evidence", ""), 14)
+            text = _format_point_text(claim, detail) or _limit_words(point.get("text", ""), 24)
+            if text:
+                blocks.append(TextBlock(text=text, role="bullet", bullet_level=0, claim=claim, detail=detail, evidence=evidence))
+        else:
+            text = _limit_words(str(point), 24)
+            if text:
+                blocks.append(TextBlock(text=text, role="bullet", bullet_level=0))
+        if len(blocks) >= 4:
+            break
+    return blocks
+
+
+def _ensure_structured_points(blocks: List[TextBlock], slide: SlideSpec) -> List[TextBlock]:
+    structured: List[TextBlock] = []
+    seen = set()
+    source_blocks = blocks or [TextBlock(text=slide.takeaway or slide.title or "Key idea unavailable.", role="bullet")]
+    for block in source_blocks:
+        source_text = _clean_text(block.text or block.detail or block.claim)
+        if not source_text and not block.claim and not block.detail:
+            continue
+        claim = _limit_words(block.claim or _infer_point_claim(source_text), 8)
+        detail = _complete_point(block.detail or _infer_point_detail(source_text, slide), 24)
+        if claim and detail and claim.lower().rstrip(".") == detail.lower().rstrip("."):
+            detail = _complete_point(source_text if source_text.lower().rstrip(".") != claim.lower().rstrip(".") else slide.takeaway, 24)
+        evidence = _limit_words(block.evidence or _infer_point_evidence(slide), 14)
+        text = _format_point_text(claim, detail) or source_text
+        key = text.lower()
+        if not text or key in seen:
+            continue
+        structured.append(
+            TextBlock(
+                text=text,
+                role="bullet",
+                bullet_level=block.bullet_level,
+                claim=claim,
+                detail=detail,
+                evidence=evidence,
+            )
+        )
+        seen.add(key)
+        if len(structured) >= 4:
+            break
+    return structured
+
+
+def _repair_point_blocks(slide: SlideSpec, blocks: List[TextBlock], compact_layout: bool = False) -> List[TextBlock]:
+    points = _ensure_structured_points(blocks, slide)
+    repaired: List[TextBlock] = []
+    detail_limit = 16 if compact_layout else 22
+    for point in points[:3]:
+        claim = _limit_words(point.claim or _infer_point_claim(point.text), 7)
+        detail = _complete_point(point.detail or _infer_point_detail(point.text, slide), detail_limit)
+        evidence = _limit_words(point.evidence or _infer_point_evidence(slide), 10)
+        repaired.append(
+            TextBlock(
+                text=_format_point_text(claim, detail),
+                role="bullet",
+                bullet_level=0,
+                claim=claim,
+                detail=detail,
+                evidence=evidence,
+            )
+        )
+    if not repaired:
+        repaired = _ensure_structured_points([TextBlock(text=slide.takeaway or slide.title, role="bullet")], slide)[:1]
+    return repaired
+
+
+def _repair_metric_label(metric: MetricBlock, slide: SlideSpec) -> str:
+    label = _limit_words(metric.label, 3)
+    if label.lower() in {"", "metric", "key metric", "key number", "number"}:
+        context = " ".join([slide.title, slide.takeaway] + [block.text for block in slide.text_blocks])
+        label = _metric_label_for_value(metric.value, context)
+        if label.lower() in {"key number", "key metric"}:
+            label = _context_metric_label(slide, context)
+    return _limit_words(label, 3)
+
+
+def _format_point_text(claim: str, detail: str) -> str:
+    claim = _clean_text(claim).strip(" .;:-")
+    detail = _complete_point(detail, 24)
+    if claim and detail:
+        return f"{claim}: {detail}"
+    return detail or claim
+
+
+def _infer_point_claim(text: str) -> str:
+    text = _strip_trailing_ellipsis(_clean_text(text))
+    if not text:
+        return ""
+    if ":" in text:
+        lead = text.split(":", 1)[0].strip(" -")
+        if 2 <= len(lead.split()) <= 10:
+            return lead
+    first_clause = re.split(r",|;|\sdue to\s|\sbecause\s|\bthat\s", text, maxsplit=1, flags=re.IGNORECASE)[0].strip(" -")
+    if 2 <= len(first_clause.split()) <= 8:
+        return first_clause
+    words = text.split()
+    return " ".join(words[: min(6, len(words))]).strip(" .;:-")
+
+
+def _infer_point_detail(text: str, slide: SlideSpec) -> str:
+    text = _strip_trailing_ellipsis(_clean_text(text))
+    if ":" in text:
+        detail = text.split(":", 1)[1].strip(" -")
+        if detail:
+            return detail
+    if len(text.split()) >= 5:
+        return text
+    return slide.takeaway or text or slide.title
+
+
+def _infer_point_evidence(slide: SlideSpec) -> str:
+    if slide.image_blocks:
+        image = slide.image_blocks[0]
+        return image.title or image.caption or image.placeholder_text or "source figure"
+    if slide.table_blocks:
+        table = slide.table_blocks[0]
+        return table.title or table.caption or "source table"
+    if slide.metric_blocks:
+        metric = slide.metric_blocks[0]
+        return "metric " + _clean_text(metric.value or metric.label)
+    if slide.notes:
+        return _limit_words(slide.notes[0], 12)
+    if slide.section_label:
+        return f"{slide.section_label} section"
+    return slide.title or "source plan"
+
+
 def _compact_text_blocks(blocks: List[TextBlock]) -> List[TextBlock]:
     compact: List[TextBlock] = []
     seen = set()
@@ -848,7 +1011,16 @@ def _compact_text_blocks(blocks: List[TextBlock]) -> List[TextBlock]:
             point = _complete_point(part, 34)
             if not point or point.lower() in seen:
                 continue
-            compact.append(TextBlock(text=point, role="bullet", bullet_level=0))
+            compact.append(
+                TextBlock(
+                    text=point,
+                    role="bullet",
+                    bullet_level=0,
+                    claim=block.claim if point == block.text else "",
+                    detail=block.detail if point == block.text else "",
+                    evidence=block.evidence,
+                )
+            )
             seen.add(point.lower())
             if len(compact) >= 4:
                 return compact
@@ -930,6 +1102,10 @@ def _metric_label_for_value(value: str, context: str) -> str:
     lower = context.lower()
     if "%" in value and "success" in lower:
         return "Success rate"
+    if "%" in value and "win" in lower:
+        return "Win rate"
+    if "%" in value and any(term in lower for term in ("efficiency", "improvement", "speed", "cost")):
+        return "Efficiency gain"
     if "r=" in value.lower():
         return "Correlation"
     if "p=" in value.lower():
@@ -940,7 +1116,38 @@ def _metric_label_for_value(value: str, context: str) -> str:
         return "Guesses"
     if "accuracy" in lower:
         return "Accuracy"
+    if "rating" in lower:
+        return "Rating"
+    if any(term in lower for term in ("parameter", "params")):
+        return "Parameters"
+    if any(term in lower for term in ("benchmark", "score", "win rate")):
+        return "Benchmark score"
+    if any(term in lower for term in ("context", "token", "window")):
+        return "Context length"
     return "Key number"
+
+
+def _context_metric_label(slide: SlideSpec, context: str) -> str:
+    candidates = [
+        getattr(slide, "title", "") or "",
+        getattr(slide, "takeaway", "") or "",
+    ]
+    candidates.extend(getattr(block, "claim", "") or block.text for block in slide.text_blocks[:2])
+    stop_words = {
+        "the", "a", "an", "of", "to", "in", "and", "or", "for", "with", "that", "this", "these", "those",
+        "is", "are", "was", "were", "be", "been", "being", "has", "have", "had", "can", "could", "from",
+        "into", "using", "based", "compared", "new",
+    }
+    for candidate in candidates:
+        words = [
+            word.strip(" ,.;:()[]")
+            for word in _clean_text(candidate).split()
+            if word.strip(" ,.;:()[]")
+        ]
+        meaningful = [word for word in words if word.lower() not in stop_words]
+        if meaningful:
+            return " ".join(meaningful[:3])
+    return "Slide metric"
 
 
 def _pick_cover_figure(plan: ContentPlan) -> Optional[ImageBlock]:

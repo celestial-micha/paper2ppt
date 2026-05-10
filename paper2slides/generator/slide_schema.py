@@ -7,24 +7,38 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class TextBlock:
-    """Editable text content rendered into a text box."""
+    """Editable numbered-point content rendered into a text box."""
     text: str
     role: str = "body"
     bullet_level: int = 0
+    claim: str = ""
+    detail: str = ""
+    evidence: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "text": self.text,
             "role": self.role,
             "bullet_level": self.bullet_level,
+            "claim": self.claim,
+            "detail": self.detail,
+            "evidence": self.evidence,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TextBlock":
+        claim = data.get("claim", "")
+        detail = data.get("detail", "")
+        text = data.get("text", "")
+        if not text and (claim or detail):
+            text = f"{claim}: {detail}".strip(" :")
         return cls(
-            text=data.get("text", ""),
+            text=text,
             role=data.get("role", "body"),
             bullet_level=data.get("bullet_level", 0),
+            claim=claim,
+            detail=detail,
+            evidence=data.get("evidence", ""),
         )
 
 

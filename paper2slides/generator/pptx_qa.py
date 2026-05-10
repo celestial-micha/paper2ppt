@@ -9,7 +9,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+import re
+from typing import Dict, List, Optional
+
+from .slide_schema import PresentationSpec
 
 
 @dataclass
@@ -72,6 +75,133 @@ def inspect_pptx_layout(pptx_path: Path) -> PptxQaResult:
 
     severe = [w for w in warnings if "outside" in w or "exceeds" in w or "empty" in w]
     return PptxQaResult(passed=not severe, warnings=warnings, slide_count=len(prs.slides))
+
+
+def evaluate_presentation_spec(
+    spec: PresentationSpec,
+    layout_result: Optional[PptxQaResult] = None,
+) -> Dict:
+    """Evaluate semantic/spec quality plus optional PPTX layout warnings."""
+    warnings: List[str] = []
+    failed_slides: set[int] = set()
+
+    if not spec.slides:
+        warnings.append("deck: slide spec is empty")
+
+    for slide_index, slide in enumerate(spec.slides, start=1):
+        slide_warnings = _evaluate_slide_spec(slide_index, slide)
+        if slide_warnings:
+            if any(_is_severe_warning(warning) for warning in slide_warnings):
+                failed_slides.add(slide_index)
+            warnings.extend(slide_warnings)
+
+    layout_warnings = list(layout_result.warnings if layout_result else [])
+    for warning in layout_warnings:
+        match = re.search(r"slide\s+(\d+)", warning, flags=re.IGNORECASE)
+        if match and _is_severe_warning(warning):
+            failed_slides.add(int(match.group(1)))
+        warnings.append(f"layout: {warning}")
+
+    severe = [warning for warning in warnings if _is_severe_warning(warning)]
+    return {
+        "passed": not severe,
+        "warnings": warnings,
+        "failed_slides": sorted(failed_slides),
+        "slide_count": len(spec.slides),
+        "layout": layout_result.to_dict() if layout_result else None,
+        "checks": [
+            "empty components",
+            "meaningless decoration/content placeholders",
+            "truncated ellipsis",
+            "numbered point claim/detail/evidence",
+            "metric label/value quality",
+            "layout QA",
+        ],
+    }
+
+
+def _evaluate_slide_spec(slide_index: int, slide) -> List[str]:
+    warnings: List[str] = []
+    title = (slide.title or "").strip()
+    if not title:
+        warnings.append(f"slide {slide_index}: empty title")
+
+    has_content = any(
+        [
+            (slide.takeaway or "").strip(),
+            slide.text_blocks,
+            slide.image_blocks,
+            slide.table_blocks,
+            slide.metric_blocks,
+        ]
+    )
+    if not has_content:
+        warnings.append(f"slide {slide_index}: slide spec appears empty")
+
+    for point_index, point in enumerate(slide.text_blocks, start=1):
+        claim = (getattr(point, "claim", "") or "").strip()
+        detail = (getattr(point, "detail", "") or "").strip()
+        evidence = (getattr(point, "evidence", "") or "").strip()
+        text = (point.text or "").strip()
+        if not claim:
+            warnings.append(f"slide {slide_index}: point {point_index} missing claim")
+        if not detail:
+            warnings.append(f"slide {slide_index}: point {point_index} missing detail")
+        if not evidence:
+            warnings.append(f"slide {slide_index}: point {point_index} missing evidence")
+        if _has_truncated_ellipsis(" ".join([text, claim, detail, evidence])):
+            warnings.append(f"slide {slide_index}: point {point_index} contains truncated ellipsis")
+        if claim and detail and claim.lower().rstrip(".") == detail.lower().rstrip("."):
+            warnings.append(f"slide {slide_index}: point {point_index} claim repeats detail")
+
+    for metric_index, metric in enumerate(slide.metric_blocks, start=1):
+        label = (metric.label or "").strip()
+        value = (metric.value or "").strip()
+        note = (metric.note or "").strip()
+        if not label or label.lower() in {"metric", "key metric", "key number", "number"}:
+            warnings.append(f"slide {slide_index}: metric {metric_index} has meaningless label")
+        if not value:
+            warnings.append(f"slide {slide_index}: metric {metric_index} missing value")
+        elif not re.search(r"\d|%|=|x|k|m|b", value, flags=re.IGNORECASE):
+            warnings.append(f"slide {slide_index}: metric {metric_index} value looks non-quantitative")
+        if _has_truncated_ellipsis(" ".join([label, value, note])):
+            warnings.append(f"slide {slide_index}: metric {metric_index} contains truncated ellipsis")
+
+    for image_index, image in enumerate(slide.image_blocks, start=1):
+        if not any([(image.path or "").strip(), (image.title or "").strip(), (image.caption or "").strip(), (image.placeholder_text or "").strip()]):
+            warnings.append(f"slide {slide_index}: image {image_index} is an empty component")
+        placeholder = (image.placeholder_text or "").strip().lower()
+        if placeholder in {"original figure", "figure", "image", "placeholder"} and not image.caption:
+            warnings.append(f"slide {slide_index}: image {image_index} has meaningless decoration placeholder")
+
+    for table_index, table in enumerate(slide.table_blocks, start=1):
+        if not table.rows:
+            warnings.append(f"slide {slide_index}: table {table_index} is empty")
+
+    if _has_truncated_ellipsis(" ".join([slide.title or "", slide.takeaway or ""])):
+        warnings.append(f"slide {slide_index}: title/takeaway contains truncated ellipsis")
+
+    return warnings
+
+
+def _has_truncated_ellipsis(text: str) -> bool:
+    return bool(re.search(r"(\.\.\.|…)\s*$|(\.\.\.|…)\s+[A-Z0-9]", text or ""))
+
+
+def _is_severe_warning(warning: str) -> bool:
+    return any(
+        marker in warning.lower()
+        for marker in (
+            "missing claim",
+            "missing detail",
+            "empty",
+            "meaningless",
+            "truncated",
+            "outside",
+            "exceeds",
+            "appears empty",
+        )
+    )
 
 
 def _check_text_box(slide_index: int, shape, text: str, warnings: List[str]) -> None:
