@@ -8,7 +8,9 @@ different compositions for metric, visual, table, and cover slides.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
@@ -64,8 +66,24 @@ class PptxRenderer:
 
         blank_layout = prs.slide_layouts[6]
         render_index = 1
+        sections = self._section_sequence(spec)
+
+        title_slide = prs.slides.add_slide(blank_layout)
+        self._paint_background(title_slide, prs, title=True)
+        self._render_title_page(title_slide, spec, sections, render_index)
+        render_index += 1
+
+        toc_slide = prs.slides.add_slide(blank_layout)
+        self._paint_background(toc_slide, prs)
+        self._render_toc(toc_slide, sections, render_index)
+        render_index += 1
+
+        content_slides = list(spec.slides)
+        if content_slides and content_slides[0].section_type == "opening":
+            content_slides = content_slides[1:]
+
         last_section = ""
-        for slide_spec in spec.slides:
+        for slide_spec in content_slides:
             section = (slide_spec.section_label or "").strip()
             if section and section != last_section and slide_spec.section_type != "opening":
                 divider = prs.slides.add_slide(blank_layout)
@@ -110,7 +128,7 @@ class PptxRenderer:
             return "statement"
         return layout
 
-    def _paint_background(self, slide, prs) -> None:
+    def _paint_background(self, slide, prs, title: bool = False) -> None:
         t = self.theme
         bg = slide.shapes.add_shape(self.MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
         bg.fill.solid()
@@ -126,6 +144,194 @@ class PptxRenderer:
         short_rail.fill.solid()
         short_rail.fill.fore_color.rgb = self._rgb(t.secondary)
         short_rail.line.fill.background()
+
+        if title:
+            band = slide.shapes.add_shape(
+                self.MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+                self.Inches(0),
+                self.Inches(0.06),
+                self.Inches(3.05),
+                int(prs.slide_height - self.Inches(0.06)),
+            )
+            band.fill.solid()
+            band.fill.fore_color.rgb = self._rgb(t.pale_secondary)
+            band.line.fill.background()
+            accent = slide.shapes.add_shape(
+                self.MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+                self.Inches(2.86),
+                self.Inches(0.06),
+                self.Inches(0.16),
+                int(prs.slide_height - self.Inches(0.06)),
+            )
+            accent.fill.solid()
+            accent.fill.fore_color.rgb = self._rgb(t.secondary)
+            accent.line.fill.background()
+
+    def _section_sequence(self, spec: PresentationSpec) -> List[str]:
+        sections: List[str] = []
+        for slide in spec.slides:
+            label = (slide.section_label or "").strip()
+            if not label or slide.section_type == "opening":
+                continue
+            if label not in sections:
+                sections.append(label)
+        if not sections:
+            sections = ["Motivation", "Core Ideas", "Method", "Results", "Conclusion"]
+        return sections[:7]
+
+    def _deck_identity(self, spec: PresentationSpec) -> tuple[str, str, str, str]:
+        first = spec.slides[0] if spec.slides else None
+        source = " ".join(
+            part
+            for part in [
+                first.title if first else "",
+                first.takeaway if first else "",
+                " ".join(block.text for block in first.text_blocks[:2]) if first else "",
+            ]
+            if part
+        )
+
+        title = (spec.title or "").strip()
+        if not title or title.lower() in {"paper2slides presentation", "presentation"}:
+            match = re.search(r"Title:\s*(.*?)(?:\s+Authors?:|$)", source, flags=re.IGNORECASE)
+            title = match.group(1).strip() if match else (first.title if first else "Paper Presentation")
+        title = re.sub(r"^\s*Title:\s*", "", title, flags=re.IGNORECASE)
+        title = re.split(r"\s+Title:\s*", title, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+
+        author_match = re.search(r"Authors?:\s*(.*?)(?:\s+Affiliations?:|$)", source, flags=re.IGNORECASE)
+        authors = author_match.group(1).strip() if author_match else ""
+        authors = re.split(r"\s+Title:\s*", authors, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+        affiliation_match = re.search(r"Affiliations?:\s*(.*)$", source, flags=re.IGNORECASE)
+        affiliation = affiliation_match.group(1).strip() if affiliation_match else ""
+
+        if not authors:
+            authors = "Authors from source paper"
+        if not affiliation:
+            affiliation = "Academic paper presentation"
+        date_text = datetime.now().strftime("%Y-%m-%d")
+        return self._truncate(title, 118), self._truncate(authors, 76), self._truncate(affiliation, 76), date_text
+
+    def _render_title_page(self, slide, spec: PresentationSpec, sections: Sequence[str], slide_index: int) -> None:
+        t = self.theme
+        title, authors, affiliation, date_text = self._deck_identity(spec)
+
+        self._add_text(
+            slide,
+            "Research Paper Presentation",
+            self.Inches(0.72),
+            self.Inches(0.9),
+            self.Inches(1.9),
+            self.Inches(0.62),
+            size=10.5,
+            bold=True,
+            color=t.secondary,
+            font=t.body_font,
+            max_lines=2,
+            alignment=self.PP_ALIGN.CENTER,
+        )
+        self._add_text(
+            slide,
+            title,
+            self.Inches(3.5),
+            self.Inches(1.08),
+            self.Inches(8.4),
+            self.Inches(1.55),
+            size=self._fit_title_size(title, base=32, min_size=24),
+            bold=True,
+            color=t.ink,
+            font=t.title_font,
+            max_lines=2,
+        )
+        self._rounded_rect(slide, self.Inches(3.52), self.Inches(2.86), self.Inches(1.25), self.Inches(0.07), t.primary, t.primary)
+        self._rounded_rect(slide, self.Inches(4.88), self.Inches(2.86), self.Inches(2.75), self.Inches(0.07), t.secondary, t.secondary)
+
+        self._add_text(slide, authors, self.Inches(3.55), self.Inches(3.35), self.Inches(7.5), self.Inches(0.38), 15, True, t.primary, t.body_font, 1)
+        self._add_text(slide, affiliation, self.Inches(3.55), self.Inches(3.82), self.Inches(7.5), self.Inches(0.32), 11, False, t.muted, t.body_font, 1)
+        self._add_text(slide, date_text, self.Inches(3.55), self.Inches(4.26), self.Inches(2.4), self.Inches(0.28), 10, False, t.muted, t.body_font, 1)
+
+        if sections:
+            preview = " / ".join(sections[:4])
+            self._add_text(
+                slide,
+                preview,
+                self.Inches(3.55),
+                self.Inches(5.34),
+                self.Inches(7.9),
+                self.Inches(0.34),
+                size=10.5,
+                bold=True,
+                color=t.secondary,
+                font=t.body_font,
+                max_lines=1,
+            )
+        self._render_title_summary_tiles(slide, spec, sections)
+        self._footer(slide, slide_index)
+
+    def _render_title_summary_tiles(self, slide, spec: PresentationSpec, sections: Sequence[str]) -> None:
+        t = self.theme
+        content_slides = [slide_spec for slide_spec in spec.slides if slide_spec.section_type != "opening"]
+        figure_count = sum(len(slide_spec.image_blocks) for slide_spec in spec.slides)
+        items = [
+            (str(len(sections)), "Sections", t.pale_primary, t.primary),
+            (str(len(content_slides)), "Content slides", t.pale_secondary, t.secondary),
+            (str(figure_count), "Source figures", t.pale_neutral, t.accent),
+        ]
+        positions = [
+            (self.Inches(9.05), self.Inches(4.58), self.Inches(2.55), self.Inches(0.52)),
+            (self.Inches(9.05), self.Inches(5.18), self.Inches(1.85), self.Inches(0.52)),
+            (self.Inches(9.05), self.Inches(5.78), self.Inches(1.25), self.Inches(0.52)),
+        ]
+        for (value, label, fill, accent), (left, top, width, height) in zip(items, positions):
+            self._rounded_rect(slide, left, top, width, height, fill, self.theme.rule)
+            self._add_text(slide, value, int(left + self.Inches(0.16)), int(top + self.Inches(0.1)), self.Inches(0.55), self.Inches(0.24), 13, True, accent, t.title_font, 1)
+            self._add_text(slide, label, int(left + self.Inches(0.76)), int(top + self.Inches(0.16)), int(width - self.Inches(0.86)), self.Inches(0.2), 7.2, True, t.muted, t.body_font, 1)
+
+    def _render_toc(self, slide, sections: Sequence[str], slide_index: int) -> None:
+        t = self.theme
+        self._add_text(slide, "Contents", self.Inches(0.78), self.Inches(0.62), self.Inches(4.5), self.Inches(0.68), 30, True, t.ink, t.title_font, 1)
+        self._add_text(
+            slide,
+            "A sectioned route through the paper: why it matters, what is new, how it works, and what it proves.",
+            self.Inches(0.82),
+            self.Inches(1.35),
+            self.Inches(9.4),
+            self.Inches(0.42),
+            12.5,
+            True,
+            t.primary,
+            t.body_font,
+            1,
+        )
+
+        palette = [t.primary, t.secondary, t.accent, t.ink, t.primary, t.secondary, t.accent]
+        start_top = self.Inches(2.16)
+        row_h = self.Inches(0.68)
+        gap = self.Inches(0.18)
+        for index, section in enumerate(sections[:7], start=1):
+            y = int(start_top + (index - 1) * (row_h + gap))
+            accent = palette[(index - 1) % len(palette)]
+            self._rounded_rect(slide, self.Inches(0.86), y, self.Inches(0.62), row_h, accent, accent)
+            self._add_text(
+                slide,
+                f"{index:02d}",
+                self.Inches(0.97),
+                y + self.Inches(0.18),
+                self.Inches(0.42),
+                self.Inches(0.22),
+                10.5,
+                True,
+                (255, 255, 255),
+                t.title_font,
+                1,
+                alignment=self.PP_ALIGN.CENTER,
+            )
+            self._add_text(slide, section, self.Inches(1.72), y + self.Inches(0.11), self.Inches(5.4), self.Inches(0.34), 15.5, True, t.ink, t.title_font, 1)
+            line_left = self.Inches(7.12)
+            line_width = self.Inches(3.95)
+            self._rounded_rect(slide, line_left, y + self.Inches(0.32), line_width, self.Inches(0.025), t.rule, t.rule)
+            self._rounded_rect(slide, line_left, y + self.Inches(0.32), int(line_width * index / max(1, len(sections[:7]))), self.Inches(0.025), accent, accent)
+
+        self._footer(slide, slide_index)
 
     def _render_cover(self, slide, slide_spec: SlideSpec, slide_index: int) -> None:
         t = self.theme
@@ -191,8 +397,6 @@ class PptxRenderer:
                 self.Inches(5.55),
                 caption=True,
             )
-        else:
-            self._render_abstract_mark(slide, self.Inches(7.55), self.Inches(1.15), self.Inches(4.8), self.Inches(4.8))
 
         self._footer(slide, slide_index)
 
@@ -230,48 +434,31 @@ class PptxRenderer:
 
     def _render_statement(self, slide, slide_spec: SlideSpec, slide_index: int, closing: bool = False) -> None:
         t = self.theme
-        title = self._clean_title(slide_spec.title)
-        self._add_text(
-            slide,
-            title,
-            self.Inches(0.75),
-            self.Inches(0.52),
-            self.Inches(11.85),
-            self.Inches(0.58),
-            size=self._fit_title_size(title, base=24, min_size=18),
-            bold=True,
-            color=t.ink,
-            font=t.title_font,
-            max_lines=1,
-        )
+        self._render_header(slide, slide_spec)
 
         claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
         has_metrics = bool(slide_spec.metric_blocks)
-        claim_width = self.Inches(7.05 if has_metrics else 10.6)
-        bullet_width = self.Inches(7.0 if has_metrics else 10.3)
+        claim_width = self.Inches(7.15 if has_metrics else 10.95)
+        bullet_width = self.Inches(7.2 if has_metrics else 11.0)
 
-        self._add_text(
+        self._render_key_message(
             slide,
             claim,
             self.Inches(0.86),
-            self.Inches(1.42),
+            self.Inches(1.28),
             claim_width,
-            self.Inches(1.2),
-            size=self._fit_title_size(claim, base=21 if not closing else 24, min_size=16),
-            bold=True,
-            color=t.primary if not closing else t.secondary,
-            font=t.title_font,
-            max_lines=2,
+            self.Inches(0.92 if not closing else 1.08),
+            accent=t.secondary if closing else t.primary,
         )
 
         self._add_bullet_list(
             slide,
             slide_spec.text_blocks[:5],
             self.Inches(0.96),
-            self.Inches(2.72),
+            self.Inches(2.42),
             bullet_width,
-            self.Inches(3.65),
-            size=15,
+            self.Inches(3.95),
+            size=13.0,
             max_items=5,
         )
 
@@ -279,10 +466,10 @@ class PptxRenderer:
             self._render_metric_column(
                 slide,
                 slide_spec.metric_blocks[:4],
-                self.Inches(8.5),
-                self.Inches(1.42),
-                self.Inches(3.45),
-                self.Inches(4.75),
+                self.Inches(8.62),
+                self.Inches(1.34),
+                self.Inches(3.28),
+                self.Inches(4.88),
             )
 
         self._footer(slide, slide_index)
@@ -302,21 +489,36 @@ class PptxRenderer:
             slide,
             slide_spec,
             image_left,
-            self.Inches(1.55),
+            self.Inches(1.72),
             visual_width,
-            image_height,
+            self.Inches(2.9 if has_table else 4.12),
             caption=True,
         )
+
+        if slide_spec.takeaway:
+            self._render_key_message(
+                slide,
+                slide_spec.takeaway,
+                text_left,
+                self.Inches(1.28),
+                text_width,
+                self.Inches(0.82),
+            )
+            points_top = self.Inches(2.34)
+            points_height = self.Inches(2.9 if has_table else 3.08)
+        else:
+            points_top = self.Inches(1.55)
+            points_height = self.Inches(3.35 if has_table else 4.15)
 
         self._add_bullet_list(
             slide,
             slide_spec.text_blocks[:5],
             text_left,
-            self.Inches(1.55),
+            points_top,
             text_width,
-            self.Inches(3.35 if has_table else 4.15),
-            size=14,
-            max_items=5,
+            points_height,
+            size=11.5,
+            max_items=4,
         )
 
         if has_table:
@@ -359,15 +561,30 @@ class PptxRenderer:
             bullet_left = self.Inches(0.9)
             bullet_width = self.Inches(11.45)
 
+        if slide_spec.takeaway:
+            self._render_key_message(
+                slide,
+                slide_spec.takeaway,
+                bullet_left,
+                self.Inches(1.25),
+                bullet_width,
+                self.Inches(0.72),
+            )
+            bullet_top = self.Inches(2.12)
+            bullet_height = self.Inches(1.2 if has_image else 1.05)
+        else:
+            bullet_top = self.Inches(1.58)
+            bullet_height = self.Inches(1.78 if has_image else 1.6)
+
         self._add_bullet_list(
             slide,
             slide_spec.text_blocks[:4],
             bullet_left,
-            self.Inches(1.58),
+            bullet_top,
             bullet_width,
-            self.Inches(1.78 if has_image else 1.6),
-            size=12.5,
-            max_items=4,
+            bullet_height,
+            size=10.6,
+            max_items=1 if slide_spec.metric_blocks else (2 if slide_spec.takeaway else 3),
         )
 
         if slide_spec.metric_blocks and not has_image:
@@ -375,12 +592,12 @@ class PptxRenderer:
                 slide,
                 slide_spec.metric_blocks[:4],
                 self.Inches(0.9),
-                self.Inches(2.95),
+                self.Inches(3.02),
                 self.Inches(11.35),
                 self.Inches(0.58),
             )
 
-        table_top = self.Inches(4.08 if has_image else 3.75)
+        table_top = self.Inches(4.08 if has_image else 3.82)
         table_height = self.Inches(2.18)
         self._render_table(slide, slide_spec, self.Inches(0.9), table_top, self.Inches(11.45), table_height)
         self._footer(slide, slide_index)
@@ -388,33 +605,22 @@ class PptxRenderer:
     def _render_header(self, slide, slide_spec: SlideSpec) -> None:
         t = self.theme
         title = self._clean_title(slide_spec.title)
+        self._rounded_rect(slide, self.Inches(0.68), self.Inches(0.28), self.Inches(11.88), self.Inches(0.64), t.surface, t.rule)
+        self._rounded_rect(slide, self.Inches(0.68), self.Inches(0.28), self.Inches(0.13), self.Inches(0.64), t.primary, t.primary)
         self._add_text(
             slide,
             title,
-            self.Inches(0.72),
-            self.Inches(0.34),
-            self.Inches(11.85),
+            self.Inches(0.92),
+            self.Inches(0.38),
+            self.Inches(11.25),
             self.Inches(0.52),
-            size=self._fit_title_size(title, base=24, min_size=18),
+            size=self._fit_title_size(title, base=22, min_size=17),
             bold=True,
             color=t.ink,
             font=t.title_font,
             max_lines=1,
         )
-        if slide_spec.takeaway:
-            self._add_text(
-                slide,
-                slide_spec.takeaway,
-                self.Inches(0.74),
-                self.Inches(0.92),
-                self.Inches(11.45),
-                self.Inches(0.52),
-                size=13.0,
-                bold=True,
-                color=t.primary,
-                font=t.body_font,
-                max_lines=1,
-            )
+        # The takeaway is rendered as a larger key-message block in each layout.
 
     def _render_images(self, slide, slide_spec: SlideSpec, image_left, image_top, image_width, max_height, caption: bool) -> None:
         count = max(1, min(2, len(slide_spec.image_blocks)))
@@ -471,14 +677,14 @@ class PptxRenderer:
         metrics = list(metrics)[:4]
         if not metrics:
             return
-        gap = int(height * 0.035)
-        slot_height = int((int(height) - gap * (len(metrics) - 1)) / len(metrics))
+        gap = self.Inches(0.18)
+        slot_height = min(self.Inches(1.0), int((int(height) - int(gap) * (len(metrics) - 1)) / len(metrics)))
         for index, metric in enumerate(metrics):
-            y = int(top + index * (slot_height + gap))
+            y = int(top + index * (slot_height + int(gap)))
             fill = self.theme.pale_primary if index % 2 == 0 else self.theme.pale_secondary
             self._rounded_rect(slide, left, y, width, slot_height, fill, self.theme.rule)
-            self._add_text(slide, self._metric_value(metric.value), int(left + width * 0.08), y + int(slot_height * 0.12), int(width * 0.84), int(slot_height * 0.42), 20, True, self.theme.primary, self.theme.title_font, 1)
-            self._add_text(slide, self._metric_label(metric), int(left + width * 0.08), y + int(slot_height * 0.6), int(width * 0.84), int(slot_height * 0.28), 8.5, False, self.theme.muted, self.theme.body_font, 1)
+            self._add_text(slide, self._metric_value(metric.value), int(left + width * 0.08), y + int(slot_height * 0.16), int(width * 0.84), int(slot_height * 0.36), 18, True, self.theme.primary, self.theme.title_font, 1)
+            self._add_text(slide, self._metric_label(metric), int(left + width * 0.08), y + int(slot_height * 0.58), int(width * 0.84), int(slot_height * 0.28), 8.2, True, self.theme.muted, self.theme.body_font, 1)
 
     def _render_table(self, slide, slide_spec: SlideSpec, table_left, table_top, table_width, table_height) -> None:
         if not slide_spec.table_blocks:
@@ -509,8 +715,107 @@ class PptxRenderer:
         blocks = list(blocks)[:max_items]
         if not blocks:
             return
-        text = "\n".join(f"- {self._truncate(block.text, 145)}" for block in blocks)
-        self._add_text(slide, text, left, top, width, height, size=size, color=self.theme.ink, font=self.theme.body_font, max_lines=max_items)
+        self._render_numbered_points(slide, blocks, left, top, width, height, size=size, max_items=max_items)
+
+    def _render_key_message(self, slide, text: str, left, top, width, height, accent=None) -> None:
+        if not text:
+            return
+        t = self.theme
+        accent = accent or t.primary
+        self._rounded_rect(slide, left, top, width, height, t.pale_primary, t.rule)
+        self._rounded_rect(slide, left, top, self.Inches(0.12), height, accent, accent)
+        self._add_text(
+            slide,
+            "Key message",
+            int(left + self.Inches(0.28)),
+            int(top + self.Inches(0.12)),
+            int(width - self.Inches(0.42)),
+            self.Inches(0.18),
+            7.5,
+            True,
+            accent,
+            t.body_font,
+            1,
+        )
+        self._add_text(
+            slide,
+            self._body_sentence(text, 230),
+            int(left + self.Inches(0.28)),
+            int(top + self.Inches(0.33)),
+            int(width - self.Inches(0.46)),
+            int(height - self.Inches(0.38)),
+            self._fit_title_size(text, base=13.0, min_size=10),
+            True,
+            t.ink,
+            t.title_font,
+            2,
+        )
+
+    def _render_numbered_points(self, slide, blocks: Sequence[TextBlock], left, top, width, height, size: float, max_items: int) -> None:
+        t = self.theme
+        blocks = list(blocks)[:max_items]
+        if not blocks:
+            return
+        count = len(blocks)
+        gap = self.Inches(0.12)
+        slot_height = int((int(height) - int(gap) * (count - 1)) / count)
+        min_slot = int(self.Inches(0.58))
+        slot_height = max(min_slot, slot_height)
+        palette = [t.primary, t.secondary, t.accent, t.ink, t.primary]
+
+        for index, block in enumerate(blocks, start=1):
+            y = int(top + (index - 1) * (slot_height + int(gap)))
+            accent = palette[(index - 1) % len(palette)]
+            lead, detail = self._split_point(block.text)
+            text_top = y + int(slot_height * 0.15)
+            number_size = min(self.Inches(0.36), int(slot_height * 0.62))
+
+            self._rounded_rect(slide, left, y + int(slot_height * 0.1), self.Inches(0.46), number_size, accent, accent)
+            self._add_text(
+                slide,
+                str(index),
+                int(left + self.Inches(0.06)),
+                y + int(slot_height * 0.18),
+                self.Inches(0.34),
+                self.Inches(0.18),
+                8.5,
+                True,
+                (255, 255, 255),
+                t.title_font,
+                1,
+                alignment=self.PP_ALIGN.CENTER,
+            )
+            text_left = int(left + self.Inches(0.72))
+            text_width = int(width - self.Inches(0.76))
+            if detail and slot_height >= self.Inches(0.62):
+                self._add_text(slide, lead, text_left, text_top, text_width, max(self.Inches(0.26), int(slot_height * 0.28)), min(size, 11.4), True, accent, t.body_font, 1)
+                self._add_text(
+                    slide,
+                    self._body_sentence(detail, 220),
+                    text_left,
+                    y + int(slot_height * 0.44),
+                    text_width,
+                    max(self.Inches(0.28), int(slot_height * 0.42)),
+                    min(size - 0.8, 10.8),
+                    False,
+                    t.ink,
+                    t.body_font,
+                    2,
+                )
+            else:
+                self._add_text(
+                    slide,
+                    self._body_sentence(block.text, 220),
+                    text_left,
+                    text_top,
+                    text_width,
+                    max(self.Inches(0.32), int(slot_height * 0.68)),
+                    min(size, 11.8),
+                    False,
+                    t.ink,
+                    t.body_font,
+                    2,
+                )
 
     def _add_text(self, slide, text: str, left, top, width, height, size: float, bold: bool = False, color=None, font: str | None = None, max_lines: int = 2, alignment=None):
         text = self._truncate_lines(text or "", max_lines=max_lines)
@@ -546,14 +851,6 @@ class PptxRenderer:
         self._rounded_rect(slide, left, top, width, height, self.theme.surface_alt, self.theme.rule)
         self._add_text(slide, text or "Original figure", left, int(top + height * 0.43), width, self.Inches(0.28), 10, False, self.theme.muted, self.theme.body_font, 1)
 
-    def _render_abstract_mark(self, slide, left, top, width, height) -> None:
-        for index, scale in enumerate((1.0, 0.72, 0.46)):
-            w = int(width * scale)
-            h = int(height * (0.18 + index * 0.03))
-            y = int(top + height * (0.18 + index * 0.2))
-            fill = [self.theme.pale_primary, self.theme.pale_secondary, self.theme.pale_neutral][index]
-            self._rounded_rect(slide, int(left), y, w, h, fill, self.theme.rule)
-
     def _footer(self, slide, slide_index: int) -> None:
         self._add_text(slide, str(slide_index), self.Inches(11.95), self.Inches(7.03), self.Inches(0.45), self.Inches(0.18), 8, False, self.theme.muted, self.theme.body_font, 1)
 
@@ -585,7 +882,88 @@ class PptxRenderer:
     def _clean_title(self, text: str) -> str:
         cleaned = (text or "").replace(" - Cover", "")
         cleaned = cleaned.replace("**", "")
+        cleaned = re.sub(r"^\s*Title:\s*", "", cleaned, flags=re.IGNORECASE)
         return self._truncate(cleaned, 82)
+
+    def _split_point(self, text: str) -> tuple[str, str]:
+        text = self._body_sentence((text or "").replace("**", ""), 170)
+        if ":" not in text:
+            lead = self._auto_point_lead(text)
+            detail = text
+            if lead and detail and lead.lower().rstrip(".") != detail.lower().rstrip("."):
+                return lead, detail
+            return text.strip(" -"), ""
+        lead, detail = text.split(":", 1)
+        lead = lead.strip(" -")
+        detail = detail.strip(" -")
+        if not lead or len(lead.split()) > 12:
+            auto_lead = self._auto_point_lead(text)
+            return (auto_lead, text) if auto_lead else (text.strip(" -"), "")
+        return self._headline_text(lead, 54), self._body_sentence(detail, 132)
+
+    def _auto_point_lead(self, text: str) -> str:
+        text = self._strip_ellipsis(text)
+        before_colon = text.split(":", 1)[0].strip(" -")
+        if before_colon and 2 <= len(before_colon.split()) <= 12:
+            return self._headline_text(before_colon, 54)
+        first_clause = re.split(r",|;|\sdue to\s|\sbecause\s|\bthat\s", text, maxsplit=1, flags=re.IGNORECASE)[0].strip(" -")
+        if 2 <= len(first_clause.split()) <= 8:
+            return self._headline_text(first_clause, 54)
+        words = text.split()
+        if len(words) < 8:
+            return ""
+        stop_words = {
+            "the", "a", "an", "of", "to", "in", "and", "or", "for", "with", "that", "this", "these", "those",
+            "is", "are", "was", "were", "be", "been", "being", "has", "have", "had", "can", "could",
+            "such",
+        }
+        lead_words = []
+        for word in words:
+            clean = word.strip(" ,.;:()[]").lower()
+            lead_words.append(word.strip(" ,.;:"))
+            if len(lead_words) >= 4 and clean not in stop_words:
+                break
+            if len(lead_words) >= 7:
+                break
+        return self._headline_text(" ".join(lead_words), 54)
+
+    def _body_sentence(self, text: str, max_len: int) -> str:
+        text = self._strip_ellipsis(text)
+        if len(text) <= max_len:
+            return self._ensure_sentence(text)
+        cut = text[:max_len].rstrip()
+        sentence_end = max(cut.rfind("."), cut.rfind(";"), cut.rfind("!"), cut.rfind("?"))
+        if sentence_end >= max_len * 0.45:
+            cut = cut[: sentence_end + 1]
+        else:
+            cut = cut.rsplit(" ", 1)[0].rstrip(" ,;:-")
+            weak_endings = {
+                "a", "an", "the", "of", "to", "in", "on", "for", "with", "by", "and", "or", "that", "which",
+                "due", "associated", "including", "such", "as", "from", "through", "into", "across", "between",
+                "during",
+            }
+            words = cut.split()
+            while len(words) > 6 and words[-1].strip(" ,;:-").lower() in weak_endings:
+                words.pop()
+            cut = " ".join(words)
+        return self._ensure_sentence(cut)
+
+    def _headline_text(self, text: str, max_len: int) -> str:
+        text = self._strip_ellipsis(text).strip(" .;:-")
+        if len(text) <= max_len:
+            return text
+        return text[:max_len].rsplit(" ", 1)[0].strip(" .;:-")
+
+    def _ensure_sentence(self, text: str) -> str:
+        text = self._strip_ellipsis(text).strip()
+        if not text:
+            return ""
+        if text[-1] in ".!?":
+            return text
+        return text + "."
+
+    def _strip_ellipsis(self, text: str) -> str:
+        return re.sub(r"\.{2,}\s*$", "", " ".join((text or "").split())).strip()
 
     def _truncate_lines(self, text: str, max_lines: int) -> str:
         lines = [line.strip() for line in str(text).split("\n") if line.strip()]

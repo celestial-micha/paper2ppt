@@ -1,32 +1,32 @@
-# paper2ppt 开发历程说明
+# paper2ppt 开发历史与接力说明
 
-这份文档用于说明 paper2ppt 从上游 Paper2Slides 项目演进到当前版本的主要改造步骤、技术选择和阶段成果。它适合在项目展示、面试复盘或后续维护时使用。
+这份文档用于帮助新的对话快速理解当前项目状态。它记录了 `paper2ppt` 从上游 Paper2Slides 项目演进到“纯文本大模型生成可编辑 PPTX + 演讲稿 + 详细 TeX/PDF 附件”的过程，也说明下一步如果要按 ReAct Agent / Plan-and-Solve 继续改，应该从哪里入手。
 
 ## 1. 项目起点
 
-paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。
+本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。
 
 上游项目的核心能力包括：
 
 - 解析论文 PDF。
 - 提取正文、表格和图片。
-- 使用 RAG/LLM 生成内容规划。
+- 使用 RAG / LLM 生成内容规划。
 - 通过图片生成模型生成海报或幻灯片式图片。
 
-最初的问题是：虽然可以从 PDF 一键生成“类似 PPT 的结果”，但最后产物更接近图片或 PDF，不是真正可编辑的 PowerPoint。对论文汇报来说，这会带来几个问题：
+最初的问题是：虽然可以从 PDF 一键得到“像 PPT 的结果”，但最终产物更接近图片或 PDF，不是真正可编辑的 PowerPoint。对于论文汇报，这会带来几个问题：
 
-- PPT 里的文字和图形不可方便编辑。
+- PPT 里的文字和图形不方便编辑。
 - 图片生成模型成本较高。
 - 文生图模型容易改写或失真论文原图。
-- 生成结果不稳定，难以做细粒度排版控制。
+- 结果不稳定，难以做精细排版控制。
 
-因此，项目改造目标被确定为：
+因此本项目的核心改造目标被确定为：
 
 ```text
 不使用文生图模型，只使用文本大模型和论文原始素材，生成真正可编辑的 PPTX，并同步生成演讲稿。
 ```
 
-## 2. 第一阶段：跑通原项目和建立检查点
+## 2. 第一阶段：跑通原项目并建立检查点
 
 第一阶段先保证原始项目可以在本地环境跑通。
 
@@ -35,31 +35,31 @@ paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)�
 - 梳理 conda 环境和依赖。
 - 确认 `paper2slides` 环境可以运行项目。
 - 使用本地 API 配置完成论文解析、摘要、规划和生成流程。
-- 生成 `PROJECT_REPORT.md` 记录当时的运行过程和关键输出。
+- 记录各阶段 checkpoint 的位置和复用方式。
 
 阶段成果：
 
-- 项目可以一键从 PDF 进入完整流水线。
-- 明确了各阶段 checkpoint 的位置和复用方式。
-- 确认后续可以从 `--from-stage generate` 快速重跑生成阶段。
+- 项目可以从 PDF 进入完整流水线。
+- 明确了各阶段 checkpoint 的位置。
+- 后续可以用 `--from-stage generate` 快速重跑生成阶段，不必每次重新解析 PDF。
 
-## 3. 第二阶段：从图片生成改为原生 PPTX 生成
+## 3. 第二阶段：改为原生 PPTX 生成
 
 这一阶段是项目最核心的功能改造。
 
 原路径：
 
 ```text
-PDF -> 内容规划 -> 调用图片模型生成每页图片 -> 拼成 PDF/类 PPT
+PDF -> 内容规划 -> 调用图片模型生成每页图片 -> 拼成 PDF / 类 PPT
 ```
 
 新路径：
 
 ```text
-PDF -> 内容规划 -> 文本大模型策展 slide spec -> python-pptx 渲染原生 PPTX
+PDF -> 内容规划 -> 文本大模型生成 slide spec -> python-pptx 渲染原生 PPTX
 ```
 
-主要新增模块：
+主要新增或重点改造的模块：
 
 ```text
 paper2slides/generator/slide_schema.py
@@ -71,7 +71,7 @@ paper2slides/generator/text_pptx_workflow.py
 关键设计：
 
 - 用结构化 `PresentationSpec` / `SlideSpec` 描述每页 PPT。
-- 文字、图片、表格、指标都作为可编辑对象进入 PPTX。
+- 文字、图片、表格和指标都作为可编辑对象进入 PPTX。
 - 图片只使用论文中已经解析出来的原始图片。
 - 不调用文生图模型。
 
@@ -79,7 +79,7 @@ paper2slides/generator/text_pptx_workflow.py
 
 - 成功输出 `slides.pptx`。
 - PPT 内容从图片式结果变成可编辑 PowerPoint。
-- 项目开始具备“低成本生成论文汇报稿”的核心价值。
+- 项目具备“低成本生成论文汇报稿”的核心价值。
 
 ## 4. 第三阶段：接入 LangChain 和 LangGraph
 
@@ -89,7 +89,7 @@ LangChain 用于：
 
 - 统一调用文本大模型。
 - 支持兼容 OpenAI 接口的中转服务。
-- 记录使用的模型和调用方式。
+- 记录模型和调用方式。
 
 LangGraph 用于：
 
@@ -97,7 +97,7 @@ LangGraph 用于：
 - 支持后续增加 QA、修复、讲稿等节点。
 - 在依赖不可用时保留非 LangGraph 的兜底路径。
 
-核心工作流：
+当前核心工作流大致为：
 
 ```text
 prepare_packet
@@ -113,176 +113,271 @@ prepare_packet
 
 - PPT 生成过程具备清晰节点边界。
 - 代码更容易扩展和调试。
-- 后续的 QA 自动返修和讲稿生成能够自然接入。
+- 后续 QA 自动返修、ReAct Agent、Plan-and-Solve 都能自然接入。
 
-## 5. 第四阶段：改善内容质量，避免“论文搬运”
+## 5. 第四阶段：全部模型调用统一为 gpt-5-mini
 
-早期 PPT 的问题是文字过多，像把论文原文复制到 slide 中。
+用户明确要求：只要调用模型，通通只使用 `gpt-5-mini`，避免昂贵的 `gpt-4o`。
 
-针对这个问题，做了内容策展和压缩：
+当前约定：
 
-- 限制每页 bullet 数量。
-- 限制 bullet 字数。
-- 强制每页有一个明确 takeaway。
-- 鼓励使用论文图片和表格作为页面中心。
-- 从正文中抽取关键数字作为 metric。
-- 把详细解释放到 speaker script，而不是全部塞进 PPT。
+- 所有文本模型调用默认使用 `gpt-5-mini`。
+- 不再使用 `gpt-4o` 做 PPT 生成、修复、讲稿或详细稿生成。
+- 如果将来新增 evaluator / repair agent，也必须继续使用 `gpt-5-mini`。
 
-后来又发现过度精简会让页面显得太空，所以进一步调整为“详略得当”：
+这条约定非常重要，后续开发不要因为示例代码、默认配置或第三方项目习惯而回退到更贵模型。
 
-- 普通页面保留 2-4 条要点。
-- 方法和结果页允许更完整的上下文。
-- 结论和封面页保持相对简洁。
-- 讲稿承担更多解释细节。
+## 6. 第五阶段：融合 Paper2PPT 的详细 TeX 思路
 
-阶段成果：
-
-- PPT 从“论文摘抄”变成“展示稿”。
-- 文字密度更适合现场汇报。
-- 讲稿可以补足 PPT 中省略的解释。
-
-## 6. 第五阶段：重构 PPTX 渲染器
-
-最初的 PPTX 渲染器可用，但视觉效果不够稳定，存在颜色土、页面空、标题越界和结构遮挡等问题。
-
-改造方向：
-
-- 统一浅灰背景和青绿/蓝色强调色。
-- 减少大面积黄色。
-- 增加不同版式：cover、statement、visual、table、metric、closing。
-- 标题字号根据长度自动调整。
-- 图片按比例放入安全区域。
-- caption 居中显示。
-- 无指标时不再绘制空的右侧占位栏。
-- 空值 metric 会被过滤，避免出现“有栏无数据”。
-
-阶段成果：
-
-- PPT 更像正式论文汇报 deck。
-- 第 2 页和最后一页的空栏问题被修复。
-- 图片注释位置和对齐更自然。
-- 页面越界和遮挡风险降低。
-
-## 7. 第六阶段：增加 PPTX QA 和自动返修
-
-为了避免生成后仍有标题溢出、文本框过小、页面空白等问题，新增了 `pptx_qa.py`。
-
-QA 检查内容包括：
-
-- 形状是否超出页面范围。
-- 页面是否疑似为空。
-- 标题/副标题是否过长。
-- 文本框是否太小。
-- bullet 列表是否可能纵向溢出。
-
-LangGraph 中加入返修循环：
+用户额外下载了一个参考项目：
 
 ```text
-render -> layout_qa.json -> repair_spec -> render
+D:\coding\agent_paper_to_slider\Paper2Slides-main\Paper2PPT-main
 ```
 
-返修动作包括：
+参考项目 `gejifeng/Paper2PPT` 的优点是：
 
-- 压缩标题。
-- 压缩 takeaway。
-- 减少 bullet 数量。
-- 截短过长指标。
-- 压缩表格。
-- 必要时调整布局。
+- 能生成更详略得当的论文讲解材料。
+- 使用 TeX / Beamer 路径生成较详细的 slide PDF。
+- 章节结构感更强。
 
-阶段成果：
+本项目没有替换原来的 PPTX 生成路径，而是在现有输出基础上额外融合了详细稿能力。
 
-- 每次输出都会有 `layout_qa.json`。
-- 发现风险时可以自动修复并重新渲染。
-- 项目从“生成后人工检查”提升为“生成后自动检查和返修”。
+当前输出中，除了原生 PPTX 和演讲稿，还会生成：
 
-## 8. 第七阶段：生成演讲稿
+```text
+detailed_slides.tex
+detailed_slides.pdf
+```
 
-为了让生成结果不仅是 PPT，还能直接用于汇报，项目新增 `speaker_script.md`。
+设计目标：
 
-讲稿内容来自最终修复后的 slide spec，因此和 PPT 保持一致。
+- `slides.pptx`：可编辑、适合正式汇报和后期修改。
+- `speaker_script.md`：配套演讲稿。
+- `detailed_slides.tex` / `detailed_slides.pdf`：更详细的论文讲解附件，适合作为补充材料或备课稿。
 
-每页讲稿包含：
+## 7. 第六阶段：DeepSeek_V4.pdf 与动态页数
 
-- 页面标题。
-- Key message。
-- Suggested narration。
-- 需要强调的指标。
-- 需要指向的图片或表格。
-- Source trace。
+当前推荐测试 PDF 已改为：
 
-阶段成果：
+```text
+test_papers\DeepSeek_V4.pdf
+```
 
-- 输出从单一 PPT 扩展为 PPT + 汇报讲稿。
-- PPT 可以更简洁，详细解释放到讲稿里。
-- 适合论文汇报、课程展示和项目复盘。
+用户发现论文较长时不应只生成 8 页左右，因此项目增加了更灵活的页数控制。
 
-## 9. 第八阶段：项目清理和发布准备
-
-在确认新路径稳定后，对项目进行了清理。
-
-移除或计划移除的旧内容：
-
-- 上游前端页面。
-- Docker 和脚本启动入口。
-- 图片生成式示例 assets。
-- 旧的文生图 generator。
-- 旧的 image generation prompts。
-- 仅用于早期 Codex 协作的临时文档。
-
-保留的核心能力：
-
-- PDF 解析。
-- 摘要和内容规划。
-- LangGraph PPTX workflow。
-- 原生 PPTX 渲染。
-- PPTX QA。
-- speaker script。
-
-阶段成果：
-
-- 项目定位更清楚。
-- 运行入口更简单。
-- README 和中文 README 面向新用户重写。
-- `paper2slides/.env.example` 成为公开配置模板。
-
-## 10. 当前项目能力总结
-
-paper2ppt 当前已经具备以下能力：
-
-- 一键从 PDF 生成 editable PPTX。
-- 使用文本大模型进行内容策展。
-- 使用论文原始图片，不生成新图片。
-- 同步生成讲稿。
-- 自动检查并修复部分排版风险。
-- 支持从 checkpoint 复用前面阶段，降低重复调用成本。
-
-当前典型命令：
+当前常用命令：
 
 ```powershell
-python -m paper2slides --input path\to\paper.pdf --output slides --style academic --length medium --fast
+python -m paper2slides --input test_papers\DeepSeek_V4.pdf --output slides --style academic --length medium --slides 24 --fast
 ```
 
-只重跑生成阶段：
+说明：
+
+- `--slides 24` 可以指定目标页数。
+- `--length medium` 控制内容密度。
+- `--fast` 复用快速路径。
+- 如果已经有解析结果，优先使用 `--from-stage generate` 重跑生成阶段。
+
+确定性重跑命令：
 
 ```powershell
-python -m paper2slides --input path\to\paper.pdf --output slides --style academic --length medium --fast --from-stage generate
+$env:PPTX_FORCE_DETERMINISTIC="1"
+python -m paper2slides --input test_papers\DeepSeek_V4.pdf --output slides --style academic --length medium --slides 24 --fast --from-stage generate
 ```
 
-## 11. 面试时可以强调的技术点
+## 8. 第七阶段：章节结构和视觉编排
 
-- 从“文生图式 PPT”重构为“原生可编辑 PPTX”。
-- 使用结构化 slide spec 解耦内容策展和渲染。
-- 使用 LangGraph 编排多节点生成流程。
-- 通过 QA 节点形成生成-检查-修复闭环。
-- 通过 speaker script 把详细解释从 PPT 页面中拆出来。
-- 在成本上避免文生图模型，只使用文本模型和原始论文素材。
-- 保留 checkpoint 机制，支持低成本重跑。
+早期 PPT 的问题是内容基本正确，但像“文字搬运”，缺少真正 PPT 的章节感和组件化排版。
 
-## 12. 后续可改进方向
+后来逐步增加了：
 
-- 增加更强的真实 PowerPoint 渲染级视觉 QA。
-- 支持更多 deck theme。
-- 支持自动把论文表格转换为更高级的图表。
-- 支持模板导入和品牌风格约束。
-- 把 speaker script 进一步拆成逐页 speaker notes 写入 PPTX。
+- 标题页。
+- 目录页。
+- 章节分隔页。
+- Motivation / Method / Results / Conclusion 等章节划分。
+- 标题、重点信息、编号要点、指标卡片、图片说明等不同组件。
+- 更合适的字体大小和留白。
+
+这一阶段的目标不是单纯把文字塞进 slide，而是让 PPT 像真正可以交付的汇报稿。
+
+## 9. 最近一次用户非常满意的视觉修复
+
+最近一次重要修复集中在 `pptx_renderer.py` 和 `text_pptx_workflow.py`，用户确认效果“超级超级满意”。
+
+修复背景：
+
+- 用户不希望暴力删除好看的装饰组件。
+- 希望保留封面、目录、章节页的版式美感。
+- 只删除真正无意义或干扰理解的小横杠。
+- 希望 numbered points 有“重点句 + 解释句”，并且句子尽量完整，不要都是省略号。
+
+当前已经修好的点：
+
+- 封面右下角三个 summary tiles 被恢复，并填入真实内容，例如 `Sections`、`Content slides`、`Source figures`。
+- 目录页右侧的横线被保留，但改成有意义的进度线 / 视觉引导线，不再像空横杠。
+- 章节分隔页的横线被恢复，保持简洁好看的过渡页风格。
+- numbered point 旁边无意义的小连接横杠被移除。
+- numbered point 尽量拆成“claim + detail”的两层结构。
+- 对长句和省略号做了改进，减少因为布局截断导致的不可交付感。
+- metric / key number 卡片的填充逻辑更谨慎，避免大卡片里只有很小、很空的文字。
+
+当前满意输出示例：
+
+```text
+outputs\DeepSeek_V4\paper\fast\slides_academic_medium_24slides\20260510_174945
+```
+
+其中包含：
+
+```text
+slides.pptx
+speaker_script.md
+detailed_slides.tex
+detailed_slides.pdf
+layout_qa.json
+previews
+```
+
+该次 `layout_qa.json` 显示：
+
+```text
+passed: true
+pages: 29
+```
+
+仍有一些非致命 warning，例如长标题或少量文本溢出提示，但整体已经通过当前 QA。
+
+## 10. 当前关键文件
+
+建议下一轮对话优先阅读：
+
+```text
+README.md
+README.zh-CN.md
+DEVELOPMENT_HISTORY.zh-CN.md
+paper2slides/generator/text_pptx_workflow.py
+paper2slides/generator/pptx_renderer.py
+paper2slides/generator/slide_schema.py
+paper2slides/generator/spec_builder.py
+```
+
+其中：
+
+- `text_pptx_workflow.py` 负责文本 PPTX 工作流、模型调用、spec 生成、讲稿和详细稿。
+- `pptx_renderer.py` 负责把结构化 spec 渲染成 PPTX，并包含当前大部分视觉编排逻辑。
+- `slide_schema.py` 定义结构化 slide spec。
+- `spec_builder.py` 提供 spec 构造和兜底逻辑。
+
+## 11. 当前验证方式
+
+之前已通过的单元测试：
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+C:\Users\81001\.conda\envs\paper2slides\python.exe -m unittest test_phase1_pptx.py
+```
+
+结果：
+
+```text
+Ran 6 tests
+OK
+```
+
+推荐人工验证方式：
+
+1. 用 DeepSeek_V4.pdf 重跑生成。
+2. 打开 `slides.pptx` 检查封面、目录、章节页和 numbered point 页面。
+3. 查看 `layout_qa.json` 是否 `passed: true`。
+4. 重点检查是否存在空卡片、无意义横杠、截断省略句、缺少 claim/detail 的编号点。
+
+## 12. 当前已知限制
+
+虽然视觉效果已经明显改善，但仍然存在一些结构性问题，适合下一轮用 ReAct Agent / Plan-and-Solve 继续解决：
+
+- 有些 numbered point 只有 detail，没有清晰 claim。
+- 有些 claim/detail 是后处理推断出来的，不一定足够稳定。
+- 当前 QA 更偏布局检查，还不是完整的语义质量评估。
+- 当前 repair 还没有形成真正的“评估 -> 定位问题 -> 局部修复 -> 再评估”闭环。
+- 对“句子是否完整”“是否可交付”“是否出现无意义装饰”的判断还比较规则化。
+
+## 13. 下一步建议：ReAct Agent / Plan-and-Solve 闭环
+
+用户希望后续引入 ReAct Agent、Plan-and-Solve 技术，让系统可以评估驱动地闭环迭代。
+
+建议目标架构：
+
+```text
+Generate slide spec
+ -> Plan QA checks
+ -> Evaluate each slide
+ -> Identify failed slides and reasons
+ -> Repair only failed slide specs
+ -> Rerender PPTX
+ -> Re-evaluate
+ -> Stop when pass or reach max iterations
+```
+
+建议新增或改造的能力：
+
+- 在 slide spec 层面明确每个 numbered point 的结构：
+  - `claim`
+  - `detail`
+  - `evidence`
+  - `source_section`
+- 增加 evaluator，检查：
+  - 封面 summary tiles 是否为空。
+  - 目录页和章节页的装饰是否有语义。
+  - numbered point 是否缺 claim 或 detail。
+  - 是否出现孤立横杠、空组件、无意义 label。
+  - 是否出现 `...` 形式的截断省略句。
+  - metric 卡片是否有 label 和 value，且内容匹配。
+  - layout QA 是否通过。
+- 增加 repair prompt：
+  - 只修复失败页面。
+  - 不整体重写全部 PPT。
+  - 保留已有好看的布局和用户确认满意的视觉风格。
+  - 所有模型调用继续使用 `gpt-5-mini`。
+- 增加迭代上限，例如最多 2-3 轮，避免无限循环。
+
+## 14. 新对话推荐提示词
+
+新开对话时，可以直接把下面这段发给 Codex：
+
+```text
+请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
+
+然后从当前 paper2ppt 项目状态继续。现在优先实现 ReAct / Plan-and-Solve 闭环来改进 PPT 生成：
+1. 生成或修复 slide spec，让每个 numbered point 都有 claim、detail、evidence 字段。
+2. 增加 evaluator，检查空组件、无意义装饰、截断省略句、缺少 claim/detail、metric label/value 质量和 layout QA。
+3. 增加 repair loop，只修改失败页面并重新渲染。
+4. 所有模型调用保持使用 gpt-5-mini。
+5. 用 DeepSeek_V4.pdf 作为主要测试 PDF，尽量从 --from-stage generate 重跑。
+
+注意：上一轮用户已经非常满意当前 PPT 的视觉风格，不要暴力删掉封面 summary tiles、目录进度线或章节分隔页横线；要在保留这些版式美感的基础上做语义化和 QA 闭环。
+```
+
+## 15. Git 注意事项
+
+本地 `paper2slides\.env` 已经存在，用于保存 API key。不要提交 `.env`。
+
+可以提交：
+
+```text
+README.md
+README.zh-CN.md
+DEVELOPMENT_HISTORY.zh-CN.md
+paper2slides/generator/pptx_renderer.py
+paper2slides/generator/text_pptx_workflow.py
+```
+
+通常不建议提交：
+
+```text
+paper2slides\.env
+outputs\
+__pycache__\
+```
+
+如果需要把生成好的 PPT 单独备份，可以手动复制或 release，不建议默认纳入源码提交。

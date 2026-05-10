@@ -2,57 +2,90 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-paper2ppt 可以把学术论文 PDF 转换成可编辑的 PowerPoint，并同步生成一份演讲稿。它的目标是一个实用流程：输入 PDF，使用文本大模型策展内容和结构，复用论文原始图片，最后得到原生 `.pptx` 和可直接修改的讲解稿。
+paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint、配套演讲稿，以及可选的详细版 Beamer/TeX 旁路汇报。
 
-paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。本项目保留了上游项目的论文解析、内容提取、检查点流水线和部分 RAG 思路，同时把最后的图片生成式幻灯片路径改造成了“文本大模型 + 原生 PPTX”的生成流程。
+当前项目目标是服务真实论文汇报：复用论文原始图片和表格，只使用文本大模型做规划和写作，渲染原生可编辑 `.pptx`，并围绕输出做轻量 QA 和自动修复。
 
-## 效果预览
+本项目继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。我们保留了上游项目的 PDF 解析、素材抽取、checkpoint 和论文处理思路，但把最后的图片生成式幻灯片路径替换成了原生 PPTX 工作流。
 
-![paper2ppt 生成的 PPTX 预览](paper2ppt_preview.png)
+## 当前状态
 
-## 功能特点
+项目现在支持：
 
-- 从 PDF 论文生成可编辑 PowerPoint。
-- 同步生成 `speaker_script.md`，方便准备汇报讲稿。
-- 额外生成信息更充分的 Beamer/TeX 详细版汇报，适合更长时间的讲解。
-- 复用论文中提取到的原始图片和表格。
-- 使用 LangChain/LangGraph 进行文本大模型策展和工作流编排。
-- 生成 PPT 时不调用文生图模型。
-- 生成后自动进行轻量 PPTX 排版 QA，并在发现风险时自动返修。
-- 保存中间检查点，后续可以从指定阶段继续运行。
+- 可编辑 PowerPoint 输出：`slides.pptx`。
+- 配套讲稿：`speaker_script.md`。
+- 详细版 Beamer/TeX 旁路：`detailed_slides.tex`，如果本机安装了 `pdflatex`，还会生成 `detailed_slides.pdf`。
+- 基于 LangChain/LangGraph 的文本大模型工作流。
+- 默认文本模型配置使用 `gpt-5-mini`。
+- 使用 `--slides` 精确指定目标页数。
+- 带章节意识的 PPT：标题页、目录页、章节分隔页、key message、编号要点、紧凑指标卡、论文原图和表格。
+- 轻量 PPTX 排版 QA 和自动修复。
+- 使用 `PPTX_FORCE_DETERMINISTIC=1` 从已有 checkpoint 低成本重跑 deterministic fallback。
+
+最近一轮视觉迭代重点是让生成结果更像正式 PPT：
+
+- 增加正式标题页，包含标题、作者、上下文/日期和右下角信息块。
+- 增加目录页，并把右侧横线改成有意义的章节进度线。
+- 增加章节分隔页。
+- 普通页改成“标题栏 + Key message + 编号要点”。
+- 删除编号要点旁边无意义的小横杠。
+- 恢复有价值的装饰横线和信息块，但让它们承载真实信息。
+- 改进 bullet 渲染，使每条尽量呈现“短 claim + 完整 detail 句子”，而不是被截断的省略句。
+
+## 推荐测试 PDF
+
+当前主要本地测试论文是：
+
+```text
+test_papers/DeepSeek_V4.pdf
+```
+
+最近开发时检查的输出位于：
+
+```text
+outputs/DeepSeek_V4/paper/fast/slides_academic_medium_24slides/
+```
+
+具体时间戳目录会随每次运行变化。成功运行后一般包含：
+
+```text
+slides.pptx
+speaker_script.md
+detailed_slides.tex
+detailed_slides.pdf
+layout_qa.json
+```
 
 ## 工作流程
 
 ```text
 PDF
- -> 论文解析和素材提取
- -> 摘要检查点
- -> 内容规划检查点
- -> LangGraph PPTX 工作流
-    -> 构建 source packet
+ -> 论文解析和原始素材抽取
+ -> summary checkpoint
+ -> content plan checkpoint
+ -> LangGraph PPTX workflow
+    -> source packet
     -> 可选的论文原图理解
-    -> 文本大模型策展 slide spec
+    -> 文本大模型策划 deck spec
     -> slide spec 校验
     -> 原生 PPTX 渲染
-    -> 排版 QA 和自动返修
-    -> 演讲稿生成
-    -> 详细版 Beamer/TeX 旁路生成
+    -> layout QA 和修复循环
+    -> 生成 speaker script
+    -> 生成详细版 Beamer/TeX 旁路
 ```
 
-生成的 PPT 不是网页截图，也不是图片拼接。它使用 PowerPoint 原生文本框、形状、表格和论文原始图片，因此可以继续在 PowerPoint 中编辑。
+生成的 PPTX 不是截图，也不是整页图片。它使用 PowerPoint 原生文本框、形状、表格和插入的论文原图，因此可以继续在 PowerPoint 里编辑。
 
 ## 环境要求
 
 - Windows、macOS 或 Linux
-- Python 3.10 或以上，推荐 Python 3.12
+- Python 3.10 或更新版本，推荐 Python 3.12
 - Conda 或其他 Python 环境管理工具
 - 一个兼容 OpenAI chat-completions 接口的文本模型 API
 
-本项目开发测试时使用的 conda 环境名是 `paper2slides`，但环境名可以自行设置。
+本项目开发时使用的本地 conda 环境名是 `paper2slides`，但环境名不是硬性要求。
 
 ## 安装
-
-克隆仓库并进入项目目录后，创建环境：
 
 ```powershell
 conda create -n paper2ppt python=3.12
@@ -60,7 +93,7 @@ conda activate paper2ppt
 pip install -r requirements.txt
 ```
 
-如果你已经有可用的 Python 环境，可以直接在当前环境安装依赖：
+如果你已经有合适的 Python 环境：
 
 ```powershell
 pip install -r requirements.txt
@@ -68,15 +101,27 @@ pip install -r requirements.txt
 
 ## 配置 API
 
-paper2ppt 会从 `paper2slides/.env` 读取 API 配置。
+paper2ppt 从这里读取 API 配置：
 
-先复制公开模板：
+```text
+paper2slides/.env
+```
+
+为了避免上传 GitHub 泄露 key，仓库里只应该提交模板：
+
+```text
+paper2slides/.env.example
+```
+
+如果是新克隆的仓库，可以从模板复制本地 env 文件：
 
 ```powershell
 copy paper2slides\.env.example paper2slides\.env
 ```
 
-然后编辑 `paper2slides/.env`：
+当前本地工作区里，`paper2slides/.env` 已经存在，不需要再复制，也不要上传。
+
+典型配置：
 
 ```env
 RAG_LLM_API_KEY=your_api_key_here
@@ -84,7 +129,20 @@ RAG_LLM_BASE_URL=https://api.example.com/v1
 LLM_MODEL=gpt-5-mini
 ```
 
-如果希望模型理解论文原图，可以配置一个支持视觉输入的文本模型。这个步骤只分析论文原始图片，不生成新图片。
+重要成本规则：
+
+```env
+LLM_MODEL=gpt-5-mini
+PPTX_VISION_MODEL=gpt-5-mini
+```
+
+如果不需要调用模型，只想从已有 checkpoint 重渲染：
+
+```env
+PPTX_FORCE_DETERMINISTIC=1
+```
+
+可选的论文原图理解：
 
 ```env
 PPTX_ENABLE_FIGURE_ANALYSIS=1
@@ -92,20 +150,21 @@ PPTX_VISION_MODEL=gpt-5-mini
 PPTX_MAX_FIGURE_ANALYSIS=5
 ```
 
-仓库中提交的是 `paper2slides/.env.example`。真正包含 API key 的 `paper2slides/.env` 应该只保留在本地。
+这一步只分析论文原图，不生成新图片。
 
-## 第一次运行
+## 运行
 
-使用任意本地 PDF 路径：
+典型运行：
 
 ```powershell
-python -m paper2slides --input path\to\paper.pdf --output slides --style academic --length medium --fast
+python -m paper2slides --input test_papers\DeepSeek_V4.pdf --output slides --style academic --length medium --slides 24 --fast
 ```
 
-如果你本地有测试论文，也可以这样运行：
+从已有 checkpoint 低成本重跑生成阶段：
 
 ```powershell
-python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output slides --style academic --length medium --fast
+$env:PPTX_FORCE_DETERMINISTIC="1"
+python -m paper2slides --input test_papers\DeepSeek_V4.pdf --output slides --style academic --length medium --slides 24 --fast --from-stage generate
 ```
 
 常用参数：
@@ -114,19 +173,33 @@ python -m paper2slides --input test_papers\AGI_Is_Coming_Wordle.pdf --output sli
 --input       PDF 文件路径
 --output      slides
 --style       academic 或自定义风格描述
---length      short、medium 或 long（大约对应 8-12、14-22、24-36 页内容页）
+--length      short、medium 或 long
 --slides      精确指定目标内容页数，会覆盖 --length
 --fast        使用直接解析/查询流程，不跑完整索引
 --from-stage  rag、summary、plan 或 generate
---list        查看历史输出
---debug       输出更详细日志
+--list        列出历史输出
+--debug       输出更多日志
 ```
+
+动态页数范围：
+
+```text
+short   大约 8-12 页内容页
+medium  大约 14-22 页内容页
+long    大约 24-36 页内容页
+```
+
+长论文建议使用 `--slides 24` 或类似显式页数，让覆盖更充分。
 
 ## 输出文件
 
-成功运行后，paper2ppt 会在 `outputs/` 下创建一个带时间戳的输出目录。
+典型时间戳输出目录：
 
-常见输出：
+```text
+outputs/<project_name>/paper/fast/slides_academic_medium_24slides/<timestamp>/
+```
+
+常见文件：
 
 ```text
 slides.pptx
@@ -138,54 +211,36 @@ checkpoint_slide_spec.json
 checkpoint_slide_spec_llm_raw.txt
 ```
 
-文件含义：
+含义：
 
 - `slides.pptx`：可编辑 PowerPoint。
 - `speaker_script.md`：逐页讲稿草稿。
-- `detailed_slides.tex`：从同一批检查点生成的详细版 Beamer/TeX 汇报。
-- `detailed_slides.pdf`：如果本机安装了 `pdflatex`，会自动编译得到这份 PDF。
+- `detailed_slides.tex`：详细版 Beamer/TeX 汇报。
+- `detailed_slides.pdf`：如果有 `pdflatex`，会自动编译得到 PDF。
 - `layout_qa.json`：轻量排版 QA 结果。
 - `checkpoint_slide_spec.json`：最终结构化 slide spec。
-- `checkpoint_slide_spec_llm_raw.txt`：大模型策展阶段的原始输出。
+- `checkpoint_slide_spec_llm_raw.txt`：如果调用了 curator LLM，会保存原始输出。
 
-## 从后续阶段继续运行
-
-如果 PDF 已经解析过，只想重新生成 PPTX 和讲稿，可以运行：
-
-```powershell
-python -m paper2slides --input path\to\paper.pdf --output slides --style academic --length medium --fast --from-stage generate
-```
-
-这会复用前面的解析、摘要和规划检查点，只重新运行 LangGraph PPTX 工作流。
-
-## 项目结构
-
-```text
-paper2slides/
-  core/                 流水线阶段、路径和检查点逻辑
-  generator/            内容规划、LangGraph 工作流、PPTX 渲染器、QA
-  prompts/              论文规划和抽取提示词
-  rag/                  继承自上游的 RAG 客户端和查询辅助
-  raganything/          继承自上游的文档解析层
-  summary/              论文/通用摘要和素材模型
-  utils/                日志和文件工具
-
-README.md
-README.zh-CN.md
-DEVELOPMENT_HISTORY.zh-CN.md
-requirements.txt
-test_phase1_pptx.py
-```
-
-重要实现文件：
+## 重要实现文件
 
 ```text
 paper2slides/generator/text_pptx_workflow.py
 paper2slides/generator/pptx_renderer.py
 paper2slides/generator/pptx_qa.py
 paper2slides/generator/slide_schema.py
-paper2slides/generator/content_planner.py
+paper2slides/generator/spec_builder.py
+paper2slides/generator/detailed_tex.py
+paper2slides/core/stages/generate_stage.py
+paper2slides/core/paths.py
 ```
+
+用户还在本地下载了另一个参考项目：
+
+```text
+Paper2PPT-main/
+```
+
+它可以作为灵感来源，尤其是详细 TeX 输出方面，但不应该替换当前 paper2ppt 的主生成路径。
 
 ## 测试
 
@@ -193,10 +248,50 @@ paper2slides/generator/content_planner.py
 python -m unittest test_phase1_pptx.py
 ```
 
-也可以查看 CLI 是否正常：
+不写 `__pycache__` 的快速语法检查：
 
 ```powershell
-python -m paper2slides --help
+$env:PYTHONDONTWRITEBYTECODE="1"
+python -c "import ast, pathlib; ast.parse(pathlib.Path('paper2slides/generator/pptx_renderer.py').read_text(encoding='utf-8')); print('AST OK')"
+```
+
+## 下一阶段方向：ReAct / Plan-and-Solve
+
+当前 PPT 视觉已经明显变好，但内容质量还需要更强的闭环。下一阶段计划从一次性生成 slide spec，升级为评估驱动的 agent 循环：
+
+```text
+Plan-and-Solve
+ -> 生成结构化 slide plan
+ -> 要求每条 point 包含 claim、detail、evidence
+ -> 渲染 PPTX
+ -> 用 ReAct 风格 QA 批判检查
+ -> 只修复失败页面
+ -> 重新渲染并再次检查
+```
+
+目标检查项：
+
+- 不出现空视觉组件。
+- 不出现没有意义的装饰元素。
+- 交付文本不出现被截断的省略句。
+- 编号要点尽量有短 claim 和完整 detail 说明句。
+- 指标卡必须有有意义的 label 和 value。
+- 标题页、目录页、章节页的视觉元素必须承载真实信息。
+- 所有模型调用都使用 `gpt-5-mini`。
+
+新开对话时建议这样说：
+
+```text
+请先阅读 README.md、README.zh-CN.md 和 DEVELOPMENT_HISTORY.zh-CN.md。
+
+然后从当前 paper2ppt 项目状态继续。现在优先实现 ReAct / Plan-and-Solve 闭环来改进 PPT 生成：
+1. 生成或修复 slide spec，让每个 numbered point 都有 claim、detail、evidence 字段。
+2. 增加 evaluator，检查空组件、无意义装饰、截断省略句、缺少 claim/detail、metric label/value 质量和 layout QA。
+3. 增加 repair loop，只修改失败页面并重新渲染。
+4. 所有模型调用保持使用 gpt-5-mini。
+5. 用 DeepSeek_V4.pdf 作为主要测试 PDF，尽量从 --from-stage generate 重跑。
+
+注意：上一轮用户已经非常满意当前 PPT 的视觉风格，不要暴力删掉封面 summary tiles、目录进度线或章节分隔页横线；要在保留这些版式美感的基础上做语义化和 QA 闭环。
 ```
 
 ## 常见问题
@@ -209,20 +304,19 @@ python -m paper2slides --help
 
 如果 PPT 太空或太密：
 
-- 尝试不同的 `--length`。
-- 对长论文可以用 `--slides 24` 这类显式页数，让覆盖更充分。
-- 使用 `--from-stage generate` 重新生成。
-- 在 `.env` 中切换更适合的文本模型。
+- 尝试不同 `--length`。
+- 使用 `--slides 24` 或其他显式页数。
+- 从 `--from-stage generate` 重跑。
 
-如果某页看起来拥挤：
+如果接口临时不稳定或只想低成本重跑：
+
+- 设置 `PPTX_FORCE_DETERMINISTIC=1`。
+
+如果某页看起来拥挤或被截断：
 
 - 查看 `layout_qa.json`。
-- 在 `.env` 中适当提高 `PPTX_QA_MAX_REPAIR_ATTEMPTS`。
-
-如果 LLM 接口临时不稳定：
-
-- 可以设置 `PPTX_FORCE_DETERMINISTIC=1`，复用已解析的检查点，并在不继续调用 LLM 的情况下生成 fallback PPTX/TeX。
+- 尽可能从保存后的 PPTX 渲染预览图检查。
 
 ## 项目来源
 
-paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。如果继续分发或扩展本项目，请保留上游项目的来源说明和许可证要求。
+paper2ppt 继承自 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides)。如果继续分发或扩展本项目，请保留上游来源说明和许可证要求。

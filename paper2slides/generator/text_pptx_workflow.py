@@ -756,7 +756,11 @@ def _parse_llm_spec(raw_response: str, plan: ContentPlan, source_plan_path: str)
 
 
 def _fallback_compact_spec(plan: ContentPlan, source_plan_path: str = "") -> PresentationSpec:
-    base = build_presentation_spec(plan, title="Paper2Slides Presentation", source_plan_path=source_plan_path)
+    base = build_presentation_spec(
+        plan,
+        title=_infer_deck_title_from_plan(plan) or "Paper2Slides Presentation",
+        source_plan_path=source_plan_path,
+    )
     for slide in base.slides:
         slide.layout = _infer_layout(slide)
         slide.takeaway = _limit_words(slide.text_blocks[0].text if slide.text_blocks else slide.title, 22)
@@ -764,6 +768,31 @@ def _fallback_compact_spec(plan: ContentPlan, source_plan_path: str = "") -> Pre
         slide.metric_blocks = _extract_metrics_from_slide(slide)[:4]
     base.metadata = {**(base.metadata or {}), "curation": "fallback_compact"}
     return base
+
+
+def _infer_deck_title_from_plan(plan: ContentPlan) -> str:
+    sections = list(getattr(plan, "sections", []) or [])
+    candidates = []
+    if getattr(plan, "metadata", None):
+        for key in ("title", "paper_title", "document_title"):
+            value = plan.metadata.get(key)
+            if value:
+                candidates.append(str(value))
+    for section in sections[:3]:
+        candidates.append(str(getattr(section, "title", "") or ""))
+        candidates.append(str(getattr(section, "content", "") or "")[:320])
+
+    text = " ".join(_clean_text(item) for item in candidates if item)
+    match = re.search(r"Title:\s*(.*?)(?:\s+Authors?:|$)", text, flags=re.IGNORECASE)
+    if match:
+        title = re.split(r"\s+Title:\s*", match.group(1), maxsplit=1, flags=re.IGNORECASE)[0].strip()
+        return _limit_words(title, 14)
+    for item in candidates:
+        cleaned = _clean_text(item)
+        cleaned = re.sub(r"^\s*Title:\s*", "", cleaned, flags=re.IGNORECASE)
+        if cleaned and len(cleaned.split()) >= 3 and not cleaned.lower().startswith(("overview", "abstract", "introduction")):
+            return _limit_words(cleaned, 14)
+    return ""
 
 
 def _section_to_packet(section) -> Dict[str, Any]:
@@ -816,7 +845,7 @@ def _compact_text_blocks(blocks: List[TextBlock]) -> List[TextBlock]:
     for block in blocks:
         parts = _split_into_points(block.text)
         for part in parts:
-            point = _limit_words(part, 18)
+            point = _complete_point(part, 34)
             if not point or point.lower() in seen:
                 continue
             compact.append(TextBlock(text=point, role="bullet", bullet_level=0))
@@ -824,6 +853,30 @@ def _compact_text_blocks(blocks: List[TextBlock]) -> List[TextBlock]:
             if len(compact) >= 4:
                 return compact
     return compact
+
+
+def _complete_point(text: str, max_words: int) -> str:
+    text = _strip_trailing_ellipsis(text)
+    if not text:
+        return ""
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    search = " ".join(words[: max_words + 10])
+    sentence_end = max(search.rfind("."), search.rfind(";"), search.rfind("!"), search.rfind("?"))
+    if sentence_end > 0:
+        sentence = search[: sentence_end + 1].strip()
+        if len(sentence.split()) >= 5:
+            return sentence
+
+    keep = words[:max_words]
+    weak_endings = {
+        "a", "an", "the", "of", "to", "in", "on", "for", "with", "by", "and", "or", "that", "which", "due",
+        "associated", "including", "such", "as", "from", "through", "into", "across", "between", "during",
+    }
+    while len(keep) > 8 and keep[-1].strip(" ,;:-").lower() in weak_endings:
+        keep.pop()
+    return " ".join(keep).rstrip(" ,;:-") + "."
 
 
 def _compact_metric_blocks(blocks: List[MetricBlock]) -> List[MetricBlock]:
@@ -921,8 +974,16 @@ def _limit_words(text: str, max_words: int) -> str:
     text = _clean_text(text)
     words = text.split()
     if len(words) <= max_words:
-        return text
-    return " ".join(words[:max_words]).rstrip(" ,;:") + "..."
+        return _strip_trailing_ellipsis(text)
+    sentence_end = max(text[:260].rfind("."), text[:260].rfind(";"), text[:260].rfind("!"), text[:260].rfind("?"))
+    if sentence_end > 0 and len(text[:sentence_end].split()) <= max_words + 8:
+        return _strip_trailing_ellipsis(text[: sentence_end + 1])
+    return _strip_trailing_ellipsis(" ".join(words[:max_words]).rstrip(" ,;:"))
+
+
+def _strip_trailing_ellipsis(text: str) -> str:
+    text = re.sub(r"\.{2,}\s*$", "", _clean_text(text)).strip()
+    return text
 
 
 def _clean_text(text: str) -> str:
