@@ -24,7 +24,7 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 使用 `python-pptx` 渲染原生可编辑 PowerPoint 对象，包括文本框、形状、表格和论文原图。
 - 所有模型调用统一配置为 `gpt-5-mini`。
 - 同步生成配套的 `speaker_script.md` 演讲稿。
-- 增加 slide spec evaluator 和 layout QA，检查空组件、截断文本、指标卡质量、缺失结构化字段和无意义装饰元素。
+- 增加 slide spec evaluator 和 layout QA，检查空组件、截断文本、指标卡质量、缺失结构化字段、布局与素材不匹配、无意义装饰元素。
 - numbered point 在渲染前会被规范化为 `claim`、`detail`、`evidence` 三个字段。
 - 增加更像正式汇报的结构：标题页、目录页、章节分隔页、key message、编号 claim/detail/evidence 要点、论文原图和紧凑指标卡。
 
@@ -49,6 +49,8 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 带章节意识的 PPT：标题页、目录页、章节分隔页、key message、结构化编号要点、紧凑指标卡、论文原图和表格。
 - slide spec evaluator 和 PPTX 排版 QA。
 - 有上限的修复循环，只修改失败页面的 slide spec，并重新渲染。
+- 对不支持的 LLM layout 名称、缺少图片的视觉布局、缺少表格的表格布局做自动规范化。
+- `PPTX_ENABLE_FIGURE_ANALYSIS=auto`，只在图片 caption 信息不足时自动分析论文原图。
 - 使用 `PPTX_FORCE_DETERMINISTIC=1` 从已有 checkpoint 低成本重跑 deterministic fallback。
 
 最近一轮视觉迭代重点是让生成结果更像正式 PPT：
@@ -60,7 +62,7 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 删除编号要点旁边无意义的小横杠。
 - 恢复有价值的装饰横线和信息块，但让它们承载真实信息。
 - 改进 bullet 渲染，使每条呈现“短 claim + 完整 detail 句子”，并保留 evidence 字段用于 QA 和讲稿。
-- 增加 evaluator 驱动的修复逻辑，覆盖缺失要点字段、低质量 metric label/value、空组件和严重版式缺陷。
+- 增加 evaluator 驱动的修复逻辑，覆盖缺失要点字段、低质量 metric label/value、空组件、不支持的 layout、视觉/表格布局素材不匹配和严重版式缺陷。
 
 ## 推荐测试 PDF
 
@@ -74,6 +76,14 @@ test_papers/DeepSeek_V4.pdf
 
 ```text
 outputs/DeepSeek_V4/paper/fast/slides_academic_medium_24slides/
+```
+
+此外也用以下论文做过跨论文验证：
+
+```text
+test_papers/Deep Residual Learning for Image Recognition.pdf
+test_papers/Thinking_with_Visual_Primitives.pdf
+test_papers/mHC：Manifold-Constrained Hyper-Connections.pdf
 ```
 
 具体时间戳目录会随每次运行变化。成功运行后一般包含：
@@ -111,6 +121,8 @@ PDF
     -> 生成 speaker script
     -> 可选生成详细版 Beamer/TeX 旁路
 ```
+
+关于 evaluator 驱动闭环的流程图和面试讲解，可查看 [Agentic PPTX Workflow](docs/agent_workflow.md)。
 
 生成的 PPTX 不是截图，也不是整页图片。它使用 PowerPoint 原生文本框、形状、表格和插入的论文原图，因此可以继续在 PowerPoint 里编辑。
 
@@ -183,12 +195,14 @@ PPTX_FORCE_DETERMINISTIC=1
 可选的论文原图理解：
 
 ```env
-PPTX_ENABLE_FIGURE_ANALYSIS=1
+PPTX_ENABLE_FIGURE_ANALYSIS=auto
 PPTX_VISION_MODEL=gpt-5-mini
 PPTX_MAX_FIGURE_ANALYSIS=5
 ```
 
-这一步只分析论文原图，不生成新图片。
+这一步只分析论文原图，不生成新图片。`auto` 模式只在图片 caption 看起来不足以支撑 slide curation 时自动开启。也可以用 `1` 强制开启，或用 `0` 强制关闭。
+
+fast paper 模式下会跳过冗余的 `paper_info` RAG 查询；论文标题、作者等元数据仍由 summary 阶段从解析后的 markdown 中抽取。
 
 ## 运行
 
@@ -264,7 +278,9 @@ paper2slides/generator/pptx_renderer.py
 paper2slides/generator/pptx_qa.py
 paper2slides/generator/slide_schema.py
 paper2slides/generator/spec_builder.py
+paper2slides/generator/content_planner.py
 paper2slides/generator/detailed_tex.py
+paper2slides/core/stages/rag_stage.py
 paper2slides/core/stages/generate_stage.py
 paper2slides/core/paths.py
 ```

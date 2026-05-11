@@ -333,58 +333,154 @@ class ContentPlanner:
         try:
             data = json.loads(json_str)
             items = data.get("slides") or data.get("sections") or []
-            
-            sections = []
-            total = len(items)
-            for idx, item in enumerate(items):
-                # Parse tables
-                tables = []
-                for t in item.get("tables", []):
-                    tables.append(TableRef(
-                        table_id=t.get("table_id", ""),
-                        extract=t.get("extract", ""),
-                        focus=t.get("focus", ""),
-                    ))
-                
-                # Parse figures
-                figures = []
-                for f in item.get("figures", []):
-                    figures.append(FigureRef(
-                        figure_id=f.get("figure_id", ""),
-                        focus=f.get("focus", ""),
-                    ))
-                
-                # Auto-determine section_type based on position (slides only)
-                if is_slides:
-                    if idx == 0:
-                        section_type = "opening"
-                    elif idx == total - 1:
-                        section_type = "ending"
-                    else:
-                        section_type = "content"
-                else:
-                    section_type = "content"
-                
-                sections.append(Section(
-                    id=item.get("id", f"section_{idx+1}"),
-                    title=item.get("title", ""),
-                    section_type=section_type,
-                    content=item.get("content", ""),
-                    tables=tables,
-                    figures=figures,
-                    section_label=item.get("section", "") or item.get("chapter", ""),
-                ))
-            return sections
+            return self._items_to_sections(items, is_slides)
             
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing failed: {e}")
             logger.error(f"Failed to parse JSON string (first 500 chars): {json_str[:500]}")
+            items = self._extract_lenient_slide_items(json_str)
+            if items:
+                logger.warning(f"Recovered {len(items)} slide item(s) with lenient JSON parsing")
+                return self._items_to_sections(items, is_slides)
             logger.warning("Using fallback sections due to JSON parse error")
             return self._fallback_sections()
         except Exception as e:
             logger.error(f"Unexpected error in _parse_sections: {e}")
             logger.warning("Using fallback sections due to unexpected error")
             return self._fallback_sections()
+
+    def _items_to_sections(self, items: List[Dict[str, Any]], is_slides: bool) -> List[Section]:
+        sections = []
+        total = len(items)
+        for idx, item in enumerate(items):
+            if not isinstance(item, dict):
+                continue
+            tables = []
+            for t in item.get("tables", []):
+                if not isinstance(t, dict):
+                    continue
+                tables.append(TableRef(
+                    table_id=t.get("table_id", ""),
+                    extract=t.get("extract", ""),
+                    focus=t.get("focus", ""),
+                ))
+
+            figures = []
+            for f in item.get("figures", []):
+                if not isinstance(f, dict):
+                    continue
+                figures.append(FigureRef(
+                    figure_id=f.get("figure_id", ""),
+                    focus=f.get("focus", ""),
+                ))
+
+            if is_slides:
+                if idx == 0:
+                    section_type = "opening"
+                elif idx == total - 1:
+                    section_type = "ending"
+                else:
+                    section_type = "content"
+            else:
+                section_type = "content"
+
+            sections.append(Section(
+                id=item.get("id", f"section_{idx+1}"),
+                title=item.get("title", ""),
+                section_type=section_type,
+                content=item.get("content", ""),
+                tables=tables,
+                figures=figures,
+                section_label=item.get("section", "") or item.get("chapter", ""),
+            ))
+        return sections
+
+    def _extract_lenient_slide_items(self, json_str: str) -> List[Dict[str, Any]]:
+        """Best-effort recovery when the LLM emits one malformed item."""
+        array_match = re.search(r'"(?:slides|sections)"\s*:\s*\[', json_str)
+        if not array_match:
+            return []
+        start = array_match.end()
+        items: List[Dict[str, Any]] = []
+        depth = 0
+        in_string = False
+        escape = False
+        obj_start = -1
+
+        for index in range(start, len(json_str)):
+            char = json_str[index]
+            if in_string:
+                if escape:
+                    escape = False
+                elif char == "\\":
+                    escape = True
+                elif char == '"':
+                    in_string = False
+                continue
+
+            if char == '"':
+                in_string = True
+                continue
+            if char == "{":
+                if depth == 0:
+                    obj_start = index
+                depth += 1
+                continue
+            if char == "}":
+                depth -= 1
+                if depth == 0 and obj_start >= 0:
+                    raw_obj = json_str[obj_start:index + 1]
+                    try:
+                        item = json.loads(self._fix_invalid_escapes(raw_obj))
+                    except json.JSONDecodeError:
+                        item = self._salvage_slide_object(raw_obj, len(items) + 1)
+                    if item:
+                        items.append(item)
+                    obj_start = -1
+                continue
+            if char == "]" and depth == 0:
+                break
+        return items
+
+    def _fix_invalid_escapes(self, s: str) -> str:
+        result = []
+        i = 0
+        while i < len(s):
+            if s[i] == "\\" and i + 1 < len(s):
+                next_char = s[i + 1]
+                if next_char in ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']:
+                    result.append(s[i:i+2])
+                    i += 2
+                else:
+                    result.append('\\\\')
+                    result.append(next_char)
+                    i += 2
+            else:
+                result.append(s[i])
+                i += 1
+        return ''.join(result)
+
+    def _salvage_slide_object(self, raw_obj: str, index: int) -> Dict[str, Any]:
+        def field(name: str) -> str:
+            match = re.search(rf'"{name}"\s*:\s*"(.*?)"', raw_obj, flags=re.DOTALL)
+            if not match:
+                return ""
+            value = match.group(1)
+            value = value.replace('\\"', '"').replace("\\n", "\n")
+            return re.sub(r"\s+", " ", value).strip()
+
+        title = field("title")
+        content = field("content")
+        if not title and not content:
+            return {}
+        return {
+            "id": field("id") or f"section_{index:02d}",
+            "section": field("section"),
+            "title": title or f"Slide {index}",
+            "content": content,
+            "tables": [],
+            "figures": [],
+        }
     
     def _fallback_sections(self) -> List[Section]:
         """Return minimal fallback sections if parsing fails."""

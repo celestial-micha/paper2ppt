@@ -6,9 +6,9 @@ from paper2slides.generator.detailed_tex import generate_detailed_tex_deck
 from paper2slides.generator.config import GenerationConfig, GenerationInput, OutputType, SlidesLength, StyleType
 from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
-from paper2slides.generator.pptx_qa import evaluate_presentation_spec
+from paper2slides.generator.pptx_qa import evaluate_presentation_spec, inspect_pptx_layout
 from paper2slides.generator.pptx_renderer import PptxRenderer
-from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _qa_repair_node
+from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _normalize_slide_layout, _qa_repair_node
 from paper2slides.generator.spec_builder import build_presentation_spec
 from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
@@ -56,6 +56,36 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         renderer = PptxRenderer()
         renderer.render(spec, output_path)
         self.assertTrue(output_path.exists())
+
+    def test_toc_with_seven_sections_stays_inside_slide_bounds(self):
+        slides = []
+        for index in range(7):
+            slides.append(
+                SlideSpec(
+                    slide_id=f"slide_{index + 1:02d}",
+                    title=f"Section {index + 1} Slide",
+                    section_label=f"Section {index + 1}",
+                    layout="statement",
+                    takeaway="This slide checks table of contents spacing.",
+                    text_blocks=[
+                        TextBlock(
+                            text="Claim: The generated deck keeps section labels readable.",
+                            claim="The generated deck keeps section labels readable.",
+                            detail="Seven section entries should fit inside the table of contents slide.",
+                            evidence="Renderer layout QA",
+                        )
+                    ],
+                )
+            )
+        spec = PresentationSpec(title="TOC Fit", slides=slides)
+
+        temp_root = Path(__file__).parent / "outputs" / "tmp"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        output_path = temp_root / f"toc_{uuid.uuid4().hex}.pptx"
+        PptxRenderer().render(spec, output_path)
+
+        qa = inspect_pptx_layout(output_path)
+        self.assertTrue(qa.passed, qa.warnings)
 
     def test_slide_planning_uses_text_only_figure_manifest(self):
         planner = ContentPlanner(api_key="test-key", base_url="http://localhost", model="test-model")
@@ -194,6 +224,46 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn(1, report["failed_slides"])
         self.assertTrue(any("missing claim" in warning for warning in report["warnings"]))
         self.assertTrue(any("meaningless label" in warning for warning in report["warnings"]))
+
+    def test_visual_layout_without_image_is_rejected_and_normalized(self):
+        slide = SlideSpec(
+            slide_id="slide_01",
+            title="No Visual",
+            layout="visual_left",
+            takeaway="This slide has only text.",
+            text_blocks=[
+                TextBlock(
+                    text="Claim: A complete detail sentence.",
+                    claim="Claim",
+                    detail="A complete detail sentence.",
+                    evidence="source section",
+                )
+            ],
+        )
+        report = evaluate_presentation_spec(PresentationSpec(title="Eval", slides=[slide]))
+        self.assertFalse(report["passed"])
+        self.assertIn(1, report["failed_slides"])
+        self.assertEqual(_normalize_slide_layout(slide), "statement")
+
+    def test_unknown_content_layout_without_visual_normalizes_to_statement(self):
+        slide = SlideSpec(
+            slide_id="slide_01",
+            title="Content Layout",
+            layout="content",
+            takeaway="This slide should use the full text canvas.",
+            text_blocks=[
+                TextBlock(
+                    text="Claim: A complete detail sentence.",
+                    claim="Claim",
+                    detail="A complete detail sentence.",
+                    evidence="source section",
+                )
+            ],
+        )
+        report = evaluate_presentation_spec(PresentationSpec(title="Eval", slides=[slide]))
+        self.assertFalse(report["passed"])
+        self.assertIn(1, report["failed_slides"])
+        self.assertEqual(_normalize_slide_layout(slide), "statement")
 
     def test_generates_detailed_tex_sidecar(self):
         plan = ContentPlan(

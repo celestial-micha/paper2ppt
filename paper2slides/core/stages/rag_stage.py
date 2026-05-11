@@ -328,11 +328,16 @@ async def run_rag_stage(base_dir: Path, config: Dict) -> Dict:
         
         # Execute queries (direct GPT-4o with images in original positions)
         if content_type == "paper":
+            fast_queries = {
+                category: queries
+                for category, queries in RAG_PAPER_QUERIES.items()
+                if category != "paper_info"
+            }
             rag_results = await _run_fast_queries_by_category(
                 client=client,
                 markdown_content="",  # Not used anymore, content is processed inside
                 markdown_paths=markdown_paths,
-                queries_by_category=RAG_PAPER_QUERIES,
+                queries_by_category=fast_queries,
                 model=model,
             )
         else:

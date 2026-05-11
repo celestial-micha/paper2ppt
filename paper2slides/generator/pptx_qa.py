@@ -138,6 +138,15 @@ def _evaluate_slide_spec(slide_index: int, slide) -> List[str]:
     if not has_content:
         warnings.append(f"slide {slide_index}: slide spec appears empty")
 
+    layout = (slide.layout or "").lower()
+    allowed_layouts = {"", "auto", "cover", "statement", "metric_focus", "visual_left", "visual_right", "table_focus", "quote", "closing", "section"}
+    if layout not in allowed_layouts:
+        warnings.append(f"slide {slide_index}: unsupported layout '{layout}'")
+    if layout in {"visual_left", "visual_right"} and not slide.image_blocks:
+        warnings.append(f"slide {slide_index}: visual layout has no image")
+    if layout == "table_focus" and not slide.table_blocks:
+        warnings.append(f"slide {slide_index}: table layout has no table")
+
     for point_index, point in enumerate(slide.text_blocks, start=1):
         claim = (getattr(point, "claim", "") or "").strip()
         detail = (getattr(point, "detail", "") or "").strip()
@@ -197,6 +206,9 @@ def _is_severe_warning(warning: str) -> bool:
             "empty",
             "meaningless",
             "truncated",
+            "visual layout has no image",
+            "table layout has no table",
+            "unsupported layout",
             "outside",
             "exceeds",
             "appears empty",

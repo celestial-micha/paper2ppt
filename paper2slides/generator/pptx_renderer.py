@@ -114,10 +114,19 @@ class PptxRenderer:
 
     def _normalized_layout(self, slide_spec: SlideSpec) -> str:
         layout = (slide_spec.layout or "auto").lower()
+        allowed = {"cover", "statement", "metric_focus", "visual_right", "visual_left", "table_focus", "quote", "closing"}
         if slide_spec.section_type == "opening":
             return "cover"
         if slide_spec.section_type == "ending":
             return "closing"
+        if layout not in allowed and layout not in {"section", "auto", ""}:
+            if slide_spec.table_blocks:
+                return "table_focus"
+            if slide_spec.image_blocks:
+                return "visual_right"
+            if slide_spec.metric_blocks:
+                return "metric_focus"
+            return "statement"
         if layout == "auto":
             if slide_spec.table_blocks:
                 return "table_focus"
@@ -126,6 +135,20 @@ class PptxRenderer:
             if slide_spec.metric_blocks:
                 return "metric_focus"
             return "statement"
+        if layout in {"visual_left", "visual_right"} and not slide_spec.image_blocks:
+            if slide_spec.table_blocks:
+                return "table_focus"
+            if slide_spec.metric_blocks:
+                return "metric_focus"
+            return "statement"
+        if layout == "table_focus" and not slide_spec.table_blocks:
+            if slide_spec.image_blocks:
+                return "visual_right"
+            if slide_spec.metric_blocks:
+                return "metric_focus"
+            return "statement"
+        if layout == "quote" and not slide_spec.image_blocks and not slide_spec.table_blocks:
+            return "metric_focus" if slide_spec.metric_blocks else "statement"
         return layout
 
     def _paint_background(self, slide, prs, title: bool = False) -> None:
@@ -304,9 +327,10 @@ class PptxRenderer:
         )
 
         palette = [t.primary, t.secondary, t.accent, t.ink, t.primary, t.secondary, t.accent]
-        start_top = self.Inches(2.16)
-        row_h = self.Inches(0.68)
-        gap = self.Inches(0.18)
+        section_count = min(7, len(sections))
+        start_top = self.Inches(2.05)
+        row_h = self.Inches(0.56 if section_count >= 7 else 0.68)
+        gap = self.Inches(0.11 if section_count >= 7 else 0.18)
         for index, section in enumerate(sections[:7], start=1):
             y = int(start_top + (index - 1) * (row_h + gap))
             accent = palette[(index - 1) % len(palette)]
@@ -315,7 +339,7 @@ class PptxRenderer:
                 slide,
                 f"{index:02d}",
                 self.Inches(0.97),
-                y + self.Inches(0.18),
+                y + self.Inches(0.14),
                 self.Inches(0.42),
                 self.Inches(0.22),
                 10.5,
@@ -325,11 +349,11 @@ class PptxRenderer:
                 1,
                 alignment=self.PP_ALIGN.CENTER,
             )
-            self._add_text(slide, section, self.Inches(1.72), y + self.Inches(0.11), self.Inches(5.4), self.Inches(0.34), 15.5, True, t.ink, t.title_font, 1)
+            self._add_text(slide, section, self.Inches(1.72), y + self.Inches(0.08), self.Inches(5.4), self.Inches(0.32), 14.5 if section_count >= 7 else 15.5, True, t.ink, t.title_font, 1)
             line_left = self.Inches(7.12)
             line_width = self.Inches(3.95)
-            self._rounded_rect(slide, line_left, y + self.Inches(0.32), line_width, self.Inches(0.025), t.rule, t.rule)
-            self._rounded_rect(slide, line_left, y + self.Inches(0.32), int(line_width * index / max(1, len(sections[:7]))), self.Inches(0.025), accent, accent)
+            self._rounded_rect(slide, line_left, y + self.Inches(0.28), line_width, self.Inches(0.025), t.rule, t.rule)
+            self._rounded_rect(slide, line_left, y + self.Inches(0.28), int(line_width * index / max(1, section_count)), self.Inches(0.025), accent, accent)
 
         self._footer(slide, slide_index)
 

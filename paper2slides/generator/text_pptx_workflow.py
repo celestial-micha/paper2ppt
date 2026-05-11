@@ -204,11 +204,17 @@ def _analyze_figures_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
     if os.getenv("PPTX_FORCE_DETERMINISTIC", "").strip().lower() in {"1", "true", "yes"}:
         return {**state, "figure_analyses": {}}
 
-    enabled = os.getenv("PPTX_ENABLE_FIGURE_ANALYSIS", "1").strip().lower() not in {"0", "false", "no"}
+    figures = state["source_packet"].get("figures", [])[: int(os.getenv("PPTX_MAX_FIGURE_ANALYSIS", "5"))]
+    mode = os.getenv("PPTX_ENABLE_FIGURE_ANALYSIS", "auto").strip().lower()
+    if mode in {"0", "false", "no", "off"}:
+        return {**state, "figure_analyses": {}}
+    if mode in {"1", "true", "yes", "on"}:
+        enabled = True
+    else:
+        enabled = _should_auto_analyze_figures(figures)
     if not enabled:
         return {**state, "figure_analyses": {}}
 
-    figures = state["source_packet"].get("figures", [])[: int(os.getenv("PPTX_MAX_FIGURE_ANALYSIS", "5"))]
     if not figures:
         return {**state, "figure_analyses": {}}
 
@@ -225,6 +231,24 @@ def _analyze_figures_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
 
     packet = {**state["source_packet"], "figures": enriched_figures}
     return {**state, "source_packet": packet, "figure_analyses": analyses}
+
+
+def _should_auto_analyze_figures(figures: List[Dict[str, Any]]) -> bool:
+    """Use figure analysis only when captions are too weak for reliable curation."""
+    if not figures:
+        return False
+    weak_count = 0
+    generic_terms = {"figure", "image", "example", "overview", "result", "diagram"}
+    for fig in figures:
+        caption = _clean_text(fig.get("caption", ""))
+        words = caption.split()
+        if len(caption) < 80 or len(words) < 10:
+            weak_count += 1
+            continue
+        meaningful_words = [word.strip(".,:;()[]").lower() for word in words[:8]]
+        if meaningful_words and all(word in generic_terms for word in meaningful_words[:3]):
+            weak_count += 1
+    return weak_count >= max(1, len(figures) // 2)
 
 
 def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
@@ -316,6 +340,7 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         slide.table_blocks = slide.table_blocks[:1]
         if slide.layout in {"section", "auto"} and not slide.image_blocks and not slide.table_blocks:
             slide.layout = "metric_focus" if slide.metric_blocks else "statement"
+        slide.layout = _normalize_slide_layout(slide)
 
     spec.metadata = {
         **(spec.metadata or {}),
@@ -414,6 +439,7 @@ def _qa_repair_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
             slide.layout = "visual_right"
         if slide.layout == "table_focus" and not slide.table_blocks and slide.image_blocks:
             slide.layout = "visual_right"
+        slide.layout = _normalize_slide_layout(slide)
 
         repair_log.append(
             f"attempt {attempt}: slide {slide_index} compressed "
@@ -1251,6 +1277,34 @@ def _infer_layout(slide: SlideSpec) -> str:
     if slide.metric_blocks:
         return "metric_focus"
     return "statement"
+
+
+def _normalize_slide_layout(slide: SlideSpec) -> str:
+    layout = (slide.layout or "auto").lower()
+    allowed = {"cover", "statement", "metric_focus", "visual_right", "visual_left", "table_focus", "quote", "closing"}
+    if slide.section_type == "opening":
+        return "cover"
+    if slide.section_type == "ending":
+        return "closing"
+    if layout not in allowed and layout not in {"section", "auto", ""}:
+        return _infer_layout(slide)
+    if layout in {"visual_left", "visual_right"} and not slide.image_blocks:
+        if slide.table_blocks:
+            return "table_focus"
+        if slide.metric_blocks:
+            return "metric_focus"
+        return "statement"
+    if layout == "table_focus" and not slide.table_blocks:
+        if slide.image_blocks:
+            return "visual_right"
+        if slide.metric_blocks:
+            return "metric_focus"
+        return "statement"
+    if layout in {"section", "auto", ""}:
+        return _infer_layout(slide)
+    if layout == "quote" and not slide.image_blocks and not slide.table_blocks:
+        return "metric_focus" if slide.metric_blocks else "statement"
+    return layout
 
 
 def _infer_slide_section(slide: SlideSpec) -> str:

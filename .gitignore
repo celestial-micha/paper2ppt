@@ -78,6 +78,9 @@ rag_output/
 # Local reference clones; not part of the main paper2ppt runtime
 Paper2PPT-main/
 
+# Local learning and development notes
+DEVELOPMENT_HISTORY.zh-CN.md
+
 # Temporary and test files
 debug.*
 tmp/

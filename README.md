@@ -24,7 +24,7 @@ The main change is the generation path. The original image-style slide path has 
 - `python-pptx` renders native editable PowerPoint objects: text boxes, shapes, tables, and inserted source figures.
 - All model calls are configured to use `gpt-5-mini`.
 - The workflow generates a matching `speaker_script.md`.
-- Spec and layout QA check for empty components, clipped text, weak metric cards, truncated ellipses, missing numbered-point fields, and decorative elements that do not carry information.
+- Spec and layout QA check for empty components, clipped text, weak metric cards, truncated ellipses, missing numbered-point fields, layout/payload mismatches, and decorative elements that do not carry information.
 - Numbered points are represented with structured `claim`, `detail`, and `evidence` fields before rendering.
 - The deck now has presentation structure: title page, contents page, section dividers, key-message blocks, numbered claim/detail/evidence points, source figures, and compact metric cards.
 
@@ -49,6 +49,8 @@ The project now supports:
 - Section-aware decks with title page, contents page, section dividers, key-message blocks, structured numbered points, compact metric cards, source figures, and tables.
 - Spec-aware evaluator plus PPTX layout QA.
 - Bounded repair loop that reworks only failed slide specs before rerendering.
+- Layout normalization for unsupported LLM layout names and visual/table layouts without matching payload.
+- Automatic figure-analysis gating with `PPTX_ENABLE_FIGURE_ANALYSIS=auto`.
 - Deterministic fallback generation with `PPTX_FORCE_DETERMINISTIC=1` for cheap reruns from existing checkpoints.
 
 The most recent visual iteration focused on making the generated deck look like a real presentation:
@@ -60,7 +62,7 @@ The most recent visual iteration focused on making the generated deck look like 
 - Removed meaningless tiny connector marks beside numbered bullets.
 - Restored useful decorative bars and tiles when they carry information.
 - Improved bullet rendering so points show a short claim plus a complete detail sentence instead of clipped ellipses.
-- Added evaluator-driven repair for missing point fields, low-quality metric labels/values, empty components, and severe layout defects.
+- Added evaluator-driven repair for missing point fields, low-quality metric labels/values, empty components, unsupported layouts, visual/table payload mismatches, and severe layout defects.
 
 ## Recommended Test PDF
 
@@ -74,6 +76,14 @@ The latest checked output during development was generated under:
 
 ```text
 outputs/DeepSeek_V4/paper/fast/slides_academic_medium_24slides/
+```
+
+Additional cross-paper checks have also been run with:
+
+```text
+test_papers/Deep Residual Learning for Image Recognition.pdf
+test_papers/Thinking_with_Visual_Primitives.pdf
+test_papers/mHC：Manifold-Constrained Hyper-Connections.pdf
 ```
 
 The exact timestamped folder changes per run. A successful run should include:
@@ -111,6 +121,8 @@ PDF
     -> speaker script generation
     -> optional detailed Beamer/TeX sidecar generation
 ```
+
+For a diagram and interview-friendly explanation of the evaluator-driven loop, see [Agentic PPTX Workflow](docs/agent_workflow.md).
 
 The generated PPTX is not a screenshot deck. It uses native PowerPoint text boxes, shapes, tables, and inserted source images, so it remains editable in PowerPoint.
 
@@ -183,12 +195,14 @@ PPTX_FORCE_DETERMINISTIC=1
 Optional figure understanding:
 
 ```env
-PPTX_ENABLE_FIGURE_ANALYSIS=1
+PPTX_ENABLE_FIGURE_ANALYSIS=auto
 PPTX_VISION_MODEL=gpt-5-mini
 PPTX_MAX_FIGURE_ANALYSIS=5
 ```
 
-This analyzes source paper figures. It does not generate new images.
+This optional step analyzes source paper figures. It does not generate new images. In `auto` mode, it only runs when figure captions look too weak for reliable slide curation. Use `1` to force it on or `0` to force it off.
+
+In fast paper mode, redundant `paper_info` RAG querying is skipped because paper metadata is extracted directly from parsed markdown during summary generation.
 
 ## Run
 
@@ -264,7 +278,9 @@ paper2slides/generator/pptx_renderer.py
 paper2slides/generator/pptx_qa.py
 paper2slides/generator/slide_schema.py
 paper2slides/generator/spec_builder.py
+paper2slides/generator/content_planner.py
 paper2slides/generator/detailed_tex.py
+paper2slides/core/stages/rag_stage.py
 paper2slides/core/stages/generate_stage.py
 paper2slides/core/paths.py
 ```
