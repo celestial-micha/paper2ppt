@@ -117,6 +117,23 @@ def _replace_images_with_base64(markdown_content: str, markdown_base_path: str) 
     return content_parts, image_count
 
 
+def _build_vision_client():
+    """Build a separate OpenAI-compatible client for image payload calls."""
+    from openai import OpenAI
+
+    api_key = os.getenv("RAG_VISION_API_KEY") or os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("RAG_VISION_BASE_URL") or os.getenv("OPENAI_BASE_URL") or None
+    if not api_key:
+        raise ValueError(
+            "RAG_FAST_INCLUDE_IMAGES=1 requires RAG_VISION_API_KEY or OPENAI_API_KEY "
+            "for the configured vision model."
+        )
+    kwargs = {"api_key": api_key}
+    if base_url:
+        kwargs["base_url"] = base_url
+    return OpenAI(**kwargs)
+
+
 async def _run_fast_queries_by_category(
     client,
     markdown_content: str,
@@ -124,9 +141,12 @@ async def _run_fast_queries_by_category(
     queries_by_category: Dict[str, List[str]],
     model: str = "gpt-5-mini",
     max_concurrency: int = 10,
+    include_images: bool = False,
+    vision_model: str = "",
+    vision_client=None,
 ) -> Dict[str, List[Dict]]:
     """
-    Fast mode: Direct GPT-4o queries with markdown content and images in original positions
+    Fast mode: Direct chat-completions queries with markdown content.
     
     Args:
         client: OpenAI client
@@ -135,9 +155,19 @@ async def _run_fast_queries_by_category(
         queries_by_category: Queries organized by category
         model: Model to use
         max_concurrency: Max concurrent queries
+        include_images: Whether to embed local images as image_url payloads.
+        vision_model: Model to use when include_images is enabled.
+        vision_client: OpenAI-compatible client for image payload calls.
     """
-    # Process all markdown files and embed images at original positions
-    logger.info("Processing markdown files and embedding images...")
+    active_model = vision_model if include_images and vision_model else model
+    active_client = vision_client if include_images and vision_client else client
+
+    # Process all markdown files. Text and image payloads use separate model
+    # settings so DeepSeek text calls are not mixed with vision-capable calls.
+    if include_images:
+        logger.info("Processing markdown files and embedding images...")
+    else:
+        logger.info("Processing markdown files in text-only mode; image payloads disabled.")
     
     all_content_parts = []
     total_images = 0
@@ -155,14 +185,22 @@ async def _run_fast_queries_by_category(
         with open(md_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Replace images with base64 at original positions
-        content_parts, img_count = _replace_images_with_base64(content, base_path)
+        if include_images:
+            # Replace images with base64 at original positions.
+            content_parts, img_count = _replace_images_with_base64(content, base_path)
+        else:
+            content_parts = [{"type": "text", "text": content}]
+            img_count = 0
         all_content_parts.extend(content_parts)
         total_images += img_count
         
-        logger.info(f"  {Path(md_path).name}: embedded {img_count} images")
+        if include_images:
+            logger.info(f"  {Path(md_path).name}: embedded {img_count} images")
+        else:
+            logger.info(f"  {Path(md_path).name}: text-only content")
     
     logger.info(f"Total embedded images: {total_images}")
+    result_mode = "fast_direct_with_vision" if include_images else "fast_direct_text"
     
     semaphore = asyncio.Semaphore(max_concurrency)
     
@@ -206,8 +244,8 @@ Please provide a detailed answer based on the content and images above."""
                 
                 # Call OpenAI API
                 response = await asyncio.to_thread(
-                    lambda: client.chat.completions.create(
-                        model=model,
+                    lambda: active_client.chat.completions.create(
+                        model=active_model,
                         messages=messages,
                         temperature=0.3,
                     )
@@ -218,7 +256,8 @@ Please provide a detailed answer based on the content and images above."""
                 return (category, idx, {
                     "query": query,
                     "answer": answer,
-                    "mode": "fast_direct_with_vision",
+                    "mode": result_mode,
+                    "model": active_model,
                     "success": True,
                 })
             except Exception as e:
@@ -226,7 +265,8 @@ Please provide a detailed answer based on the content and images above."""
                 return (category, idx, {
                     "query": query,
                     "answer": None,
-                    "mode": "fast_direct_with_vision",
+                    "mode": result_mode,
+                    "model": active_model,
                     "success": False,
                     "error": str(e),
                 })
@@ -318,13 +358,20 @@ async def run_rag_stage(base_dir: Path, config: Dict) -> Dict:
         # Use OpenAI to query markdown content directly
         logger.info("")
         model = os.getenv("LLM_MODEL", "gpt-5-mini")
-        logger.info(f"Running queries with {model} and images ({content_type})...")
+        include_images = os.getenv("RAG_FAST_INCLUDE_IMAGES", "1").strip().lower() in {"1", "true", "yes", "on"}
+        vision_model = os.getenv("RAG_VISION_MODEL", os.getenv("PPTX_VISION_MODEL", "gpt-5-mini"))
+        input_mode = "text+images" if include_images else "text-only"
+        active_model = vision_model if include_images else model
+        logger.info(f"Running queries with {active_model} in {input_mode} mode ({content_type})...")
+        if include_images and active_model != model:
+            logger.info(f"  Text model remains {model}; fast image-aware queries use {active_model}.")
         
         from openai import OpenAI
         
         api_key = os.getenv("RAG_LLM_API_KEY", "")
         base_url = os.getenv("RAG_LLM_BASE_URL")
         client = OpenAI(api_key=api_key, base_url=base_url)
+        vision_client = _build_vision_client() if include_images else None
         
         # Execute queries (direct GPT-4o with images in original positions)
         if content_type == "paper":
@@ -339,6 +386,9 @@ async def run_rag_stage(base_dir: Path, config: Dict) -> Dict:
                 markdown_paths=markdown_paths,
                 queries_by_category=fast_queries,
                 model=model,
+                include_images=include_images,
+                vision_model=vision_model,
+                vision_client=vision_client,
             )
         else:
             raise ValueError("Fast mode currently only supports content_type='paper'")

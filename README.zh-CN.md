@@ -22,7 +22,7 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 
 - 由模型规划结构化 slide spec，而不是生成整页幻灯片图片。
 - 使用 `python-pptx` 渲染原生可编辑 PowerPoint 对象，包括文本框、形状、表格和论文原图。
-- 所有模型调用统一配置为 `gpt-5-mini`。
+- 模型调用统一走兼容 OpenAI chat-completions 的配置；当前模板默认使用 DeepSeek。
 - 同步生成配套的 `speaker_script.md` 演讲稿。
 - 增加 slide spec evaluator 和 layout QA，检查空组件、截断文本、指标卡质量、缺失结构化字段、布局与素材不匹配、无意义装饰元素。
 - numbered point 在渲染前会被规范化为 `claim`、`detail`、`evidence` 三个字段。
@@ -44,13 +44,13 @@ paper2ppt 可以把学术 PDF 论文转换成可编辑的 PowerPoint 和配套�
 - 配套讲稿：`speaker_script.md`。
 - 可选的轻量 Beamer/TeX 旁路，由本仓库自己的代码生成。它是参考/备份路径，不是主交付物。
 - 基于 LangChain/LangGraph 的文本大模型工作流。
-- 默认文本模型配置使用 `gpt-5-mini`。
+- 通过 `.env` 配置 DeepSeek / OpenAI-compatible 文本模型。
 - 使用 `--slides` 精确指定目标页数。
 - 带章节意识的 PPT：标题页、目录页、章节分隔页、key message、结构化编号要点、紧凑指标卡、论文原图和表格。
 - slide spec evaluator 和 PPTX 排版 QA。
 - 有上限的修复循环，只修改失败页面的 slide spec，并重新渲染。
 - 对不支持的 LLM layout 名称、缺少图片的视觉布局、缺少表格的表格布局做自动规范化。
-- `PPTX_ENABLE_FIGURE_ANALYSIS=auto`，只在图片 caption 信息不足时自动分析论文原图。
+- 双模型路由：文本生成使用 `deepseek-v4-flash`；图片/多模态调用使用 `gpt-5-mini`。
 - 使用 `PPTX_FORCE_DETERMINISTIC=1` 从已有 checkpoint 低成本重跑 deterministic fallback。
 
 最近一轮视觉迭代重点是让生成结果更像正式 PPT：
@@ -175,15 +175,18 @@ copy paper2slides\.env.example paper2slides\.env
 
 ```env
 RAG_LLM_API_KEY=your_api_key_here
-RAG_LLM_BASE_URL=https://api.example.com/v1
-LLM_MODEL=gpt-5-mini
+RAG_LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-v4-flash
+RAG_LLM_MAX_TOKENS=8192
+RAG_FAST_INCLUDE_IMAGES=1
+RAG_VISION_MODEL=gpt-5-mini
+RAG_VISION_API_KEY=your_openai_or_vision_api_key_here
 ```
 
-重要成本规则：
+可选的 PPTX 专用模型覆盖：
 
 ```env
-LLM_MODEL=gpt-5-mini
-PPTX_VISION_MODEL=gpt-5-mini
+PPTX_LLM_MODEL=deepseek-v4-flash
 ```
 
 如果不需要调用模型，只想从已有 checkpoint 重渲染：
@@ -197,10 +200,11 @@ PPTX_FORCE_DETERMINISTIC=1
 ```env
 PPTX_ENABLE_FIGURE_ANALYSIS=auto
 PPTX_VISION_MODEL=gpt-5-mini
+PPTX_VISION_API_KEY=your_openai_or_vision_api_key_here
 PPTX_MAX_FIGURE_ANALYSIS=5
 ```
 
-这一步只分析论文原图，不生成新图片。`auto` 模式只在图片 caption 看起来不足以支撑 slide curation 时自动开启。也可以用 `1` 强制开启，或用 `0` 强制关闭。
+这一步只分析论文原图，不生成新图片。`auto` 模式只在图片 caption 看起来不足以支撑 slide curation 时自动开启。也可以用 `1` 强制开启，或用 `0` 强制关闭。需要注意模型路由不要混淆：DeepSeek 负责文本调用，启用图片输入时由 `gpt-5-mini` 处理。
 
 fast paper 模式下会跳过冗余的 `paper_info` RAG 查询；论文标题、作者等元数据仍由 summary 阶段从解析后的 markdown 中抽取。
 
@@ -290,6 +294,46 @@ paper2slides/core/paths.py
 ```powershell
 python -m unittest test_phase1_pptx.py
 ```
+
+## Benchmark 种子
+
+仓库里已经加入第一版 benchmark 种子，用来把之前 human-in-the-loop 的 QA 经验整理成自动化报告：
+
+```powershell
+python -m paper2slides.benchmark --outputs outputs --report-dir benchmark_runs\local_history
+```
+
+它会扫描已有的 `layout_qa.json`，把 warning 归类成稳定的 badcase 类型，并写出 `qa_summary.md` 和 `qa_summary.json`。这一版还不会重新跑 PDF-to-PPT 生成。论文清单位于 `benchmarks/papers.json`；当前 `ai20` 已经由原本 12 篇本地论文加 8 篇新增的大模型、推理、agent/评估报告组成。
+
+当前已用 `Kimi_K2_Technical_Report.pdf` 做过一次单篇端到端验证：从 `summary` 阶段续跑，文本调用使用 `deepseek-v4-flash`，图片输入/多模态调用使用 `gpt-5-mini`，最终 1/1 通过、23 页、2 个 warning。报告位于 `benchmark_runs/ai20_20260607_005847/aggregate_report.md`。
+
+下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 golden baseline，并扩展多模板与审美 benchmark。详细计划见：
+
+```text
+docs/benchmark_plan.zh-CN.md
+docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+docs/next_window_handoff.zh-CN.md
+```
+
+校验 `ai20` 论文集合：
+
+```powershell
+C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.papers validate --set ai20
+```
+
+如果在新机器上需要重新下载缺失的 `ai20` 论文，推荐使用：
+
+```powershell
+.\benchmarks\download_ai20.ps1
+```
+
+运行 `ai20` 批量 benchmark：
+
+```powershell
+C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.runner run --set ai20 --styles academic --slides 24 --resume
+```
+
+如果只想先做低风险冒烟测试，可以加 `--limit 1`。报告会写到 `benchmark_runs/<set>_<timestamp>/`。
 
 不写 `__pycache__` 的快速语法检查：
 

@@ -73,6 +73,7 @@ Desktop.ini
 # Runtime data
 sources/
 outputs/
+benchmark_runs/
 rag_output/
 
 # Local reference clones; not part of the main paper2ppt runtime

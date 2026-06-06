@@ -42,6 +42,8 @@ async def run_pipeline(base_dir: Path, config_dir: Path, config: Dict, from_stag
         start_idx = STAGES.index(from_stage)
         for i in range(start_idx, len(STAGES)):
             state["stages"][STAGES[i]] = "pending"
+        if not any(status == "failed" for status in state["stages"].values()):
+            state.pop("error", None)
         # Update session_id if provided
         if session_id:
             state["session_id"] = session_id
@@ -77,6 +79,8 @@ async def run_pipeline(base_dir: Path, config_dir: Path, config: Dict, from_stag
                 await run_generate_stage(base_dir, config_dir, config)
             
             state["stages"][stage] = "completed"
+            if not any(status == "failed" for status in state["stages"].values()):
+                state.pop("error", None)
             save_state(config_dir, state)
             
         except Exception as e:

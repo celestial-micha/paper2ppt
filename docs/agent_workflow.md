@@ -15,16 +15,16 @@ This is not a fully general autonomous ReAct agent that freely chooses arbitrary
 ```mermaid
 flowchart TD
     A["Input PDF"] --> B["PDF Parsing<br/>MinerU + asset extraction"]
-    B --> C["RAG / Query Stage<br/>gpt-5-mini"]
+    B --> C["RAG / Query Stage<br/>configured text LLM"]
     C --> D["Summary Stage<br/>paper metadata, tables, figures"]
-    D --> E["Content Planning<br/>gpt-5-mini"]
+    D --> E["Content Planning<br/>configured text LLM"]
 
     E --> F["LangGraph PPTX Workflow"]
 
     subgraph F["LangGraph PPTX Workflow"]
         F1["Prepare Source Packet<br/>paper plan + figures + tables"]
-        F2["Optional Figure Analysis<br/>gpt-5-mini"]
-        F3["Curate Slide Spec<br/>gpt-5-mini"]
+        F2["Optional Figure Analysis<br/>configured model"]
+        F3["Curate Slide Spec<br/>configured text LLM"]
         F4["Validate + Normalize Spec<br/>claim / detail / evidence"]
         F5["Render Native PPTX<br/>python-pptx"]
         F6["Evaluate<br/>spec evaluator + layout QA"]
@@ -54,7 +54,7 @@ The project does not simply ask a model to write slides once. It first asks the 
 
 The agentic part is the closed loop:
 
-1. **Plan**: `gpt-5-mini` turns paper evidence into a structured `PresentationSpec`.
+1. **Plan**: the configured text LLM turns paper evidence into a structured `PresentationSpec`.
 2. **Act**: the renderer turns the spec into native PowerPoint objects.
 3. **Observe**: the evaluator inspects the spec and rendered PPTX layout.
 4. **Repair**: only failed slide specs are modified.
@@ -108,11 +108,28 @@ The main API calls in a full run are:
 2. **Summary extraction calls**: consolidate metadata, motivation, methods, results, tables, and figures into a usable summary checkpoint.
 3. **Content planning call**: creates the section-level slide plan.
 4. **Deck curator call**: creates the final compact `PresentationSpec` used by `python-pptx`.
-5. **Auto/optional figure analysis call**: describes extracted figures for better visual placement when captions look too weak.
+5. **Auto/optional figure analysis call**: describes extracted figures for better visual placement when captions look too weak. This uses the configured vision model, not the DeepSeek text model.
 
-The first four categories feed the final `slides.pptx` and `speaker_script.md`. The figure analysis call only matters when it returns usable `figure_analyses`; if `figure_analysis_count` is `0`, it did not affect the final deck. For cost control, `PPTX_ENABLE_FIGURE_ANALYSIS=auto` runs it only when captions look too weak. Use `1` to force it on or `0` to force it off.
+The first four categories feed the final `slides.pptx` and `speaker_script.md`. The figure analysis call only matters when it returns usable `figure_analyses`; if `figure_analysis_count` is `0`, it did not affect the final deck. The current cost-aware setup keeps text and multimodal routing separate: `deepseek-v4-flash` handles text calls, while `gpt-5-mini` handles image payloads in the fast RAG/query stage (`RAG_VISION_MODEL`) and optional figure analysis (`PPTX_VISION_MODEL`).
 
 The TeX/Beamer sidecar (`detailed_slides.tex` and `detailed_slides.pdf`) is generated locally from the final plan/spec. It does not call the LLM and does not add API cost.
+
+## From Workflow QA To Benchmark QA
+
+The single-deck loop answers: "Is this generated deck usable?"
+
+The next benchmark loop answers a larger question: "Which template, layout policy, and repair rule works best across papers, and how does each iteration improve quality?"
+
+The planned multi-style benchmark keeps the current `academic` template as a golden baseline, then adds new templates such as `editorial`, `conference`, `systems`, `data_report`, and `visual_explainer`. Each template is evaluated on the same paper set so improvements can be measured rather than argued subjectively.
+
+The benchmark should score four dimensions:
+
+- **Reliability**: generated artifacts, QA pass rate, severe warning rate, missing artifacts, repair success.
+- **Content organization**: section coverage, TOC alignment, slide role balance, claim/detail/evidence completeness.
+- **Visual layout**: overflow, alignment, whitespace balance, figure readability, metric/table readability.
+- **Aesthetics**: palette harmony, contrast, typography consistency, visual hierarchy, style consistency, presentation polish.
+
+This turns aesthetic judgment into a structured evaluation problem. The project can then show curves such as warning rate decreasing, pass rate increasing, and aesthetic score improving after each targeted iteration.
 
 ## 中文面试讲法
 
@@ -134,7 +151,7 @@ The TeX/Beamer sidecar (`detailed_slides.tex` and `detailed_slides.pdf`) is gene
 
 可以这样解释：
 
-1. 先由 `gpt-5-mini` 做内容规划，把论文压缩成结构化 `PresentationSpec`。
+1. 先由配置的文本模型（当前为 `deepseek-v4-flash`）做内容规划，把论文压缩成结构化 `PresentationSpec`。
 2. 系统把这个 spec 当作中间程序，而不是直接相信模型输出。
 3. 渲染器执行这个程序，生成原生可编辑 PPTX。
 4. evaluator 同时检查两层结果：一层是 spec 语义质量，例如 numbered point 是否有 `claim/detail/evidence`，metric 是否有合理 label/value；另一层是 PPTX 版式质量，例如空组件、溢出、截断等。

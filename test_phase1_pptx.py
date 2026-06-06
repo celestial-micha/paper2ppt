@@ -1,6 +1,7 @@
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 
 from paper2slides.generator.detailed_tex import generate_detailed_tex_deck
 from paper2slides.generator.config import GenerationConfig, GenerationInput, OutputType, SlidesLength, StyleType
@@ -8,9 +9,13 @@ from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
 from paper2slides.generator.pptx_qa import evaluate_presentation_spec, inspect_pptx_layout
 from paper2slides.generator.pptx_renderer import PptxRenderer
-from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _normalize_slide_layout, _qa_repair_node
+from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _get_figure_analysis_model, _get_pptx_llm_model, _normalize_slide_layout, _qa_repair_node
 from paper2slides.generator.spec_builder import build_presentation_spec
 from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
+from paper2slides.benchmark.qa_summary import QaRunResult, classify_warning, summarize_layout_qa
+from paper2slides.benchmark.papers import expand_paper_set, validate_paper_files
+from paper2slides.benchmark.runner import _build_command, _preflight_environment, summarize_run_results
+from paper2slides.core.stages.rag_stage import _run_fast_queries_by_category
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
 
 
@@ -304,6 +309,274 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn("\\documentclass", tex)
         self.assertIn("Detailed sidecar preserves extra context.", tex)
         self.assertIn("Accuracy", tex)
+
+    def test_pptx_model_can_follow_main_llm_model(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "LLM_MODEL": "deepseek-v4-flash",
+            },
+            clear=True,
+        ):
+            self.assertEqual(_get_pptx_llm_model(), "deepseek-v4-flash")
+
+    def test_pptx_model_override_and_figure_model_priority(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "LLM_MODEL": "deepseek-v4-flash",
+                "PPTX_LLM_MODEL": "deepseek-v4-pro",
+                "PPTX_VISION_MODEL": "vision-compatible-model",
+            },
+            clear=True,
+        ):
+            self.assertEqual(_get_pptx_llm_model(), "deepseek-v4-pro")
+            self.assertEqual(_get_figure_analysis_model(), "vision-compatible-model")
+
+    def test_benchmark_warning_classifier(self):
+        self.assertEqual(classify_warning("slide 2: text box may overflow vertically"), "text_overflow")
+        self.assertEqual(classify_warning("slide 3: visual layout has no image"), "layout_payload_mismatch")
+        self.assertEqual(classify_warning("slide 4: point 1 missing claim"), "structured_point")
+        self.assertEqual(classify_warning("slide 5: metric 1 has meaningless label"), "metric_quality")
+
+    def test_benchmark_summary_aggregates_qa_runs(self):
+        summary = summarize_layout_qa(
+            [
+                QaRunResult(
+                    path="outputs/a/layout_qa.json",
+                    project="a",
+                    passed=True,
+                    slide_count=10,
+                    warning_count=1,
+                    failed_slides=[],
+                    categories={"text_overflow": 1},
+                    warnings=["slide 1: text box may overflow vertically"],
+                ),
+                QaRunResult(
+                    path="outputs/b/layout_qa.json",
+                    project="b",
+                    passed=False,
+                    slide_count=5,
+                    warning_count=2,
+                    failed_slides=[3],
+                    categories={"empty_content": 1, "metric_quality": 1},
+                    warnings=["slide 3: slide appears empty", "slide 3: metric 1 missing value"],
+                ),
+            ]
+        )
+        self.assertEqual(summary["run_count"], 2)
+        self.assertEqual(summary["passed_runs"], 1)
+        self.assertEqual(summary["failed_runs"], 1)
+        self.assertEqual(summary["total_slides"], 15)
+        self.assertEqual(summary["category_counts"]["metric_quality"], 1)
+
+    def test_benchmark_manifest_expands_included_sets(self):
+        manifest = {
+            "sets": {
+                "local_1": {"papers": [{"id": "a", "path": "a.pdf"}]},
+                "ai2": {
+                    "includes": ["local_1"],
+                    "additional_papers": [{"id": "b", "path": "b.pdf"}],
+                },
+            }
+        }
+        papers = expand_paper_set(manifest, "ai2")
+        self.assertEqual([paper["id"] for paper in papers], ["a", "b"])
+
+    def test_benchmark_manifest_validation_reports_missing_files(self):
+        root = Path(__file__).parent / "outputs" / "tmp" / f"manifest_{uuid.uuid4().hex}"
+        root.mkdir(parents=True, exist_ok=True)
+        present = root / "present.pdf"
+        present.write_bytes(b"%PDF-1.4\n")
+        manifest = root / "papers.json"
+        manifest.write_text(
+            """
+{
+  "sets": {
+    "sample": {
+      "papers": [
+        {"id": "present", "path": "__PRESENT__"},
+        {"id": "missing", "path": "__MISSING__"}
+      ]
+    }
+  }
+}
+""".replace("__PRESENT__", str(present).replace("\\", "\\\\")).replace(
+                "__MISSING__", str(root / "missing.pdf").replace("\\", "\\\\")
+            ),
+            encoding="utf-8",
+        )
+        result = validate_paper_files(manifest, "sample")
+        self.assertEqual(result["total"], 2)
+        self.assertEqual(len(result["present"]), 1)
+        self.assertEqual(len(result["missing"]), 1)
+
+    def test_benchmark_runner_builds_expected_command(self):
+        command = _build_command(
+            python_executable="python",
+            paper_path=Path("test_papers/example.pdf"),
+            output_dir=Path("outputs"),
+            style="academic",
+            length="medium",
+            slides=24,
+            fast=True,
+            from_stage="generate",
+        )
+        self.assertEqual(command[:3], ["python", "-m", "paper2slides"])
+        self.assertIn("--fast", command)
+        self.assertIn("--from-stage", command)
+        self.assertIn("generate", command)
+        self.assertIn("--slides", command)
+        self.assertIn("24", command)
+
+    def test_benchmark_runner_summary_counts_failures_and_warnings(self):
+        summary = summarize_run_results(
+            [
+                {
+                    "style": "academic",
+                    "returncode": 0,
+                    "qa_passed": True,
+                    "elapsed_seconds": 10,
+                    "warning_count": 1,
+                    "slide_count": 5,
+                    "warning_categories": {"text_overflow": 1},
+                },
+                {
+                    "style": "academic",
+                    "returncode": 0,
+                    "qa_passed": False,
+                    "elapsed_seconds": 20,
+                    "warning_count": 2,
+                    "slide_count": 4,
+                    "warning_categories": {"metric_quality": 2},
+                },
+                {
+                    "style": "visual",
+                    "returncode": 1,
+                    "qa_passed": None,
+                    "elapsed_seconds": 5,
+                    "warning_count": 0,
+                    "slide_count": 0,
+                    "warning_categories": {},
+                },
+            ]
+        )
+        self.assertEqual(summary["total_runs"], 3)
+        self.assertEqual(summary["succeeded"], 1)
+        self.assertEqual(summary["qa_failed"], 1)
+        self.assertEqual(summary["command_failed"], 1)
+        self.assertEqual(summary["total_warnings"], 3)
+        self.assertEqual(summary["warning_categories"]["metric_quality"], 2)
+
+    def test_fast_rag_defaults_to_text_only_without_image_payloads(self):
+        import asyncio
+
+        class FakeCompletions:
+            def __init__(self):
+                self.messages = None
+
+            def create(self, **kwargs):
+                self.messages = kwargs["messages"]
+
+                class Choice:
+                    message = type("Message", (), {"content": "answer"})
+
+                return type("Response", (), {"choices": [Choice()]})
+
+        class FakeClient:
+            def __init__(self):
+                self.completions = FakeCompletions()
+                self.chat = type("Chat", (), {"completions": self.completions})
+
+        temp_root = Path(__file__).parent / "outputs" / "tmp" / f"rag_{uuid.uuid4().hex}"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        md_path = temp_root / "paper.md"
+        md_path.write_text("Text before image. ![Figure](figure.png) Caption text.", encoding="utf-8")
+        (temp_root / "figure.png").write_bytes(b"not a real png, but should not be read")
+
+        client = FakeClient()
+        result = asyncio.run(
+            _run_fast_queries_by_category(
+                client=client,
+                markdown_content="",
+                markdown_paths=[str(md_path)],
+                queries_by_category={"summary": ["What is the method?"]},
+                model="deepseek-v4-flash",
+                max_concurrency=1,
+                include_images=False,
+            )
+        )
+        self.assertEqual(result["summary"][0]["mode"], "fast_direct_text")
+        user_content = client.completions.messages[1]["content"]
+        self.assertFalse(any(part.get("type") == "image_url" for part in user_content))
+
+    def test_fast_rag_uses_vision_model_when_images_are_enabled(self):
+        import asyncio
+
+        class FakeCompletions:
+            def __init__(self):
+                self.model = None
+                self.messages = None
+
+            def create(self, **kwargs):
+                self.model = kwargs["model"]
+                self.messages = kwargs["messages"]
+
+                class Choice:
+                    message = type("Message", (), {"content": "answer"})
+
+                return type("Response", (), {"choices": [Choice()]})
+
+        class FakeClient:
+            def __init__(self):
+                self.completions = FakeCompletions()
+                self.chat = type("Chat", (), {"completions": self.completions})
+
+        temp_root = Path(__file__).parent / "outputs" / "tmp" / f"rag_vision_{uuid.uuid4().hex}"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        md_path = temp_root / "paper.md"
+        md_path.write_text("![Figure](figure.png) Caption text.", encoding="utf-8")
+        # A minimal PNG signature is enough for the base64 payload test.
+        (temp_root / "figure.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+
+        client = FakeClient()
+        result = asyncio.run(
+            _run_fast_queries_by_category(
+                client=client,
+                markdown_content="",
+                markdown_paths=[str(md_path)],
+                queries_by_category={"summary": ["What is the figure?"]},
+                model="deepseek-v4-flash",
+                max_concurrency=1,
+                include_images=True,
+                vision_model="gpt-5-mini",
+            )
+        )
+        self.assertEqual(client.completions.model, "gpt-5-mini")
+        self.assertEqual(result["summary"][0]["mode"], "fast_direct_with_vision")
+        self.assertEqual(result["summary"][0]["model"], "gpt-5-mini")
+        user_content = client.completions.messages[1]["content"]
+        self.assertTrue(any(part.get("type") == "image_url" for part in user_content))
+
+    def test_benchmark_preflight_requires_vision_key_when_images_enabled(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaises(RuntimeError):
+                _preflight_environment(
+                    {
+                        "RAG_FAST_INCLUDE_IMAGES": "1",
+                        "PPTX_ENABLE_FIGURE_ANALYSIS": "auto",
+                    }
+                )
+
+    def test_benchmark_preflight_allows_split_text_and_vision_keys(self):
+        with patch.dict("os.environ", {}, clear=True):
+            _preflight_environment(
+                {
+                    "RAG_FAST_INCLUDE_IMAGES": "1",
+                    "PPTX_ENABLE_FIGURE_ANALYSIS": "auto",
+                    "RAG_VISION_API_KEY": "vision-key",
+                }
+            )
 
 
 if __name__ == "__main__":

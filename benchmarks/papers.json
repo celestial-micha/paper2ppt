@@ -1,0 +1,240 @@
+{
+  "sets": {
+    "local_12": {
+      "description": "Existing local paper fixtures used as the first paper2ppt benchmark seed set.",
+      "papers": [
+        {
+          "id": "2025_ai_agent_index",
+          "path": "test_papers/2025_AI_Agent_Index.pdf",
+          "tags": [
+            "agent",
+            "index",
+            "survey"
+          ]
+        },
+        {
+          "id": "agentic_llm_survey",
+          "path": "test_papers/Agentic_Large_Language_Models_Survey.pdf",
+          "tags": [
+            "agent",
+            "survey"
+          ]
+        },
+        {
+          "id": "agi_is_coming_wordle",
+          "path": "test_papers/AGI_Is_Coming_Wordle.pdf",
+          "tags": [
+            "reasoning",
+            "benchmark"
+          ]
+        },
+        {
+          "id": "resnet",
+          "path": "test_papers/Deep Residual Learning for Image Recognition.pdf",
+          "tags": [
+            "vision",
+            "classic"
+          ]
+        },
+        {
+          "id": "deepseek_v4",
+          "path": "test_papers/DeepSeek_V4.pdf",
+          "tags": [
+            "llm",
+            "deepseek",
+            "technical-report"
+          ]
+        },
+        {
+          "id": "deep_research_agents",
+          "path": "test_papers/Deep_Research_Agents_Systematic_Examination.pdf",
+          "tags": [
+            "agent",
+            "deep-research",
+            "evaluation"
+          ]
+        },
+        {
+          "id": "llm_agent_evaluation_survey",
+          "path": "test_papers/Evaluation_Benchmarking_LLM_Agents_Survey.pdf",
+          "tags": [
+            "agent",
+            "evaluation",
+            "survey"
+          ]
+        },
+        {
+          "id": "agent_infrastructure",
+          "path": "test_papers/Infrastructure_for_AI_Agents.pdf",
+          "tags": [
+            "agent",
+            "infrastructure"
+          ]
+        },
+        {
+          "id": "llm_agent_survey",
+          "path": "test_papers/LLM_Agent_Survey_Methodology_Applications_Challenges.pdf",
+          "tags": [
+            "agent",
+            "survey"
+          ]
+        },
+        {
+          "id": "mhc",
+          "path": "test_papers/mHC：Manifold-Constrained Hyper-Connections.pdf",
+          "tags": [
+            "model-architecture",
+            "llm"
+          ]
+        },
+        {
+          "id": "open_reproducible_deep_research_agent",
+          "path": "test_papers/Open_Reproducible_Deep_Research_Agent.pdf",
+          "tags": [
+            "agent",
+            "deep-research",
+            "reproducibility"
+          ]
+        },
+        {
+          "id": "thinking_with_visual_primitives",
+          "path": "test_papers/Thinking_with_Visual_Primitives.pdf",
+          "tags": [
+            "reasoning",
+            "vision-language"
+          ]
+        }
+      ]
+    },
+    "ai20": {
+      "status": "downloaded",
+      "description": "20-paper benchmark set combining local_12 with 8 recent model, post-training, reasoning, and agent/evaluation reports downloaded into test_papers.",
+      "includes": [
+        "local_12"
+      ],
+      "additional_papers": [
+        {
+          "id": "openai_gpt5_system_card",
+          "title": "GPT-5 System Card",
+          "organization": "OpenAI",
+          "path": "test_papers/OpenAI_GPT-5_System_Card.pdf",
+          "source_url": "https://cdn.openai.com/gpt-5-system-card.pdf",
+          "tags": [
+            "openai",
+            "llm",
+            "system-card",
+            "evaluation",
+            "safety"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "openai_gpt_oss_model_card",
+          "title": "gpt-oss Model Card",
+          "organization": "OpenAI",
+          "path": "test_papers/OpenAI_gpt-oss_Model_Card.pdf",
+          "source_url": "https://arxiv.org/pdf/2508.10925",
+          "tags": [
+            "openai",
+            "open-weight",
+            "llm",
+            "model-card",
+            "post-training"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "anthropic_claude_opus_4_5_system_card",
+          "title": "Claude Opus 4.5 System Card",
+          "organization": "Anthropic",
+          "path": "test_papers/Anthropic_Claude_Opus_4.5_System_Card.pdf",
+          "source_url": "https://www-cdn.anthropic.com/bf10f64990cfda0ba858290be7b8cc6317685f47.pdf",
+          "tags": [
+            "anthropic",
+            "claude",
+            "llm",
+            "system-card",
+            "evaluation",
+            "safety"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "google_deepmind_gemini_2_5_technical_report",
+          "title": "Gemini 2.5 Technical Report",
+          "organization": "Google DeepMind",
+          "path": "test_papers/Google_DeepMind_Gemini_2.5_Technical_Report.pdf",
+          "source_url": "https://arxiv.org/pdf/2507.06261",
+          "tags": [
+            "google-deepmind",
+            "gemini",
+            "llm",
+            "technical-report",
+            "evaluation"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "deepseek_r1",
+          "title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning",
+          "organization": "DeepSeek",
+          "path": "test_papers/DeepSeek_R1.pdf",
+          "source_url": "https://arxiv.org/pdf/2501.12948",
+          "tags": [
+            "deepseek",
+            "reasoning",
+            "reinforcement-learning",
+            "post-training"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "kimi_k2_technical_report",
+          "title": "Kimi K2: Open Agentic Intelligence",
+          "organization": "Moonshot AI",
+          "path": "test_papers/Kimi_K2_Technical_Report.pdf",
+          "source_url": "https://arxiv.org/pdf/2507.20534",
+          "tags": [
+            "kimi",
+            "moonshot",
+            "agent",
+            "llm",
+            "technical-report"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "bytedance_seed_thinking_v1_5",
+          "title": "Seed-Thinking-v1.5: Advancing Superb Reasoning Models with Reinforcement Learning",
+          "organization": "ByteDance Seed",
+          "path": "test_papers/ByteDance_Seed_Thinking_v1.5.pdf",
+          "source_url": "https://arxiv.org/pdf/2504.13914",
+          "tags": [
+            "bytedance",
+            "seed",
+            "doubao-related",
+            "reasoning",
+            "reinforcement-learning",
+            "post-training"
+          ],
+          "download_status": "downloaded"
+        },
+        {
+          "id": "xiaomi_mimo_vl",
+          "title": "MiMo-VL Technical Report",
+          "organization": "Xiaomi",
+          "path": "test_papers/Xiaomi_MiMo_VL.pdf",
+          "source_url": "https://arxiv.org/pdf/2506.03569",
+          "tags": [
+            "xiaomi",
+            "mimo",
+            "vision-language",
+            "technical-report",
+            "evaluation"
+          ],
+          "download_status": "downloaded"
+        }
+      ]
+    }
+  }
+}

@@ -29,7 +29,7 @@ from .slide_schema import ImageBlock, MetricBlock, PresentationSpec, SlideSpec, 
 from .spec_builder import build_presentation_spec
 
 logger = logging.getLogger(__name__)
-PPTX_LLM_MODEL = "gpt-5-mini"
+DEFAULT_PPTX_LLM_MODEL = "gpt-5-mini"
 
 
 SaveJsonFunc = Callable[[Path, Dict[str, Any]], None]
@@ -132,6 +132,25 @@ def _load_package_env() -> None:
         load_dotenv(dotenv_path=env_path, override=False)
     except Exception:
         return
+
+
+def _get_pptx_llm_model() -> str:
+    """Return the text model used by PPTX curation and repair metadata."""
+    return (
+        os.getenv("PPTX_LLM_MODEL")
+        or os.getenv("LLM_MODEL")
+        or DEFAULT_PPTX_LLM_MODEL
+    ).strip()
+
+
+def _get_figure_analysis_model() -> str:
+    """Return the model used for optional source-figure understanding."""
+    return (
+        os.getenv("PPTX_VISION_MODEL")
+        or os.getenv("PPTX_LLM_MODEL")
+        or os.getenv("LLM_MODEL")
+        or DEFAULT_PPTX_LLM_MODEL
+    ).strip()
 
 
 def _build_langgraph_runner(save_json: SaveJsonFunc) -> Optional[Callable[[_PptxWorkflowState], _PptxWorkflowState]]:
@@ -262,7 +281,7 @@ def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
             "raw_llm_response": "",
             "spec": _fallback_compact_spec(state["plan"], state.get("source_plan_path", "")),
             "used_langchain": False,
-            "llm_model": PPTX_LLM_MODEL,
+            "llm_model": _get_pptx_llm_model(),
             "validation_warnings": warnings,
         }
 
@@ -273,7 +292,7 @@ def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         logger.warning(f"Deck curator LLM failed; using deterministic fallback spec: {exc}")
         raw_response = ""
         used_langchain = False
-        model = PPTX_LLM_MODEL
+        model = _get_pptx_llm_model()
         spec = _fallback_compact_spec(state["plan"], state.get("source_plan_path", ""))
         warnings.append("Deck curator LLM failed; used deterministic fallback slide spec.")
     return {
@@ -638,7 +657,7 @@ Source packet:
 def _call_deck_curator_llm(prompt: str) -> tuple[str, bool, str]:
     api_key = os.getenv("RAG_LLM_API_KEY", "")
     base_url = os.getenv("RAG_LLM_BASE_URL") or None
-    model = PPTX_LLM_MODEL
+    model = _get_pptx_llm_model()
     max_tokens = int(os.getenv("PPTX_LLM_MAX_TOKENS", os.getenv("RAG_LLM_MAX_TOKENS", "8000")))
 
     if not api_key:
@@ -678,10 +697,21 @@ def _call_figure_analysis_llm(figures: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Analyze extracted paper figures with a vision-capable text model."""
     import base64
 
-    api_key = os.getenv("RAG_LLM_API_KEY", "")
-    base_url = os.getenv("RAG_LLM_BASE_URL") or None
-    model = PPTX_LLM_MODEL
+    api_key = (
+        os.getenv("PPTX_VISION_API_KEY")
+        or os.getenv("RAG_VISION_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+        or ""
+    )
+    base_url = (
+        os.getenv("PPTX_VISION_BASE_URL")
+        or os.getenv("RAG_VISION_BASE_URL")
+        or os.getenv("OPENAI_BASE_URL")
+        or None
+    )
+    model = _get_figure_analysis_model()
     if not api_key:
+        logger.warning("Figure analysis skipped: set PPTX_VISION_API_KEY, RAG_VISION_API_KEY, or OPENAI_API_KEY.")
         return {}
 
     content: List[Dict[str, Any]] = [
