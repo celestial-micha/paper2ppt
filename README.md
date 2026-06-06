@@ -307,7 +307,7 @@ This scans existing `layout_qa.json` files, groups warnings into stable badcase 
 
 `Kimi_K2_Technical_Report.pdf` has been used for one single-paper end-to-end validation run: resumed from the `summary` stage, text calls used `deepseek-v4-flash`, image/multimodal calls used `gpt-5-mini`, and the final result passed 1/1 with 23 slides and 2 warnings. The report is under `benchmark_runs/ai20_20260607_005847/aggregate_report.md`.
 
-The next planned phase protects the current `academic` template as a golden baseline, then adds multi-template and aesthetic benchmarking. See:
+The next planned phase protects the current `academic` template as a golden baseline, then adds multi-template and aesthetic benchmarking. The intended order is template-first: discuss template concepts, implement a small subset, validate on one paper and a small set, then run the full ai20 benchmark. See:
 
 ```text
 docs/benchmark_plan.zh-CN.md

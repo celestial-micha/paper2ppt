@@ -307,7 +307,7 @@ python -m paper2slides.benchmark --outputs outputs --report-dir benchmark_runs\l
 
 当前已用 `Kimi_K2_Technical_Report.pdf` 做过一次单篇端到端验证：从 `summary` 阶段续跑，文本调用使用 `deepseek-v4-flash`，图片输入/多模态调用使用 `gpt-5-mini`，最终 1/1 通过、23 页、2 个 warning。报告位于 `benchmark_runs/ai20_20260607_005847/aggregate_report.md`。
 
-下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 golden baseline，并扩展多模板与审美 benchmark。详细计划见：
+下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 golden baseline，并扩展多模板与审美 benchmark。执行顺序是先讨论模板方案，再实现少量模板做单篇/小集合验证，最后再跑 ai20 全量。详细计划见：
 
 ```text
 docs/benchmark_plan.zh-CN.md

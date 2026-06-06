@@ -14,13 +14,15 @@ codex老师，我们继续做 Paper2Slides-main / paper2ppt 项目。请先阅�
 
 当前目标不是重构已经很好看的 academic 模板，而是保护它作为 golden baseline，然后新增多模板 benchmark 和审美评分体系。
 
-请优先做下一阶段第一步：
-- 新增 style preset 层，建议从 paper2slides/generator/style_presets.py 开始。
-- 保留 academic/current 模板行为，不破坏现有 Kimi K2 成功结果。
-- 先实现 editorial 和 systems 两个新模板。
-- 扩展 benchmark，让同一篇论文能跑 academic/editorial/systems，并输出 style leaderboard。
+请优先做下一阶段第一步，但先不要直接改代码：
+- 先给出一组好看的论文 PPT 模板方案，用于我和老师讨论审美方向。
+- 每个模板请说明名称、目标场景、配色 palette、字体层级、标题页/目录页/章节页/普通页/图文页/metric 页/表格页的版式策略。
+- 请特别说明每个模板可能在 benchmark 中暴露什么问题，以及审美评分应该关注什么。
+- 当前成熟 academic 模板必须作为 golden baseline 保护，不要重构它。
+- 等我确认模板方向后，再进入代码实现：新增 style preset 层，先实现 editorial 和 systems 两个模板。
+- 之后再扩展 benchmark，让同一篇论文能跑 academic/editorial/systems，并输出 style leaderboard。
 - 新增第一版规则型 aesthetic/content score，不要一开始就大量调用视觉模型。
-- 用 Kimi_K2_Technical_Report.pdf 从 --from-stage generate 跑单篇多模板验证。
+- 最后用 Kimi_K2_Technical_Report.pdf 从 --from-stage generate 跑单篇多模板验证。
 
 注意模型路由：
 - 文本调用：deepseek-v4-flash，base_url=https://api.deepseek.com。
@@ -50,6 +52,22 @@ C:\Users\81001\.conda\envs\paper2slides\python.exe -m unittest test_phase1_pptx.
 ```
 
 ## 下一阶段实现顺序
+
+### Step 0：模板方案讨论
+
+目标：
+- 先让 Codex 提出模板设计方案，而不是直接黑箱实现。
+- 用户和 Codex 讨论模板审美、应用场景和 benchmark 价值。
+- 确认第一批要实现的模板。
+
+建议输出：
+- 5-6 个模板候选。
+- 每个模板的 palette、版式语言、页面类型策略。
+- 每个模板的可能失败模式。
+- 每个模板对应的审美评分重点。
+
+验收：
+- 用户确认先实现哪 1-2 个模板。
 
 ### Step 1：保护 baseline
 
@@ -152,5 +170,5 @@ C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.run
 - 不要把 API key 打印到日志、README 或报告里。
 - 不要把 DeepSeek 文本模型用于图片输入。
 - 不要为了新模板重构掉当前 `academic` baseline。
+- 不要一上来黑箱实现一堆模板；先输出模板方案让用户确认。
 - 不要一开始就跑 ai20 全量多模板，先用 Kimi 单篇和 4 篇小集合试。
-

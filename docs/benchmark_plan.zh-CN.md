@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-截至当前版本，已经完成的是 **历史 QA 汇总型 benchmark 种子**、**20 篇论文 benchmark 数据集准备**、**批量生成 runner 实现**，以及 **Kimi K2 单篇端到端生成与 QA 验证**。下一阶段重点不是盲目改当前已经成熟的 academic 模板，而是在保护它作为 golden baseline 的前提下，扩展多模板 benchmark，并把评估维度升级到内容组织、视觉排版和审美质量。
+截至当前版本，已经完成的是 **历史 QA 汇总型 benchmark 种子**、**20 篇论文 benchmark 数据集准备**、**批量生成 runner 实现**，以及 **Kimi K2 单篇端到端生成与 QA 验证**。下一阶段重点不是盲目改当前已经成熟的 academic 模板，而是在保护它作为 golden baseline 的前提下，扩展多模板 benchmark，并把评估维度升级到内容组织、视觉排版和审美质量。执行顺序采用 template-first：先讨论模板方案和审美方向，再实现少量模板做单篇/小集合验证，最后再跑 ai20 全量。
 
 当前 DeepSeek 路线使用 `deepseek-v4-flash`，不是 `deepseek-v4-pro`。项目采用双模型路由，避免把文本模型和多模态模型混淆：
 
