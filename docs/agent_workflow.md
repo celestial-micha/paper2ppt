@@ -120,16 +120,17 @@ The single-deck loop answers: "Is this generated deck usable?"
 
 The next benchmark loop answers a larger question: "Which template, layout policy, and repair rule works best across papers, and how does each iteration improve quality?"
 
-The planned multi-style benchmark keeps the current `academic` template as a golden baseline, then adds new templates such as `editorial`, `conference`, `systems`, `data_report`, and `visual_explainer`. Each template is evaluated on the same paper set so improvements can be measured rather than argued subjectively.
+The planned benchmark now has two tracks. The first track keeps the current `academic` template as a golden baseline and preserves companion styles such as `academic_warm`, `editorial`, `editorial_mono`, and `data_report` for stable regression. The second track is a from-scratch template experiment: reuse parsed paper content, but do not reuse the golden baseline visual skeleton. Instead, build a content inventory, create a rough complete draft, design slide roles and proof objects, add a new visual system, then evaluate reliability, content quality, layout quality, aesthetics, and novelty against the baseline.
 
-The benchmark should score four dimensions:
+The benchmark should score five dimensions:
 
 - **Reliability**: generated artifacts, QA pass rate, severe warning rate, missing artifacts, repair success.
 - **Content organization**: section coverage, TOC alignment, slide role balance, claim/detail/evidence completeness.
 - **Visual layout**: overflow, alignment, whitespace balance, figure readability, metric/table readability.
 - **Aesthetics**: palette harmony, contrast, typography consistency, visual hierarchy, style consistency, presentation polish.
+- **Novelty**: for from-scratch templates only, measure whether the new style still depends on the golden baseline's header rhythm, key-message block, slide role pattern, and macro page skeleton.
 
-This turns aesthetic judgment into a structured evaluation problem. The project can then show curves such as warning rate decreasing, pass rate increasing, and aesthetic score improving after each targeted iteration.
+This turns aesthetic judgment into a structured evaluation problem. The project can then show curves such as warning rate decreasing, pass rate increasing, aesthetic score improving, and baseline similarity decreasing for genuinely new templates after each targeted iteration.
 
 ## 中文面试讲法
 

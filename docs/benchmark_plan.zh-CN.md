@@ -4,7 +4,12 @@
 
 ## 当前状态
 
-截至当前版本，已经完成的是 **历史 QA 汇总型 benchmark 种子**、**20 篇论文 benchmark 数据集准备**、**批量生成 runner 实现**，以及 **Kimi K2 单篇端到端生成与 QA 验证**。下一阶段重点不是盲目改当前已经成熟的 academic 模板，而是在保护它作为 golden baseline 的前提下，扩展多模板 benchmark，并把评估维度升级到内容组织、视觉排版和审美质量。执行顺序采用 template-first：先讨论模板方案和审美方向，再实现少量模板做单篇/小集合验证，最后再跑 ai20 全量。
+截至当前版本，已经完成的是 **历史 QA 汇总型 benchmark 种子**、**20 篇论文 benchmark 数据集准备**、**批量生成 runner 实现**，以及 **Kimi K2 单篇端到端生成与 QA 验证**。随后我们尝试了多套样式，确认 `academic` 应继续作为 golden baseline，同时筛出 `academic_warm`、`editorial`、`editorial_mono`、`data_report` 作为 baseline companion styles。
+
+新的核心判断是：这些 companion styles 虽然好看，但与 golden baseline 太像，更适合作为成熟套件的可选样式，而不是“从无到有的新模板”。下一阶段 benchmark 要走双轨路线：
+
+1. **成熟套件回归**：保护 `academic`，保留 `academic_warm`、`editorial`、`editorial_mono`、`data_report`，用于稳定生成、ai20 回归和可靠性统计。
+2. **从零模板实验**：不模仿 golden baseline 的视觉骨架，只复用论文解析结果和之前积累的问题/修复经验，从 content inventory、无审美草稿、章节/目录/slide role、proof object、视觉系统一步步迭代出全新模板，并把过程中遇到的问题沉淀为可自动检测和自动修复的 benchmark rule。
 
 当前 DeepSeek 路线使用 `deepseek-v4-flash`，不是 `deepseek-v4-pro`。项目采用双模型路由，避免把文本模型和多模态模型混淆：
 
@@ -42,7 +47,7 @@ python -m paper2slides.benchmark --outputs outputs --report-dir benchmark_runs\l
 - `Kimi_K2_Technical_Report.pdf` 已完成一次单篇端到端验证：解析/RAG 复用已完成 checkpoint，从 `summary` 阶段续跑，文本模型使用 `deepseek-v4-flash`，fast RAG 的图片输入使用 `gpt-5-mini`。
 - Kimi 单篇最终报告位于 `benchmark_runs/ai20_20260607_005847/aggregate_report.md`；PPTX 输出位于 `outputs/Kimi_K2_Technical_Report/paper/fast/slides_academic_medium_24slides/20260607_010126/slides.pptx`。
 - Kimi 单篇结果：1/1 通过，23 页，耗时 298.5 秒，2 个 warning，warning categories 为 `structured_point` 和 `text_overflow`；生成阶段触发过一次 PPTX QA repair，自动调整 9 页。
-- 新增下一阶段计划文档：`docs/multistyle_aesthetic_benchmark_plan.zh-CN.md`，用于指导多模板、审美评分、内容组织评分和迭代曲线建设。
+- 更新下一阶段计划文档：`docs/multistyle_aesthetic_benchmark_plan.zh-CN.md`，用于指导 mature baseline suite、from-scratch template experiment、审美评分、内容组织评分、novelty score 和迭代规则建设。
 
 需要特别说明：
 
@@ -113,12 +118,13 @@ benchmark_runs/<set>_<timestamp>/
 - badcase 类型分布。
 - 最差论文、最差页面和最差版式。
 
-下一阶段会进一步拆成四类评分：
+下一阶段会进一步拆成五类评分：
 
 - `reliability_score`：是否稳定生成，是否缺产物，是否存在严重 QA 错误。
 - `content_score`：章节覆盖、目录一致性、slide role 分布、claim/detail/evidence 完整性。
 - `visual_layout_score`：溢出、留白、对齐、图片可读性、表格和 metric 可读性。
 - `aesthetic_score`：配色协调、层级清楚、字体一致、页面专业感和模板一致性。
+- `novelty_score`：用于 from-scratch 新模板实验，检测新模板是否只是 golden baseline 换皮。
 
 ## 20 篇论文 Benchmark 数据集计划
 
@@ -236,29 +242,71 @@ C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.run
 C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.runner run --set ai20 --styles academic --slides 24 --resume
 ```
 
-### Phase 4：多模板与审美 Benchmark
+### Phase 4：成熟套件回归与从零模板 Benchmark
 
-状态：已完成方案设计，待实现。
+状态：方向已更新，待按新路线实现。
+
+#### Phase 4A：成熟套件回归
+
+成熟套件包括：
+
+```text
+academic
+academic_warm
+editorial
+editorial_mono
+data_report
+```
+
+定位：
+
+- `academic` 是 golden baseline。
+- 其余样式是 baseline companion styles。
+- 它们用于稳定生成和全量回归，不再作为“全新模板设计”的主线。
 
 任务：
 
-- 保护当前 `academic` 模板作为 golden baseline。状态：规划完成。
-- 抽象 style / layout preset，建议新增 `paper2slides/generator/style_presets.py`。状态：待实现。
-- 第一批新增 `editorial`、`conference`、`systems`、`data_report`、`visual_explainer` 等模板。状态：待实现。
-- 同一篇论文复用解析、RAG、summary 和 plan checkpoint；只在模板视觉层变化时从 `--from-stage generate` 低成本重跑。状态：待实现。
-- 如果模板需要改变内容组织策略，再从 `--from-stage plan` 重跑，而不是重新解析 PDF。状态：待实现。
-- 输出不同模板的 pass rate、warning rate、content score、visual layout score、aesthetic score 和 overall score。状态：待实现。
-- 输出 style leaderboard、最差页面、最差模板、每篇论文推荐模板。状态：待实现。
+- 保护当前 `academic` 模板作为 golden baseline。状态：持续要求。
+- 保留 `academic_warm`、`editorial`、`editorial_mono`、`data_report`。状态：人工确认保留。
+- 对 mature suite 跑 Kimi 单篇和 ai20 全量回归。状态：待实现。
+- 输出 mature style leaderboard、warning rate、artifact success、QA pass rate。状态：待实现。
+- 修复 `data_report` 当前主色偏怪、部分颜色/文字排版问题。状态：待实现。
+
+#### Phase 4B：从零模板实验
+
+目标不是继续给 baseline 换皮，而是建立一个从已解析论文内容到全新 PPT 风格的迭代流程。
+
+任务：
+
+- 从 Kimi K2 已有 checkpoint 生成 `content_inventory`。状态：待实现。
+- 先生成“不追求好看但内容完整”的无审美草稿。状态：待实现。
+- 重新设计章节、目录、slide role、claim、proof object。状态：待实现。
+- 设计完全独立于 golden baseline 的视觉系统。状态：待实现。
+- 新增 `novelty_score` 或 baseline similarity 检测，防止新模板只是换皮。状态：待实现。
+- 将人工反馈沉淀为 badcase rule、检测规则和修复建议。状态：待实现。
+- 用 Kimi K2 单篇先迭代 2-3 轮，再扩展到 4 篇小集合，最后再跑 ai20。状态：待实现。
 
 推荐第一轮实现顺序：
 
-1. 先实现 `editorial` 和 `systems` 两个模板。
-2. 用 Kimi K2 从 `--from-stage generate` 跑 `academic,editorial,systems`。
-3. 记录初始 warning 和审美问题。
-4. 只修主要矛盾，再重跑同一集合。
-5. 形成第一张“迭代前后对比曲线”。
+1. 冻结 mature suite：`academic,academic_warm,editorial,editorial_mono,data_report`。
+2. 生成 Kimi K2 的 content inventory。
+3. 做一个无审美草稿，先保证内容完整。
+4. 设计第一套完全不同于 golden baseline 的新模板。
+5. 跑 Kimi K2 单篇，记录内容缺失、溢出、图文不匹配、审美问题和 baseline similarity。
+6. 只修 Top 1-3 个主要矛盾。
+7. 把每个问题和修复策略写入 benchmark rule。
 
 详细方案见：`docs/multistyle_aesthetic_benchmark_plan.zh-CN.md`。
+
+新窗口继续本任务时，第一轮建议只做规划，不直接改代码、不直接跑 Kimi K2 生成。应该先确认：
+
+- mature suite 与 from-scratch experiment 的边界是否清楚。
+- `content_inventory.json` 和 rough draft spec 的 schema 是否能承载 Kimi K2 已解析内容。
+- slide role / proof object / claim-detail-evidence 的定义是否足够明确。
+- `reliability_score`、`content_score`、`visual_layout_score`、`aesthetic_score`、`novelty_score` 的第一版规则型实现是否可落地。
+- 人工反馈如何转成 badcase rule、repair hint 和 regression case。
+
+完整交接提示见：`docs/next_window_handoff.zh-CN.md`。
 
 ### Phase 5：自动修复与迭代建议
 

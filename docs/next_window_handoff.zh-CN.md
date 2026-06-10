@@ -1,174 +1,187 @@
-# 新窗口交接说明
+# 新窗口交接说明 V2
 
-如果新开 Codex 窗口继续做 paper2ppt，请先把下面这段发给 Codex。
+本文档是给下一次 Codex 窗口的启动手册。核心目的：避免新窗口误以为下一步还是继续做 `academic` 换皮模板，而是要接住 **from-scratch template experiment**。
 
-## 推荐发送给 Codex 的消息
+## 新窗口请直接发送这段话
 
 ```text
-codex老师，我们继续做 Paper2Slides-main / paper2ppt 项目。请先阅读：
+codex老师，我们继续做 Paper2Slides-main / paper2ppt。请先阅读：
 
 1. docs/benchmark_plan.zh-CN.md
 2. docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
-3. docs/agent_workflow.md
-4. README.zh-CN.md
+3. docs/next_window_handoff.zh-CN.md
+4. docs/agent_workflow.md
+5. README.zh-CN.md
 
-当前目标不是重构已经很好看的 academic 模板，而是保护它作为 golden baseline，然后新增多模板 benchmark 和审美评分体系。
+请先不要写代码，先规划。
 
-请优先做下一阶段第一步，但先不要直接改代码：
-- 先给出一组好看的论文 PPT 模板方案，用于我和老师讨论审美方向。
-- 每个模板请说明名称、目标场景、配色 palette、字体层级、标题页/目录页/章节页/普通页/图文页/metric 页/表格页的版式策略。
-- 请特别说明每个模板可能在 benchmark 中暴露什么问题，以及审美评分应该关注什么。
-- 当前成熟 academic 模板必须作为 golden baseline 保护，不要重构它。
-- 等我确认模板方向后，再进入代码实现：新增 style preset 层，先实现 editorial 和 systems 两个模板。
-- 之后再扩展 benchmark，让同一篇论文能跑 academic/editorial/systems，并输出 style leaderboard。
-- 新增第一版规则型 aesthetic/content score，不要一开始就大量调用视觉模型。
-- 最后用 Kimi_K2_Technical_Report.pdf 从 --from-stage generate 跑单篇多模板验证。
+现在的目标已经更新：
 
-注意模型路由：
-- 文本调用：deepseek-v4-flash，base_url=https://api.deepseek.com。
-- 图片/多模态调用：gpt-5-mini，base_url=https://api.shunyu.tech/v1。
+1. `academic` 是 golden baseline，必须保护，不要重构。
+2. `academic_warm`、`editorial`、`editorial_mono`、`data_report` 是已经筛出来的 baseline companion styles。它们好看，要保留，但它们太像 golden baseline，不是下一步要继续创造的新模板。
+3. 下一步不是继续调颜色或 preset，而是做 from-scratch template experiment。
+4. from-scratch 的意思不是重新解析一切，而是可以复用 Kimi K2 已解析内容；但不能复用 golden baseline 的视觉骨架。
+5. 我们要从 content inventory 开始，先做无审美但内容完整的草稿，再重新设计章节、目录、slide role、claim、proof object、视觉系统，最后用 benchmark 自动检测和迭代。
+6. benchmark 不只检测是否出错，还要检测内容是否完整、排版是否清楚、审美是否好、以及新模板是否过度像 golden baseline。
+7. 每轮我给你的人工反馈，都要被整理成可自动检测、可自动修复或可回归的 benchmark rule。
+
+请你先输出一个详细执行规划，不要改代码。规划要包括：
+
+- content_inventory.json 的 schema。
+- 无审美草稿 PPT/spec 的生成方式。
+- slide role / proof object 的定义。
+- reliability/content/layout/aesthetic/novelty 五类评分如何做第一版规则型实现。
+- 如何检测新模板是不是 golden baseline 换皮。
+- 如何把人工反馈转成 badcase rule。
+- 第一轮用 Kimi_K2_Technical_Report.pdf 做 from-scratch 实验的步骤。
+- 哪些步骤可以复用已有 checkpoint，哪些情况才需要重新调用大模型。
+
+模型路由：
+- 文本：deepseek-v4-flash，base_url=https://api.deepseek.com。
+- 图片/多模态：gpt-5-mini，base_url=https://api.shunyu.tech/v1。
 - 不要把 DeepSeek 用于 image_url 多模态输入。
 - 不要打印或提交 API key。
 
-注意 git：
+git 注意：
 - paper2slides/.env、outputs/、benchmark_runs/、test_papers/ 不要提交。
-- 改完后先跑 python -m unittest test_phase1_pptx.py。
+- 改代码后跑 python -m unittest test_phase1_pptx.py。
 ```
 
-## 当前项目事实
+## 新窗口的第一句话应该确认什么
 
-- 工作目录：`D:\coding\agent_paper_to_slider\Paper2Slides-main`
-- 当前成熟模板：`academic`
-- 当前 benchmark 数据集：`ai20`，共 20 篇 PDF，位于 `test_papers/`
-- Kimi K2 单篇已经跑通：
-  - 报告：`benchmark_runs/ai20_20260607_005847/aggregate_report.md`
-  - PPT：`outputs/Kimi_K2_Technical_Report/paper/fast/slides_academic_medium_24slides/20260607_010126/slides.pptx`
-  - 结果：1/1 通过，23 页，2 个 warning
-- 测试命令：
+新窗口 Codex 应先复述下面三点：
+
+1. 当前不是继续打磨 `academic_warm/editorial/editorial_mono/data_report`。
+2. 当前是要规划一个不模仿 golden baseline 的 from-scratch 新模板实验。
+3. 第一轮先规划 schema、评分、迭代规则，不直接写代码。
+
+如果新窗口没有复述这三点，说明它还没接住任务。
+
+## 当前项目状态
+
+工作目录：
+
+```text
+D:\coding\agent_paper_to_slider\Paper2Slides-main
+```
+
+成熟模板：
+
+```text
+academic
+```
+
+保留的 companion styles：
+
+```text
+academic_warm
+editorial
+editorial_mono
+data_report
+```
+
+这些 companion styles 的定位：
+
+- 好看。
+- 可以保留。
+- 可以和 `academic` 一起做 mature suite 回归。
+- 但不是 from-scratch 新模板。
+
+当前 benchmark 数据集：
+
+```text
+ai20
+```
+
+Kimi K2 已跑通：
+
+```text
+test_papers/Kimi_K2_Technical_Report.pdf
+```
+
+golden baseline evidence：
+
+```text
+benchmark_runs/ai20_20260607_005847/aggregate_report.md
+outputs/Kimi_K2_Technical_Report/paper/fast/slides_academic_medium_24slides/20260607_010126/slides.pptx
+```
+
+## 为什么要这样做
+
+我们发现：只靠 `style_presets.py`、palette、header、key message、metric card、少量 renderer 分支，很容易得到好看的 companion styles，但它们仍然像 golden baseline。
+
+用户真正想要的是：
+
+```text
+复用论文解析结果
+但不复用 baseline 页面骨架
+从内容库存开始
+一步步做出全新视觉系统
+并把每轮问题变成 benchmark rule
+最后让 agent workflow 能自动检查和迭代
+```
+
+## 新窗口第一轮不要做什么
+
+不要：
+
+- 不要继续做新的换色模板。
+- 不要直接改 `pptx_renderer.py`。
+- 不要上来跑 Kimi K2 生成。
+- 不要跑 ai20 全量。
+- 不要把 `academic_warm/editorial/editorial_mono/data_report` 当作新模板。
+- 不要重构 `academic`。
+- 不要调用视觉模型做全量 judge。
+
+## 新窗口第一轮应该做什么
+
+只做规划，输出以下内容：
+
+1. `content_inventory.json` schema。
+2. rough draft spec schema。
+3. slide role taxonomy。
+4. proof object taxonomy。
+5. 第一版规则型评分设计：
+   - `reliability_score`
+   - `content_score`
+   - `visual_layout_score`
+   - `aesthetic_score`
+   - `novelty_score`
+6. baseline similarity 检测规则。
+7. 人工反馈到 benchmark rule 的格式。
+8. 第一轮 Kimi K2 from-scratch 实验步骤。
+9. 后续代码实现顺序。
+
+## 后续如果用户确认规划
+
+再进入代码实现，建议顺序：
+
+1. 新增 content inventory 生成器。
+2. 新增 rough draft spec 生成器。
+3. 新增 content quality / novelty scoring。
+4. 新增 iteration report。
+5. 用 Kimi K2 单篇生成第一版 from-scratch 草稿。
+6. 用户反馈。
+7. 把反馈写成 benchmark rules。
+
+## 测试命令
+
+改代码后运行：
 
 ```powershell
 $env:PYTHONDONTWRITEBYTECODE="1"
 C:\Users\81001\.conda\envs\paper2slides\python.exe -m unittest test_phase1_pptx.py
 ```
 
-## 下一阶段实现顺序
+## 文件提交注意
 
-### Step 0：模板方案讨论
-
-目标：
-- 先让 Codex 提出模板设计方案，而不是直接黑箱实现。
-- 用户和 Codex 讨论模板审美、应用场景和 benchmark 价值。
-- 确认第一批要实现的模板。
-
-建议输出：
-- 5-6 个模板候选。
-- 每个模板的 palette、版式语言、页面类型策略。
-- 每个模板的可能失败模式。
-- 每个模板对应的审美评分重点。
-
-验收：
-- 用户确认先实现哪 1-2 个模板。
-
-### Step 1：保护 baseline
-
-目标：
-- 给现有 `academic` 行为增加回归测试或快照式验证。
-- 确认新增模板不会改变现有 academic 渲染。
-
-验收：
-- `test_phase1_pptx.py` 通过。
-- Kimi K2 的 `academic` 从 `--from-stage generate` 能继续通过。
-
-### Step 2：style preset 层
-
-建议新增：
+不要提交：
 
 ```text
-paper2slides/generator/style_presets.py
+paper2slides/.env
+outputs/
+benchmark_runs/
+test_papers/
 ```
 
-至少包含：
-- `academic`
-- `editorial`
-- `systems`
-
-每个 preset 应包含：
-- palette
-- typography
-- margins
-- title block policy
-- section divider policy
-- metric card policy
-- visual/table layout policy
-
-### Step 3：renderer 分派
-
-改造：
-
-```text
-paper2slides/generator/pptx_renderer.py
-```
-
-原则：
-- 先让不同模板共享 slide schema。
-- 不让 LLM 直接控制颜色和坐标。
-- 由 preset 控制视觉系统。
-- academic 逻辑尽量保持不变。
-
-### Step 4：benchmark 多模板汇总
-
-改造：
-
-```text
-paper2slides/benchmark/runner.py
-```
-
-目标：
-- 支持多 style 输出 style leaderboard。
-- 汇总每个 style 的成功率、warning rate、平均耗时。
-- 后续加入 content / visual / aesthetic / overall 分数。
-
-### Step 5：第一版审美和内容评分
-
-建议新增：
-
-```text
-paper2slides/benchmark/aesthetic.py
-paper2slides/benchmark/content_quality.py
-paper2slides/benchmark/style_report.py
-```
-
-第一版只做规则评分：
-- 不需要先调用视觉模型。
-- 从 PPTX 元素、slide spec 和 QA JSON 中提取指标。
-- 输出可复现的分数。
-
-### Step 6：Kimi 单篇多模板验证
-
-推荐命令形态：
-
-```powershell
-C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.runner run --set ai20 --styles academic,editorial,systems --slides 24 --start-index 17 --limit 1 --from-stage generate
-```
-
-如果新模板需要重新规划内容结构，再改用：
-
-```powershell
-C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark.runner run --set ai20 --styles academic,editorial,systems --slides 24 --start-index 17 --limit 1 --from-stage plan
-```
-
-## 面试叙事要点
-
-可以这样讲：
-
-> 我先把一个成熟模板作为 golden baseline，避免为了探索新风格破坏已经稳定的能力。然后我把模板扩展成多风格系统，并用同一批论文做 benchmark。评估不只看能不能生成，还看内容组织、视觉排版和审美质量。每次迭代先看 benchmark 报告里的主要 badcase，再有针对性地修 renderer、layout preset 或 repair rule，最后用同一组论文回归，形成 pass rate、warning rate 和审美分数的提升曲线。
-
-## 不要做的事
-
-- 不要提交 `paper2slides/.env`。
-- 不要提交 `outputs/`、`benchmark_runs/`、`test_papers/`。
-- 不要把 API key 打印到日志、README 或报告里。
-- 不要把 DeepSeek 文本模型用于图片输入。
-- 不要为了新模板重构掉当前 `academic` baseline。
-- 不要一上来黑箱实现一堆模板；先输出模板方案让用户确认。
-- 不要一开始就跑 ai20 全量多模板，先用 Kimi 单篇和 4 篇小集合试。
+不要打印、复制或提交任何 API key。
