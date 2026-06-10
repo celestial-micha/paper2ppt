@@ -65,6 +65,21 @@ git 注意：
 D:\coding\agent_paper_to_slider\Paper2Slides-main
 ```
 
+当前 git checkpoint：
+
+```text
+branch: codex/from-scratch-benchmark-plan
+remote: origin/codex/from-scratch-benchmark-plan
+commit: ba94020 docs: clarify from-scratch benchmark plan
+```
+
+说明：
+
+- 这个 commit 已经 push 到 GitHub 远端分支。
+- 本地 `main` 也暂时指向同一个 commit，但远端 `origin/main` 还停在上一个提交。
+- 当前还有 companion styles 相关代码改动未提交，包括 `paper2slides/generator/style_presets.py` 和若干 renderer/pipeline 文件。新窗口第一轮只做规划时，不要误以为这些代码已经进入远端文档 commit。
+- 后续如果要保存 companion styles 代码，建议单独测试并单独 commit。
+
 成熟模板：
 
 ```text

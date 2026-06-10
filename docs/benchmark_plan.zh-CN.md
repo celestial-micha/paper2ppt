@@ -11,6 +11,8 @@
 1. **成熟套件回归**：保护 `academic`，保留 `academic_warm`、`editorial`、`editorial_mono`、`data_report`，用于稳定生成、ai20 回归和可靠性统计。
 2. **从零模板实验**：不模仿 golden baseline 的视觉骨架，只复用论文解析结果和之前积累的问题/修复经验，从 content inventory、无审美草稿、章节/目录/slide role、proof object、视觉系统一步步迭代出全新模板，并把过程中遇到的问题沉淀为可自动检测和自动修复的 benchmark rule。
 
+当前文档 checkpoint 已提交并推送到远端分支 `codex/from-scratch-benchmark-plan`，提交为 `ba94020 docs: clarify from-scratch benchmark plan`。更完整的新窗口交接说明见 `docs/next_window_handoff.zh-CN.md`。
+
 当前 DeepSeek 路线使用 `deepseek-v4-flash`，不是 `deepseek-v4-pro`。项目采用双模型路由，避免把文本模型和多模态模型混淆：
 
 ```env
