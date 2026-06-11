@@ -1,6 +1,20 @@
 """Command-line entry point for paper2ppt benchmark utilities."""
 
-from .qa_summary import main
+from __future__ import annotations
+
+import sys
+from typing import List, Optional
+
+from . import from_scratch, qa_summary
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] == "inventory":
+        return from_scratch.main(args[1:])
+    if args and args[0] == "qa-summary":
+        return qa_summary.main(args[1:])
+    return qa_summary.main(args)
 
 
 if __name__ == "__main__":

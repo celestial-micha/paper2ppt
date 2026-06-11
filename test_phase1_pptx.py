@@ -1,7 +1,10 @@
 import unittest
+import json
 import uuid
 from pathlib import Path
 from unittest.mock import patch
+
+from pptx import Presentation
 
 from paper2slides.generator.detailed_tex import generate_detailed_tex_deck
 from paper2slides.generator.config import GenerationConfig, GenerationInput, OutputType, SlidesLength, StyleType
@@ -15,6 +18,7 @@ from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, S
 from paper2slides.benchmark.qa_summary import QaRunResult, classify_warning, summarize_layout_qa
 from paper2slides.benchmark.papers import expand_paper_set, validate_paper_files
 from paper2slides.benchmark.runner import _build_command, _preflight_environment, summarize_run_results
+from paper2slides.benchmark.from_scratch import build_content_inventory, build_rough_draft_spec, render_rough_draft_pptx, write_from_scratch_artifacts
 from paper2slides.core.stages.rag_stage import _run_fast_queries_by_category
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
 
@@ -577,6 +581,179 @@ class Phase1PptxSmokeTest(unittest.TestCase):
                     "RAG_VISION_API_KEY": "vision-key",
                 }
             )
+
+    def test_from_scratch_inventory_reuses_existing_checkpoints(self):
+        root = Path(__file__).parent / "outputs" / "tmp" / f"inventory_{uuid.uuid4().hex}"
+        summary_path = root / "checkpoint_summary.json"
+        plan_path = root / "checkpoint_plan.json"
+        spec_path = root / "checkpoint_slide_spec.json"
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(
+            """
+{
+  "content_type": "paper",
+  "content": {
+    "paper_info": "**Title**: Example Agent Paper  **Authors**: Team",
+    "motivation": "## RESEARCH PROBLEM\\nAgents need reliable tool-use planning.",
+    "solution": "## FRAMEWORK OVERVIEW\\nThe system combines planning, retrieval, and execution.",
+    "results": "## MAIN RESULTS\\nThe model reaches 87% success on a benchmark.",
+    "contributions": "## MAIN CONTRIBUTIONS\\nOpen checkpoints and training recipe."
+  },
+  "origin": {
+    "base_path": "paper_assets",
+    "figures": [{"id": "Figure 1", "caption": "Pipeline overview", "path": "fig1.png"}],
+    "tables": [{"id": "Table 1", "caption": "Benchmark scores", "html": "<table><tr><td>87%</td></tr></table>"}]
+  }
+}
+""",
+            encoding="utf-8",
+        )
+        plan_path.write_text(
+            """
+{
+  "plan": {
+    "output_type": "slides",
+    "sections": [
+      {
+        "id": "slide_01",
+        "title": "Example Agent Paper",
+        "type": "opening",
+        "section": "Overview",
+        "content": "An overview of the agent system.",
+        "figures": [{"figure_id": "Figure 1", "focus": "Pipeline"}],
+        "tables": []
+      },
+      {
+        "id": "slide_02",
+        "title": "Benchmark Result",
+        "type": "content",
+        "section": "Results",
+        "content": "The model reaches 87% success.",
+        "figures": [],
+        "tables": [{"table_id": "Table 1", "focus": "Success rate"}]
+      }
+    ]
+  }
+}
+""",
+            encoding="utf-8",
+        )
+        spec_path.write_text(
+            """
+{
+  "title": "Example Agent Paper",
+  "slides": [
+    {
+      "slide_id": "slide_01",
+      "title": "Example Agent Paper",
+      "layout": "cover",
+      "takeaway": "The agent system combines planning and execution.",
+      "section_type": "opening",
+      "section_label": "Overview",
+      "text_blocks": [
+        {"text": "Unified agent loop: Planning and execution are joined.", "claim": "Unified agent loop", "detail": "Planning and execution are joined.", "evidence": "Figure 1"}
+      ],
+      "metric_blocks": []
+    },
+    {
+      "slide_id": "slide_02",
+      "title": "Benchmark Result",
+      "layout": "table_focus",
+      "takeaway": "The model reaches 87% success.",
+      "section_type": "content",
+      "section_label": "Results",
+      "text_blocks": [
+        {"text": "Strong benchmark result: The model reaches 87% success.", "claim": "Strong benchmark result", "detail": "The model reaches 87% success.", "evidence": "Table 1"}
+      ],
+      "metric_blocks": [{"label": "Success rate", "value": "87%", "note": "benchmark"}]
+    }
+  ]
+}
+""",
+            encoding="utf-8",
+        )
+
+        inventory = build_content_inventory(summary_path, plan_path, spec_path)
+        self.assertEqual(inventory["paper"]["title"], "Example Agent Paper")
+        self.assertEqual(inventory["coverage"]["plan_slide_count"], 2)
+        self.assertEqual(inventory["coverage"]["figure_count"], 1)
+        self.assertEqual(inventory["coverage"]["metric_count"], 1)
+        self.assertTrue(inventory["coverage"]["has_core_sections"]["method"])
+        self.assertEqual(inventory["assets"]["tables"][0]["row_count"], 1)
+        self.assertEqual(inventory["assets"]["tables"][0]["rows"][0][0], "87%")
+
+        rough = build_rough_draft_spec(inventory)
+        self.assertEqual(len(rough["slides"]), 2)
+        self.assertEqual(rough["slides"][0]["proof_object"]["type"], "figure")
+        self.assertEqual(rough["slides"][1]["proof_object"]["type"], "table")
+        self.assertTrue(rough["rules"]["baseline_skeleton_forbidden"])
+
+    def test_from_scratch_artifact_writer_outputs_inventory_and_rough_draft(self):
+        root = Path(__file__).parent / "outputs" / "tmp" / f"inventory_write_{uuid.uuid4().hex}"
+        summary_path = root / "checkpoint_summary.json"
+        output_dir = root / "from_scratch"
+        pptx_path = output_dir / "rough_draft.pptx"
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(
+            """
+{
+  "content_type": "paper",
+  "content": {
+    "paper_info": "Title: Minimal Paper",
+    "motivation": "A short motivation paragraph with enough content to keep.",
+    "solution": "A short method paragraph with enough content to keep."
+  },
+  "origin": {"figures": [], "tables": []}
+}
+""",
+            encoding="utf-8",
+        )
+
+        paths = write_from_scratch_artifacts(summary_path, None, None, output_dir, pptx_output=pptx_path)
+        self.assertTrue(Path(paths["content_inventory"]).exists())
+        self.assertTrue(Path(paths["rough_draft_spec"]).exists())
+        self.assertTrue(Path(paths["rough_draft_pptx"]).exists())
+        self.assertTrue(Path(paths["visual_audit"]).exists())
+        self.assertGreater(Path(paths["rough_draft_pptx"]).stat().st_size, 1000)
+        audit = json.loads(Path(paths["visual_audit"]).read_text(encoding="utf-8"))
+        self.assertTrue(audit["visual_review_manifest"]["requires_rendered_screenshots"])
+        self.assertGreaterEqual(len(audit["visual_review_manifest"]["render_requests"]), 2)
+
+    def test_from_scratch_renderer_outputs_plain_pptx(self):
+        root = Path(__file__).parent / "outputs" / "tmp" / f"rough_pptx_{uuid.uuid4().hex}"
+        pptx_path = root / "rough_draft.pptx"
+        inventory = {
+            "paper": {"title": "Plain Rough Draft"},
+            "assets": {
+                "figures": [],
+                "tables": [
+                    {
+                        "id": "Table 1",
+                        "caption": "Result table",
+                        "rows": [["Metric", "Value"], ["Success", "87%"]],
+                    }
+                ],
+            },
+        }
+        rough = {
+            "slides": [
+                {
+                    "slide_id": "slide_01",
+                    "title": "Result",
+                    "slide_role": "table_interpretation",
+                    "claim": "The result is strong enough to carry the slide.",
+                    "support": "This support text is intentionally plain and content-first.",
+                    "proof_object": {"type": "table", "id": "Table 1", "focus": "Result table"},
+                    "source_evidence": [{"source": "summary", "id": "results_01"}],
+                }
+            ]
+        }
+        render_rough_draft_pptx(inventory, rough, pptx_path)
+        self.assertTrue(pptx_path.exists())
+        self.assertGreater(pptx_path.stat().st_size, 1000)
+        prs = Presentation(pptx_path)
+        self.assertEqual(len(prs.slides), 5)
+        self.assertGreaterEqual(sum(1 for slide in prs.slides for shape in slide.shapes if getattr(shape, "has_table", False)), 1)
 
 
 if __name__ == "__main__":

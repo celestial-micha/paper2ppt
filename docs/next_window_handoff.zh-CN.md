@@ -200,3 +200,29 @@ test_papers/
 ```
 
 不要打印、复制或提交任何 API key。
+
+## 2026-06-12 补充：Human Feedback From-Scratch 复盘
+
+本轮 Kimi K2 from-scratch PPT 实验已经从 v1/v2 迭代到用户认可的 v3。新的复盘文档见：
+
+```text
+docs/human_feedback_benchmark_synthesis.zh-CN.md
+```
+
+下一个窗口继续本任务时应优先阅读该文件。它补充了：
+
+- 为什么 from-scratch 不是重新解析 PDF，而是复用已有 checkpoints。
+- v1 的标题页/目录页缺失、右侧大 proof panel 单调、表格读取不足等问题。
+- v2 的黑白配色、封面黑条、目录黑圆点、短文本大空框、metric 卡片质量不稳定等问题。
+- v3 的暖色学术视觉系统、封面 source inventory rail、目录 deck map、section divider、evidence card stack、metric layout 重构。
+- `visual_audit.json` 的 `visual_review_manifest` 设计。
+- `--render-review-dir` 的可选 PPTX 页面截图导出钩子。
+- 如何把用户反馈沉淀成 badcase registry、aesthetic_score、visual_feedback_score 和未来自动修复闭环。
+
+当前 v3 本地生成物位于：
+
+```text
+outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v3.pptx
+```
+
+注意：`outputs/` 和 `*.pptx` 被 `.gitignore` 忽略，不进入 Git。应提交的是代码、测试和文档，而不是生成产物。
