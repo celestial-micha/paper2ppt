@@ -19,6 +19,7 @@ from paper2slides.benchmark.qa_summary import QaRunResult, classify_warning, sum
 from paper2slides.benchmark.papers import expand_paper_set, validate_paper_files
 from paper2slides.benchmark.runner import _build_command, _preflight_environment, summarize_run_results
 from paper2slides.benchmark.from_scratch import build_content_inventory, build_rough_draft_spec, render_rough_draft_pptx, write_from_scratch_artifacts
+from paper2slides.benchmark.human_feedback import badcase_ids, load_human_feedback_benchmark, summarize_human_feedback_benchmark
 from paper2slides.core.stages.rag_stage import _run_fast_queries_by_category
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
 
@@ -415,6 +416,15 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertEqual(len(result["present"]), 1)
         self.assertEqual(len(result["missing"]), 1)
 
+    def test_human_feedback_benchmark_registry_loads(self):
+        data = load_human_feedback_benchmark()
+        summary = summarize_human_feedback_benchmark(data)
+        self.assertEqual(summary["accepted_reference"], "rough_draft_v5")
+        self.assertIn("rough_draft_v6", summary["avoid_versions"])
+        self.assertGreaterEqual(summary["badcase_count"], 8)
+        self.assertIn("component_overlap", badcase_ids(data))
+        self.assertIn("overoptimized_density_regression", badcase_ids(data))
+
     def test_benchmark_runner_builds_expected_command(self):
         command = _build_command(
             python_executable="python",
@@ -679,6 +689,8 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertEqual(inventory["coverage"]["figure_count"], 1)
         self.assertEqual(inventory["coverage"]["metric_count"], 1)
         self.assertTrue(inventory["coverage"]["has_core_sections"]["method"])
+        self.assertGreaterEqual(len(inventory["paper_highlights"]), 2)
+        self.assertTrue(any("87%" in item["body"] or "planning" in item["body"].lower() for item in inventory["paper_highlights"]))
         self.assertEqual(inventory["assets"]["tables"][0]["row_count"], 1)
         self.assertEqual(inventory["assets"]["tables"][0]["rows"][0][0], "87%")
 

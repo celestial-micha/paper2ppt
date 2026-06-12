@@ -333,3 +333,48 @@ data_report
 进一步可以这样讲审美评估：
 
 > 我把 PPT 质量拆成可靠性、内容组织、视觉排版和审美四类指标。可靠性保证能生成且没有严重错误；内容组织检查目录、章节、核心贡献和 evidence；视觉排版检查溢出、留白、对齐和素材匹配；审美则量化配色、对比、层级、字体一致性和专业感。这样 benchmark 不只是找 bug，也能驱动模板设计和审美质量提升。
+
+## 2026-06-12 追加：把 v1-v6 人类审美反馈纳入 Benchmark
+
+Kimi K2 from-scratch track 已经完成多轮人工反馈迭代，当前最重要的新结论是：
+
+```text
+rough_draft_v5.pptx 是当前人工接受的审美参考；
+rough_draft_v6.pptx 是一次局部自动优化导致整体观感下降的回归样本。
+```
+
+因此 benchmark 需要新增一类能力：不仅能判断“有没有生成成功”和“有没有文本溢出”，还要能记录人类偏好、检测审美回归，并把每次反馈转成可复用规则。
+
+本轮新增机器可读规则文件：
+
+```text
+benchmarks/from_scratch_human_feedback_benchmark.json
+```
+
+它补充了以下内容：
+
+- accepted reference：`rough_draft_v5.pptx`。
+- iteration log：v1-v6 每轮问题、用户反馈和修复策略。
+- badcase rules：缺标题页、缺目录页、版式单调、短文本大空框、表格缺行、组件遮挡、黑白枯燥、封面统计无意义、agenda 侧栏干、v6 过度优化回归等。
+- aesthetic rubric：将“好看”拆成 academic polish、palette vitality、layout variety、evidence readability、typography density、visual review readiness、novelty without content loss。
+- automatic review strategy：优先使用低成本 PPTX 元数据检查，只对高风险页或代表页截图和视觉判断。
+
+这部分经验会改变下一阶段自动 benchmark 的设计：
+
+1. **不要每页都视觉模型评审**：先做 shape overlap、字体大小、text density、table rows、metric grammar、layout repetition 等非视觉检查。
+2. **只渲染重点页**：标题页、目录页、section divider、高风险表格页、短文本证据页、metric 页、被非视觉检查命中的页面。
+3. **视觉改动要和 v5 对比**：任何改变 v5 主要视觉语法的规则，都需要证明更好或获得人工确认。
+4. **把回退也记录为经验**：v6 的 2x2 read path 和过度压缩 evidence cards 不是单纯失败，而是未来自动 repair loop 需要避免重复犯的 regression case。
+5. **继续复用已解析论文内容**：from-scratch track 仍然从 checkpoint_summary / checkpoint_plan / checkpoint_slide_spec 出发，不重跑已稳定的 PDF 解析链路。
+
+后续 runner 可以逐步接入这个规则文件，形成如下闭环：
+
+```text
+generate vN
+ -> run cheap PPTX metadata checks
+ -> select high-risk pages for render-review
+ -> compare against accepted reference when visual grammar changes
+ -> emit badcase hits and repair hints
+ -> repair Top 1-3 issues
+ -> record whether vN improves or regresses from v5
+```

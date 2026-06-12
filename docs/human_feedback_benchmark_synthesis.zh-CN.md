@@ -526,3 +526,166 @@ C:\Users\81001\.conda\envs\paper2slides\python.exe -m unittest test_phase1_pptx.
  -> 形成可回归 benchmark report
 ```
 
+## 9. v4-v6 追加沉淀：从“继续变好”到“知道何时回退”
+
+本轮后续迭代进一步说明了一件重要的事：benchmark 不只要记录“修了什么”，还要记录“哪种看似合理的自动优化反而让结果变差”。因此 `rough_draft_v5` 被确认为当前人工审美接受的参考版本，而 `rough_draft_v6` 被记录为一次需要回退的视觉回归。
+
+### 9.1 标题页：醒目组件必须承载论文亮点
+
+用户指出，标题页右侧如果放一个很醒目的圆角矩形，不应该只写“16 figures / 6 tables / 35 metrics”这类 source inventory。对学术汇报而言，首页最重要的是让听众快速知道论文为什么值得听。
+
+沉淀规则：
+
+```text
+cover side rail should summarize paper highlights, not only source depth.
+```
+
+修复策略：
+
+- 从已有 `summary / plan / slide_spec / metrics` 中提取 cover-ready highlights。
+- 优先展示 `Core result`、`Scale`、`Design edge`、`Evidence scope`。
+- 保留“复用已解析 checkpoint，不重跑 PDF 解析”的原则。
+- 如果要展示 figures / tables / metrics 数量，只能作为次要信息，不能占据标题页视觉主位。
+
+对应 badcase：
+
+```text
+meaningless_cover_stats
+trigger: cover 右侧组件只展示 source counts，没有论文贡献摘要
+repair: derive 3 paper highlights from parsed checkpoints
+```
+
+### 9.2 证据卡片：版式变化要服务庄重感
+
+v3/v4 中 evidence notes 的三张彩色卡片已经明显比大空白 proof panel 好看，但用户指出它在多页重复出现时仍然会单调；同时把这组三卡片放到左侧时，页面显得不够庄重。
+
+沉淀规则：
+
+```text
+right-side and bottom evidence notes are preferred for formal academic pages.
+left-side evidence triplets should be avoided unless a specific layout needs them.
+```
+
+修复策略：
+
+- 短文本证据优先使用右侧 stack、底部 notes、mosaic，而不是大空 panel。
+- evidence notes 可以变化，但变化不应破坏学术汇报的稳定感。
+- 左侧证据组三卡片不是禁用所有左侧 proof object，而是禁用“左侧三彩卡片作为主视觉”的默认用法。
+
+对应 badcases：
+
+```text
+short_text_large_panel
+layout_monotony
+left_triplet_gravitas_loss
+```
+
+### 9.3 表格遮挡：必须作为共性问题，而不是单页补丁
+
+用户多次发现 table proof panel 会覆盖正文或说明文字。这说明问题不应只在某一页手工下移，而应成为 benchmark 的通用规则。
+
+沉淀规则：
+
+```text
+table proof panels must reserve a readable gutter below claim/support text.
+```
+
+检测策略：
+
+- 在非视觉层面读取 PPTX shape bounding boxes。
+- 检查 title / claim / support / table / proof panel 是否发生高风险重叠。
+- table_bottom layout 需要专门进入 visual_review_manifest。
+- 如果渲染能力可用，高风险表格页必须导出截图复核。
+
+对应 badcase：
+
+```text
+component_overlap
+trigger: table or proof panel intersects body text box
+repair: move proof panel lower, reduce proof height, or split layout
+```
+
+### 9.4 字体与密度：先做非视觉检查，再选择性截图
+
+用户提出一个很关键的工程判断：不能指望每一页都截图并调用视觉模型，因为成本高、速度慢，而且很多问题其实可以从 PPTX 本身检测。
+
+因此后续 benchmark 应采用两阶段策略：
+
+```text
+cheap non-visual checks first, selective rendered/vision checks second.
+```
+
+第一阶段，直接分析 PPTX：
+
+- 每类文本的字体大小下限。
+- text box 面积与词数的密度。
+- card / panel 是否大而空。
+- shape 是否重叠。
+- table 是否有 native rows / columns。
+- metric 是否有 value + label + context。
+- layout family 是否过度重复。
+
+第二阶段，只对重点页截图：
+
+- 标题页。
+- 目录页。
+- section divider。
+- 高风险表格页。
+- 短文本证据页。
+- metric 页。
+- 被非视觉检查标记为 overlap / sparse / low font 的页面。
+
+这个策略已经写入：
+
+```text
+benchmarks/from_scratch_human_feedback_benchmark.json
+```
+
+### 9.5 v5 是当前审美参考，v6 是一次回归样本
+
+v6 尝试了两个看似合理的优化：
+
+- 把 agenda read path 改成 2x2 流程组件。
+- 对文字少的 evidence cards 做更激进的高度压缩。
+
+但用户反馈是：v6 没有 v5 好看，整体感觉怪。这里的教训非常重要：局部规则指标的提升，不等于整页构图和整体审美提升。
+
+沉淀规则：
+
+```text
+human preference is a regression guard.
+```
+
+具体含义：
+
+- `rough_draft_v5` 是当前 accepted reference。
+- 后续任何自动审美优化，如果改变 v5 的主要视觉语法，都必须证明自己更好，或者获得人工确认。
+- 非视觉 density heuristic 只能作为风险提示，不能单独决定视觉改版。
+- benchmark 要记录“被回退的尝试”，因为它们是未来自动 repair loop 最容易再次犯的错。
+
+对应 badcase：
+
+```text
+overoptimized_density_regression
+trigger: new heuristic improves local density but human preference worsens
+repair: gate visual-system changes behind accepted-reference comparison
+```
+
+## 10. 新增机器可读 Benchmark 资产
+
+本轮新增：
+
+```text
+benchmarks/from_scratch_human_feedback_benchmark.json
+```
+
+该文件把聊天反馈整理成机器可消费的结构：
+
+- `accepted_reference`: 当前接受版本是 `rough_draft_v5`。
+- `core_principles`: 复用已解析 checkpoints、内容优先、反馈转规则、低成本检查优先。
+- `iteration_log`: v1-v6 每轮问题和修复。
+- `badcase_rules`: 缺标题页、缺目录页、版式单调、短文本大空框、表格缺行、组件遮挡、黑白枯燥、封面统计无意义、agenda 侧栏干、v6 过度优化回归等。
+- `aesthetic_rubric`: 把“好看”拆成 academic polish、palette vitality、layout variety、evidence readability、typography density、visual review readiness、novelty without content loss。
+- `automatic_review_strategy`: 明确哪些问题先靠 PPTX 元数据检查，哪些页面才需要截图和视觉模型。
+
+这让 benchmark 不只是文档，也可以成为后续 runner / audit / repair loop 的配置来源。

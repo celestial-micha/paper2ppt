@@ -476,3 +476,46 @@ git 注意：
 - paper2slides/.env、outputs/、benchmark_runs/、test_papers/ 不要提交。
 - 改代码后跑 python -m unittest test_phase1_pptx.py。
 ```
+
+## 追加说明：Kimi K2 from-scratch v5 作为当前审美参考
+
+在后续 human-in-the-loop 迭代中，Kimi K2 from-scratch PPT 已经从“无审美草稿”推进到一个用户认为比较美观的版本。当前应把：
+
+```text
+outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v5.pptx
+```
+
+视为 from-scratch track 的阶段性 accepted reference。
+
+这意味着下一阶段的重点不是继续随意探索视觉改动，而是：
+
+1. 保存 v5。
+2. 把 v1-v6 的人类反馈沉淀成 benchmark rules。
+3. 用规则保护 v5 的主要审美方向。
+4. 再接入 `--render-review-dir`、文本快照、PPTX 几何检查和选择性视觉判断。
+5. 后续任何视觉优化都要和 v5 对比，防止“局部指标变好、整体观感变差”。
+
+v6 的回退给出一个重要教训：自动化审美优化不能只看文本密度、组件面积或局部布局合理性。它还需要维护整页构图、学术庄重感和用户偏好的稳定性。
+
+新增机器可读规则文件：
+
+```text
+benchmarks/from_scratch_human_feedback_benchmark.json
+```
+
+该文件是后续 benchmark / runner / repair loop 的候选输入，包含：
+
+- v5 accepted reference。
+- v6 regression guard。
+- v1-v6 iteration log。
+- badcase rule registry。
+- aesthetic rubric。
+- non-visual-first / selective-render review strategy。
+
+下一轮实现建议：
+
+1. 先让 benchmark runner 能读取 `benchmarks/from_scratch_human_feedback_benchmark.json`。
+2. 在 from-scratch audit 中输出这些 rule 的命中情况。
+3. 对低成本问题先做 PPTX 元数据检查，例如字体大小、shape overlap、table rows、card density、layout repetition。
+4. 只有高风险页进入截图或视觉模型评审。
+5. 自动 repair 每轮只修 Top 1-3 个问题，并记录是否比 v5 更好。

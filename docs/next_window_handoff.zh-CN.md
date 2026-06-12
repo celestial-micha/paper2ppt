@@ -226,3 +226,36 @@ outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v
 ```
 
 注意：`outputs/` 和 `*.pptx` 被 `.gitignore` 忽略，不进入 Git。应提交的是代码、测试和文档，而不是生成产物。
+
+## 2026-06-12 再补充：当前 from-scratch 参考已更新到 v5
+
+上面的 v3 说明是上一阶段记录。当前最新人工反馈已经继续推进到 v5/v6：
+
+- `rough_draft_v5.pptx` 是当前用户认为更好看的 accepted reference。
+- `rough_draft_v6.pptx` 没有 v5 好看，已经决定回退。
+- v6 的问题不是功能失败，而是一次审美回归：2x2 read path 和过度压缩 sparse evidence cards 让整体观感变差。
+- 后续任何自动审美优化都应该和 v5 对比，不能只看局部密度或几何指标。
+
+下一轮继续时，除了阅读 `docs/human_feedback_benchmark_synthesis.zh-CN.md`，还要优先阅读新增机器可读规则：
+
+```text
+benchmarks/from_scratch_human_feedback_benchmark.json
+```
+
+它记录了：
+
+- v1-v6 的人类反馈链路。
+- v5 accepted reference。
+- v6 regression guard。
+- badcase rules。
+- aesthetic rubric。
+- 非视觉检查优先、重点页选择性截图的 review 策略。
+
+下一轮推荐入口：
+
+```text
+请先不要重新解析论文，也不要直接重做视觉系统。
+先读取 benchmarks/from_scratch_human_feedback_benchmark.json，
+让 benchmark runner / from_scratch audit 能消费这些规则，
+再接入 --render-review-dir 和低成本 PPTX 元数据检查。
+```

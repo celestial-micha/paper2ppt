@@ -5,13 +5,15 @@ from __future__ import annotations
 import sys
 from typing import List, Optional
 
-from . import from_scratch, qa_summary
+from . import from_scratch, human_feedback, qa_summary
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if args and args[0] == "inventory":
         return from_scratch.main(args[1:])
+    if args and args[0] == "human-feedback":
+        return human_feedback.main(args[1:])
     if args and args[0] == "qa-summary":
         return qa_summary.main(args[1:])
     return qa_summary.main(args)

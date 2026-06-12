@@ -67,6 +67,7 @@ def build_content_inventory(
     curated_slides = _curated_slides(spec_data)
     assets = _assets(origin)
     metrics = _metrics_from_curated_slides(curated_slides)
+    paper_highlights = _paper_highlights(summary_items, plan_slides, curated_slides, metrics)
 
     title = _extract_title(content.get("paper_info", "")) or _first_non_empty(
         [spec_data.get("title", ""), plan_slides[0]["title"] if plan_slides else ""]
@@ -91,6 +92,7 @@ def build_content_inventory(
         "curated_slides": curated_slides,
         "assets": assets,
         "metrics": metrics,
+        "paper_highlights": paper_highlights,
         "coverage": _coverage(summary_items, plan_slides, curated_slides, assets, metrics),
         "design_constraints": {
             "reuse_allowed": [
@@ -216,6 +218,7 @@ def export_visual_review_pages(pptx_path: Path, audit: Dict[str, Any], output_di
         "output_dir": str(output_dir),
         "requested_pages": pages,
         "rendered_files": [],
+        "text_snapshot_files": [],
         "status": "not_run",
         "renderer": "",
         "message": "",
@@ -227,9 +230,14 @@ def export_visual_review_pages(pptx_path: Path, audit: Dict[str, Any], output_di
         status.update({"status": "skipped", "message": "No render requests were present in visual audit."})
         return status
 
-    for renderer in (_render_pages_with_powerpoint, _render_pages_with_libreoffice):
+    text_snapshots = _export_slide_text_snapshots(pptx_path, output_dir, pages)
+    if text_snapshots:
+        status["text_snapshot_files"] = text_snapshots
+
+    for renderer in (_render_pages_with_powerpoint, _render_pages_with_powershell_powerpoint, _render_pages_with_libreoffice):
         rendered = renderer(pptx_path, output_dir, pages)
         if rendered.get("status") == "rendered":
+            rendered.setdefault("text_snapshot_files", text_snapshots)
             status.update(rendered)
             return status
         status.setdefault("attempts", []).append(rendered)
@@ -237,10 +245,48 @@ def export_visual_review_pages(pptx_path: Path, audit: Dict[str, Any], output_di
     status.update(
         {
             "status": "renderer_unavailable",
-            "message": "No supported PPTX-to-PNG renderer is available. Install PowerPoint with pywin32, or LibreOffice/soffice.",
+            "message": "No supported PPTX-to-PNG renderer is available. Text snapshots were exported; install PowerPoint, pywin32, or LibreOffice/soffice for PNG review.",
         }
     )
     return status
+
+
+def _export_slide_text_snapshots(pptx_path: Path, output_dir: Path, pages: List[int]) -> List[str]:
+    try:
+        from pptx import Presentation
+    except Exception:
+        return []
+
+    try:
+        prs = Presentation(pptx_path)
+    except Exception:
+        return []
+
+    rendered: List[str] = []
+    for page in pages:
+        if page < 1 or page > len(prs.slides):
+            continue
+        lines = [f"slide: {page:02d}"]
+        slide = prs.slides[page - 1]
+        for shape in slide.shapes:
+            if getattr(shape, "has_text_frame", False):
+                text = _clean_text(shape.text)
+                if text:
+                    lines.append(text)
+            if getattr(shape, "has_table", False):
+                table = shape.table
+                rows = []
+                for row in table.rows:
+                    cells = [_clean_text(cell.text) for cell in row.cells]
+                    if any(cells):
+                        rows.append(" | ".join(cells))
+                if rows:
+                    lines.append("[table]")
+                    lines.extend(rows)
+        snapshot_path = output_dir / f"slide_{page:02d}.txt"
+        snapshot_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        rendered.append(str(snapshot_path))
+    return rendered
 
 
 def _render_pages_with_powerpoint(pptx_path: Path, output_dir: Path, pages: List[int]) -> Dict[str, Any]:
@@ -280,6 +326,105 @@ def _render_pages_with_powerpoint(pptx_path: Path, output_dir: Path, pages: List
     if rendered:
         return {"renderer": "powerpoint_com", "status": "rendered", "message": "Rendered requested pages.", "rendered_files": rendered}
     return {"renderer": "powerpoint_com", "status": "failed", "message": "PowerPoint opened, but no requested pages were rendered.", "rendered_files": rendered}
+
+
+def _render_pages_with_powershell_powerpoint(pptx_path: Path, output_dir: Path, pages: List[int]) -> Dict[str, Any]:
+    command = shutil.which("powershell") or shutil.which("pwsh")
+    if not command:
+        return {"renderer": "powershell_powerpoint_com", "status": "unavailable", "message": "PowerShell command not found."}
+
+    script_path = output_dir / "_render_powerpoint_pages.ps1"
+    script = r'''
+param(
+  [Parameter(Mandatory=$true)][string]$PptxPath,
+  [Parameter(Mandatory=$true)][string]$OutputDir,
+  [Parameter(Mandatory=$true)][string]$PagesCsv
+)
+$ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$app = $null
+$presentation = $null
+$rendered = @()
+try {
+  $pages = $PagesCsv -split "," | Where-Object { $_ } | ForEach-Object { [int]$_ }
+  $app = New-Object -ComObject PowerPoint.Application
+  $presentation = $app.Presentations.Open($PptxPath, $true, $false, $false)
+  $slideCount = [int]$presentation.Slides.Count
+  foreach ($page in $pages) {
+    if ($page -gt $slideCount) { continue }
+    $outPath = Join-Path $OutputDir ("slide_{0:D2}.png" -f $page)
+    $presentation.Slides.Item($page).Export($outPath, "PNG", 1920, 1080)
+    if (Test-Path -LiteralPath $outPath) {
+      $rendered += $outPath
+    }
+  }
+  @{ status = "rendered"; message = "Rendered requested pages via PowerShell PowerPoint COM."; rendered_files = $rendered } | ConvertTo-Json -Compress
+}
+catch {
+  @{ status = "failed"; message = $_.Exception.Message; rendered_files = $rendered } | ConvertTo-Json -Compress
+  exit 2
+}
+finally {
+  if ($presentation -ne $null) {
+    try { $presentation.Close() } catch {}
+    try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($presentation) | Out-Null } catch {}
+  }
+  if ($app -ne $null) {
+    try { $app.Quit() } catch {}
+    try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($app) | Out-Null } catch {}
+  }
+}
+'''
+    try:
+        script_path.write_text(script.strip() + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [
+                command,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(script_path),
+                str(pptx_path.resolve()),
+                str(output_dir.resolve()),
+                ",".join(str(page) for page in pages),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except Exception as exc:
+        return {"renderer": "powershell_powerpoint_com", "status": "failed", "message": str(exc), "rendered_files": []}
+    finally:
+        try:
+            script_path.unlink()
+        except Exception:
+            pass
+
+    payload = _last_json_line(result.stdout)
+    if not payload:
+        return {
+            "renderer": "powershell_powerpoint_com",
+            "status": "failed" if result.returncode else "unavailable",
+            "message": (result.stderr or result.stdout or "PowerShell did not return renderer status.")[-1000:],
+            "rendered_files": [],
+        }
+    status = str(payload.get("status", "failed"))
+    rendered_files = [str(path) for path in payload.get("rendered_files", []) if Path(str(path)).exists()]
+    if status == "rendered" and rendered_files:
+        return {
+            "renderer": "powershell_powerpoint_com",
+            "status": "rendered",
+            "message": payload.get("message", "Rendered requested pages via PowerShell PowerPoint COM."),
+            "rendered_files": rendered_files,
+        }
+    return {
+        "renderer": "powershell_powerpoint_com",
+        "status": "failed",
+        "message": payload.get("message", "PowerShell PowerPoint COM did not render any requested pages."),
+        "rendered_files": rendered_files,
+    }
 
 
 def _render_pages_with_libreoffice(pptx_path: Path, output_dir: Path, pages: List[int]) -> Dict[str, Any]:
@@ -327,6 +472,20 @@ def _render_pages_with_libreoffice(pptx_path: Path, output_dir: Path, pages: Lis
         "stdout": result.stdout[-1000:],
         "stderr": result.stderr[-1000:],
     }
+
+
+def _last_json_line(text: str) -> Dict[str, Any]:
+    for line in reversed((text or "").splitlines()):
+        line = line.strip()
+        if not line or not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except Exception:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return {}
 
 
 def render_rough_draft_pptx(inventory: Dict[str, Any], rough: Dict[str, Any], output_path: Path) -> Path:
@@ -435,6 +594,14 @@ def audit_rough_draft(inventory: Dict[str, Any], rough: Dict[str, Any], pptx_pat
                     "severity": "medium",
                 }
             )
+        if layout == "table_bottom":
+            review_targets.append(
+                {
+                    "page": slide_page,
+                    "reason": "table_bottom layout: verify the proof panel starts below the support text",
+                    "severity": "high",
+                }
+            )
         if proof_type == "figure" and not Path(figure_paths.get(proof_id, "")).exists():
             warnings.append(
                 {
@@ -513,6 +680,8 @@ def audit_rough_draft(inventory: Dict[str, Any], rough: Dict[str, Any], pptx_pat
                 "short text evidence must render as compact notes rather than a large empty proof panel",
                 "metric pages must keep value, label, and context visible on every card",
                 "dense table pages must preserve row/column grammar and avoid title/table overlap",
+                "table proof panels must begin below claim/support text and leave a readable gutter",
+                "body prose should not shrink below readable presentation size except in footers or dense tables",
                 "no component may visually cover readable text",
             ],
         },
@@ -579,12 +748,13 @@ def _layout_family(slide_data: Dict[str, Any], sequence: int) -> str:
         return variants[sequence % len(variants)]
     if role == "thesis":
         if _text_proof_is_short(slide_data):
-            return "argument_cards"
-        variants = ["argument_strip", "argument_cards", "evidence_cards"]
+            variants = ["argument_mosaic", "argument_bottom_notes", "argument_cards"]
+            return variants[sequence % len(variants)]
+        variants = ["argument_strip", "argument_cards", "evidence_cards", "argument_mosaic"]
         return variants[sequence % len(variants)]
     if role == "conclusion":
         return "closing_summary"
-    variants = ["evidence_cards", "argument_cards", "argument_strip"]
+    variants = ["evidence_cards", "argument_cards", "argument_strip", "argument_bottom_notes"]
     return variants[sequence % len(variants)]
 
 
@@ -631,7 +801,7 @@ def _add_academic_title_slide(prs: Any, inventory: Dict[str, Any], title: str, p
         13,
         _theme("muted_ink"),
     )
-    _add_cover_inventory_rail(slide, inventory, 9.25, 1.3, 3.1, 4.95)
+    _add_cover_highlight_rail(slide, inventory, 9.25, 1.22, 3.1, 5.12)
     _add_textbox(slide, "Generated from reusable paper-understanding checkpoints; no PDF reparse.", 0.78, 6.66, 8.8, 0.25, 8, _theme("soft_text"))
     _add_page_marker(slide, page, total_pages, "TITLE")
 
@@ -655,7 +825,7 @@ def _add_agenda_slide(prs: Any, sections: List[Dict[str, Any]], page: int, total
     _add_textbox(slide, f"{len(sections)}", 9.3, 3.0, 1.0, 0.45, 22, _theme("gold"), bold=True)
     _add_textbox(slide, "modules", 10.1, 3.17, 1.5, 0.22, 9, _theme("soft_text"))
     _add_textbox(slide, "Read path", 9.3, 4.05, 2.2, 0.25, 11, _theme("ink"), bold=True)
-    _add_textbox(slide, "Problem -> Method -> Evidence -> Takeaways", 9.3, 4.45, 2.55, 0.65, 10, _theme("muted_ink"))
+    _add_read_path_flow(slide, 9.25, 4.42, 2.65, 1.0)
     for idx, section in enumerate(sections, start=1):
         y = 2.3 + (idx - 1) * 0.9
         marker = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.78), Inches(y + 0.07), Inches(0.52), Inches(0.28))
@@ -669,6 +839,40 @@ def _add_agenda_slide(prs: Any, sections: List[Dict[str, Any]], page: int, total
         _add_textbox(slide, sample, 1.55, y + 0.38, 6.85, 0.25, 9, _theme("soft_text"))
     _add_rule(slide, 0.75, 6.35, 11.45, _theme("line"))
     _add_textbox(slide, "Each module begins with a divider; tables, figures, and metric cards are treated as evidence rather than filler panels.", 0.75, 6.55, 11.2, 0.38, 10, _theme("muted_ink"))
+
+
+def _add_read_path_flow(slide: Any, x: float, y: float, w: float, h: float) -> None:
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.util import Inches
+
+    steps = [
+        ("P", "Problem", _theme("teal")),
+        ("M", "Method", _theme("gold")),
+        ("E", "Evidence", _theme("clay")),
+        ("T", "Takeaways", _theme("teal_deep")),
+    ]
+    node_d = 0.34
+    available = max(0.1, w - node_d)
+    gap = available / max(1, len(steps) - 1)
+    for idx, (letter, label, color) in enumerate(steps):
+        cx = x + idx * gap
+        if idx:
+            line = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                Inches(x + (idx - 1) * gap + node_d + 0.04),
+                Inches(y + 0.16),
+                Inches(max(0.06, gap - node_d - 0.08)),
+                Inches(0.025),
+            )
+            line.fill.solid()
+            line.fill.fore_color.rgb = _theme("line")
+            line.line.fill.background()
+        node = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(cx), Inches(y), Inches(node_d), Inches(node_d))
+        node.fill.solid()
+        node.fill.fore_color.rgb = color
+        node.line.fill.background()
+        _set_shape_text(node, letter, 8, _theme("white"), bold=True)
+        _add_textbox(slide, label, cx - 0.12, y + 0.45, 0.65, 0.18, 5, _theme("muted_ink"))
 
 
 def _add_section_divider_slide(prs: Any, section: Dict[str, Any], section_index: int, page: int, total_pages: int) -> None:
@@ -719,8 +923,18 @@ def _add_content_slide(
         _add_claim_and_support(slide, slide_data, 0.65, 1.05, 5.9, 4.8, claim_size=25)
         _add_proof_object(slide, proof, figure_paths, table_index, 7.0, 1.18, 5.45, 5.15, compact=False)
     elif layout == "table_bottom":
-        _add_claim_and_support(slide, slide_data, 0.65, 1.05, 11.8, 1.72, claim_size=22)
-        _add_proof_object(slide, proof, figure_paths, table_index, 0.75, 3.05, 11.85, 3.3, compact=True)
+        _add_claim_and_support(
+            slide,
+            slide_data,
+            0.65,
+            1.0,
+            11.8,
+            2.3,
+            claim_size=22,
+            support_offset=1.72,
+            support_font_size=13,
+        )
+        _add_proof_object(slide, proof, figure_paths, table_index, 0.75, 3.5, 11.85, 2.95, compact=True)
     elif layout == "table_left":
         _add_proof_object(slide, proof, figure_paths, table_index, 0.65, 1.15, 6.35, 5.25, compact=True)
         _add_claim_and_support(slide, slide_data, 7.35, 1.05, 5.0, 4.85, claim_size=22)
@@ -748,6 +962,35 @@ def _add_content_slide(
     elif layout == "argument_cards":
         _add_claim_and_support(slide, slide_data, 0.7, 1.05, 6.25, 4.35, claim_size=25)
         _add_evidence_card_stack(slide, proof, slide_data, 7.15, 1.3, 4.9, 4.15)
+    elif layout == "argument_cards_left":
+        _add_evidence_card_stack(slide, proof, slide_data, 0.75, 1.32, 4.55, 4.0)
+        _add_claim_and_support(slide, slide_data, 5.85, 1.05, 6.25, 4.45, claim_size=25)
+    elif layout == "argument_mosaic":
+        _add_claim_and_support(
+            slide,
+            slide_data,
+            0.75,
+            1.02,
+            11.3,
+            2.35,
+            claim_size=25,
+            support_offset=1.72,
+            support_font_size=13,
+        )
+        _add_evidence_mosaic(slide, proof, slide_data, 0.85, 4.02, 11.15, 1.75)
+    elif layout == "argument_bottom_notes":
+        _add_claim_and_support(
+            slide,
+            slide_data,
+            0.75,
+            1.02,
+            10.9,
+            2.65,
+            claim_size=26,
+            support_offset=1.92,
+            support_font_size=13,
+        )
+        _add_evidence_bottom_cards(slide, proof, slide_data, 0.85, 4.55, 11.2, 1.48)
     elif layout == "evidence_cards":
         _add_claim_and_support(slide, slide_data, 0.72, 1.05, 7.0, 3.8, claim_size=25)
         _add_evidence_card_stack(slide, proof, slide_data, 8.15, 1.25, 3.95, 4.15)
@@ -805,10 +1048,13 @@ def _add_claim_and_support(
     w: float,
     h: float,
     claim_size: int = 24,
+    support_offset: float = 2.3,
+    support_font_size: int = 13,
 ) -> None:
     _add_textbox(slide, slide_data.get("title", ""), x, y, min(w, 5.4), 0.34, 14, _theme("teal_deep"), bold=True)
     _add_textbox(slide, slide_data.get("claim", ""), x, y + 0.55, w, min(1.45, h * 0.38), claim_size, _theme("ink"), bold=True)
-    _add_textbox(slide, slide_data.get("support", ""), x + 0.02, y + 2.3, w * 0.92, max(0.8, h - 2.45), 12, _theme("muted_ink"))
+    support_height = max(0.72, h - support_offset - 0.15)
+    _add_textbox(slide, slide_data.get("support", ""), x + 0.02, y + support_offset, w * 0.92, support_height, support_font_size, _theme("muted_ink"))
 
 
 def _add_proof_object(
@@ -985,7 +1231,74 @@ def _add_bottom_evidence_strip(slide: Any, proof: Dict[str, Any], x: float, y: f
     strip.line.color.rgb = _theme("line")
     _add_textbox(slide, str(proof.get("type", "evidence")).upper(), x + 0.22, y + 0.18, 1.8, 0.24, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
     _add_textbox(slide, str(proof.get("id", "source evidence")), x + 2.1, y + 0.15, 2.4, 0.3, 13, _theme("ink"), bold=True)
-    _add_textbox(slide, str(proof.get("focus", "Evidence preserved from parsed checkpoints.")), x + 0.22, y + 0.52, w - 0.45, h - 0.6, 10, _theme("muted_ink"))
+    _add_textbox(slide, str(proof.get("focus", "Evidence preserved from parsed checkpoints.")), x + 0.22, y + 0.52, w - 0.45, h - 0.6, 11, _theme("muted_ink"))
+
+
+def _add_evidence_note_card(
+    slide: Any,
+    item: Dict[str, str],
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    index: int,
+    compact: bool = False,
+) -> None:
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.util import Inches
+
+    card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+    card.fill.solid()
+    card.fill.fore_color.rgb = [_theme("teal_light"), _theme("gold_light"), _theme("clay_light")][index % 3]
+    card.line.color.rgb = _theme("line")
+    stripe = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(0.06), Inches(h))
+    stripe.fill.solid()
+    stripe.fill.fore_color.rgb = [_theme("teal"), _theme("gold"), _theme("clay")][index % 3]
+    stripe.line.fill.background()
+    label_size = 9 if compact else 10
+    body_size = 9 if compact else 10
+    _add_textbox(slide, item["label"], x + 0.18, y + 0.13, w - 0.36, 0.22, label_size, _theme("ink"), bold=True)
+    _add_textbox(slide, item["body"], x + 0.18, y + 0.43, w - 0.36, max(0.28, h - 0.5), body_size, _theme("muted_ink"))
+
+
+def _add_evidence_mosaic(
+    slide: Any,
+    proof: Dict[str, Any],
+    slide_data: Dict[str, Any],
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+) -> None:
+    items = _evidence_card_items(proof, slide_data)
+    _add_textbox(slide, "EVIDENCE MOSAIC", x, y - 0.22, w, 0.2, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
+    gap = 0.16
+    top_h = min(0.86, h * 0.52)
+    _add_evidence_note_card(slide, items[0], x, y, w, top_h, 0)
+    side_items = (items[1:] or items[:1])[:2]
+    bottom_y = y + top_h + gap
+    bottom_h = max(0.5, h - top_h - gap)
+    card_w = (w - gap) / 2
+    for idx, item in enumerate(side_items, start=1):
+        _add_evidence_note_card(slide, item, x + (idx - 1) * (card_w + gap), bottom_y, card_w, bottom_h, idx, compact=True)
+
+
+def _add_evidence_bottom_cards(
+    slide: Any,
+    proof: Dict[str, Any],
+    slide_data: Dict[str, Any],
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+) -> None:
+    items = _evidence_card_items(proof, slide_data)
+    _add_textbox(slide, "EVIDENCE NOTES", x, y - 0.22, w, 0.2, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
+    count = max(1, min(3, len(items)))
+    gap = 0.16
+    card_w = (w - gap * (count - 1)) / count
+    for idx, item in enumerate(items[:count]):
+        _add_evidence_note_card(slide, item, x + idx * (card_w + gap), y, card_w, h, idx, compact=True)
 
 
 def _add_evidence_card_stack(
@@ -1005,19 +1318,10 @@ def _add_evidence_card_stack(
     card_h = min(1.05, (h - 0.38) / max(1, len(items)) - 0.08)
     for idx, item in enumerate(items):
         cy = y + 0.35 + idx * (card_h + 0.17)
-        card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(cy), Inches(w), Inches(card_h))
-        card.fill.solid()
-        card.fill.fore_color.rgb = [_theme("teal_light"), _theme("gold_light"), _theme("clay_light")][idx % 3]
-        card.line.color.rgb = _theme("line")
-        stripe = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(cy), Inches(0.06), Inches(card_h))
-        stripe.fill.solid()
-        stripe.fill.fore_color.rgb = [_theme("teal"), _theme("gold"), _theme("clay")][idx % 3]
-        stripe.line.fill.background()
-        _add_textbox(slide, item["label"], x + 0.18, cy + 0.13, w - 0.36, 0.22, 9, _theme("ink"), bold=True)
-        _add_textbox(slide, item["body"], x + 0.18, cy + 0.43, w - 0.36, card_h - 0.5, 9, _theme("muted_ink"))
+        _add_evidence_note_card(slide, item, x, cy, w, card_h, idx)
 
 
-def _add_cover_inventory_rail(slide: Any, inventory: Dict[str, Any], x: float, y: float, w: float, h: float) -> None:
+def _add_cover_highlight_rail(slide: Any, inventory: Dict[str, Any], x: float, y: float, w: float, h: float) -> None:
     from pptx.enum.shapes import MSO_SHAPE
     from pptx.util import Inches
 
@@ -1025,23 +1329,17 @@ def _add_cover_inventory_rail(slide: Any, inventory: Dict[str, Any], x: float, y
     panel.fill.solid()
     panel.fill.fore_color.rgb = _theme("white")
     panel.line.color.rgb = _theme("line")
-    _add_textbox(slide, "SOURCE INVENTORY", x + 0.28, y + 0.32, w - 0.56, 0.25, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
-    coverage = inventory.get("coverage", {})
-    rows = [
-        ("Figures", str(coverage.get("figure_count", 0)), _theme("teal")),
-        ("Tables", str(coverage.get("table_count", 0)), _theme("gold")),
-        ("Metrics", str(coverage.get("metric_count", 0)), _theme("clay")),
-    ]
-    for idx, (label, value, color) in enumerate(rows):
-        yy = y + 0.92 + idx * 0.95
-        marker = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + 0.28), Inches(yy + 0.08), Inches(0.08), Inches(0.44))
+    _add_textbox(slide, "PAPER HIGHLIGHTS", x + 0.28, y + 0.32, w - 0.56, 0.25, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
+    highlights = inventory.get("paper_highlights", []) or []
+    for idx, item in enumerate(highlights[:3]):
+        yy = y + 0.88 + idx * 1.22
+        color = [_theme("teal"), _theme("gold"), _theme("clay")][idx % 3]
+        marker = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + 0.28), Inches(yy + 0.05), Inches(0.08), Inches(0.52))
         marker.fill.solid()
         marker.fill.fore_color.rgb = color
         marker.line.fill.background()
-        _add_textbox(slide, value, x + 0.48, yy, 0.8, 0.45, 22, _theme("ink"), bold=True)
-        _add_textbox(slide, label, x + 1.25, yy + 0.14, w - 1.55, 0.25, 10, _theme("soft_text"))
-    _add_rule(slide, x + 0.28, y + 3.85, w - 0.56, _theme("line"))
-    _add_textbox(slide, "Reuses prior paper parsing; this run only rebuilds the slide story and visual system.", x + 0.28, y + 4.05, w - 0.56, 0.62, 9, _theme("muted_ink"))
+        _add_textbox(slide, item.get("label", f"Highlight {idx + 1}"), x + 0.48, yy, w - 0.76, 0.22, 9, _theme("ink"), bold=True)
+        _add_textbox(slide, item.get("body", ""), x + 0.48, yy + 0.28, w - 0.76, 0.54, 9, _theme("muted_ink"))
 
 
 def _extract_authors(metadata_text: str) -> str:
@@ -1136,7 +1434,7 @@ def _dedupe_review_targets(targets: List[Dict[str, Any]]) -> List[Dict[str, Any]
             continue
         seen.add(key)
         result.append(item)
-    return result[:14]
+    return result[:18]
 
 
 def _summary_items(content: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -1282,6 +1580,190 @@ def _metrics_from_curated_slides(slides: Iterable[Dict[str, Any]]) -> List[Dict[
                 }
             )
     return metrics
+
+
+def _paper_highlights(
+    summary_items: List[Dict[str, Any]],
+    plan_slides: List[Dict[str, Any]],
+    curated_slides: List[Dict[str, Any]],
+    metrics: List[Dict[str, Any]],
+) -> List[Dict[str, str]]:
+    """Derive cover-ready paper highlights without reparsing the PDF."""
+    text_pool = _highlight_text_pool(summary_items, plan_slides, curated_slides)
+    highlights: List[Dict[str, str]] = []
+
+    result_text = _curated_takeaway_highlight(
+        curated_slides,
+        ("sota", "state-of-the-art", "surpass", "lead", "best", "competitive"),
+    ) or _best_highlight_sentence(
+        text_pool,
+        ("sota", "state-of-the-art", "surpass", "lead", "best", "competitive", "benchmark", "agentic"),
+    )
+    if result_text:
+        highlights.append({"label": "Core result", "body": _limit_words(result_text, 15)})
+
+    scale_text = _scale_highlight(text_pool, metrics)
+    if scale_text:
+        highlights.append({"label": "Scale", "body": scale_text})
+
+    method_text = _best_highlight_sentence(
+        text_pool,
+        ("qk-clip", "qk clip", "muon", "optimizer", "moe", "sparsity", "experts", "rl", "self-critique", "tool"),
+    )
+    if method_text:
+        highlights.append({"label": "Design edge", "body": _limit_words(method_text, 15)})
+
+    contribution_text = _best_highlight_sentence(
+        text_pool,
+        ("contribution", "pipeline", "data synthesis", "training recipe", "safety", "evaluation", "open"),
+    )
+    if contribution_text:
+        highlights.append({"label": "Evidence scope", "body": _limit_words(contribution_text, 15)})
+
+    for fallback in _fallback_highlight_sentences(text_pool):
+        highlights.append({"label": "Takeaway", "body": _limit_words(fallback, 15)})
+        if len(highlights) >= 4:
+            break
+
+    return _dedupe_highlights(highlights)[:3]
+
+
+def _curated_takeaway_highlight(curated_slides: List[Dict[str, Any]], keywords: Iterable[str]) -> str:
+    keyword_list = [keyword.lower() for keyword in keywords]
+    for slide in curated_slides:
+        text = _clean_text(slide.get("takeaway", ""))
+        lowered = text.lower()
+        if 20 <= len(text) <= 180 and any(keyword in lowered for keyword in keyword_list):
+            return text
+    return ""
+
+
+def _highlight_text_pool(
+    summary_items: List[Dict[str, Any]],
+    plan_slides: List[Dict[str, Any]],
+    curated_slides: List[Dict[str, Any]],
+) -> List[Dict[str, str]]:
+    pool: List[Dict[str, str]] = []
+    for slide in curated_slides:
+        for field in ("takeaway", "title"):
+            text = _clean_text(slide.get(field, ""))
+            if text:
+                pool.append({"category": slide.get("section_label", "") or "slide", "source": "curated", "text": text})
+        for point in slide.get("points", []) or []:
+            if not isinstance(point, dict):
+                continue
+            text = _first_non_empty([point.get("claim", ""), point.get("detail", ""), point.get("text", "")])
+            if text:
+                pool.append({"category": slide.get("section_label", "") or "slide_point", "source": "curated", "text": text})
+    for slide in plan_slides:
+        text = _first_non_empty([slide.get("content", ""), slide.get("title", "")])
+        if text:
+            pool.append({"category": slide.get("section", "") or "plan", "source": "plan", "text": text})
+    for item in summary_items:
+        text = _clean_text(item.get("text", ""))
+        if text:
+            pool.append({"category": item.get("category", ""), "source": "summary", "text": text})
+    return pool
+
+
+def _best_highlight_sentence(pool: List[Dict[str, str]], keywords: Iterable[str]) -> str:
+    keyword_list = [keyword.lower() for keyword in keywords]
+    best = ("", -1)
+    high_value = {"sota", "state-of-the-art", "surpass", "lead", "best", "qk-clip", "qk clip", "muon", "rl", "self-critique"}
+    for entry in pool:
+        for sentence in _highlight_sentences(entry.get("text", "")):
+            if len(sentence) > 240:
+                continue
+            lowered = sentence.lower()
+            score = sum(5 if keyword in high_value else 3 for keyword in keyword_list if keyword in lowered)
+            if entry.get("source") == "curated":
+                score += 3
+            if entry.get("category", "").lower() in {"results", "contribution", "method"}:
+                score += 1
+            if 45 <= len(sentence) <= 180:
+                score += 1
+            if score > best[1]:
+                best = (sentence, score)
+    return best[0] if best[1] > 0 else ""
+
+
+def _scale_highlight(pool: List[Dict[str, str]], metrics: List[Dict[str, Any]]) -> str:
+    combined = " ".join(entry.get("text", "") for entry in pool)
+    total_param = _first_regex_value(combined, r"\d+(?:\.\d+)?\s*T")
+    active_param = ""
+    for match in re.finditer(r"\d+(?:\.\d+)?\s*B", combined, flags=re.IGNORECASE):
+        window = combined[max(0, match.start() - 48) : match.end() + 60].lower()
+        if "activat" in window:
+            active_param = _clean_text(match.group(0))
+            break
+    if not active_param:
+        active_param = _first_regex_value(combined, r"\d+(?:\.\d+)?\s*B")
+
+    metric_bits = []
+    for metric in metrics:
+        label = _clean_text(metric.get("label", ""))
+        value = _clean_text(metric.get("value", ""))
+        if not label or not value:
+            continue
+        if any(word in label.lower() for word in ("parameter", "expert", "token")):
+            metric_bits.append(f"{value} {label}")
+        if len(metric_bits) >= 2:
+            break
+
+    bits = []
+    if total_param:
+        bits.append(f"{total_param} total parameters")
+    if active_param:
+        bits.append(f"{active_param} activated per token")
+    bits.extend(metric_bits)
+    return "; ".join(bits[:2]) + "." if bits else ""
+
+
+def _fallback_highlight_sentences(pool: List[Dict[str, str]]) -> List[str]:
+    result = []
+    for entry in pool:
+        for sentence in _highlight_sentences(entry.get("text", "")):
+            if len(sentence) >= 35:
+                result.append(sentence)
+                break
+    return result
+
+
+def _highlight_sentences(text: str) -> List[str]:
+    clean = re.sub(r"\s+", " ", _clean_text(text))
+    if not clean:
+        return []
+    parts = re.split(r"(?<=[.!?])\s+|\s+-\s+|\s*\n+\s*", clean)
+    return [_clean_text(part).strip(" -") for part in parts if len(_clean_text(part)) > 20]
+
+
+def _dedupe_highlights(highlights: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    result: List[Dict[str, str]] = []
+    seen = set()
+    for item in highlights:
+        body = _normalize_highlight_text(item.get("body", ""))
+        if not body:
+            continue
+        key = re.sub(r"[^a-z0-9]+", " ", body.lower()).strip()[:80]
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append({"label": _clean_text(item.get("label", "Highlight")), "body": body})
+    return result
+
+
+def _normalize_highlight_text(text: str) -> str:
+    clean = _clean_text(text)
+    clean = clean.replace("\u00a6\u00d3", "tau")
+    clean = clean.replace("\u03c4", "tau")
+    clean = clean.replace("tau=", "tau = ")
+    clean = re.sub(r"\s+", " ", clean)
+    return clean.strip()
+
+
+def _first_regex_value(text: str, pattern: str) -> str:
+    match = re.search(pattern, text or "", flags=re.IGNORECASE)
+    return _clean_text(match.group(0)) if match else ""
 
 
 def _coverage(
@@ -1487,6 +1969,26 @@ def _add_textbox(
     paragraph.font.bold = bold
     paragraph.font.color.rgb = color
     return shape
+
+
+def _set_shape_text(shape: Any, text: str, font_size: int, color: Any, bold: bool = False) -> None:
+    from pptx.enum.text import PP_ALIGN
+    from pptx.util import Pt
+
+    frame = shape.text_frame
+    frame.clear()
+    frame.word_wrap = True
+    frame.margin_left = Pt(0)
+    frame.margin_right = Pt(0)
+    frame.margin_top = Pt(0)
+    frame.margin_bottom = Pt(0)
+    paragraph = frame.paragraphs[0]
+    paragraph.text = str(text or "")
+    paragraph.alignment = PP_ALIGN.CENTER
+    paragraph.font.name = "Aptos"
+    paragraph.font.size = Pt(font_size)
+    paragraph.font.bold = bold
+    paragraph.font.color.rgb = color
 
 
 def _add_rule(slide: Any, x: float, y: float, w: float, color: Any) -> Any:

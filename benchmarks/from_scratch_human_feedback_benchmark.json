@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "benchmark_track": "from_scratch_paper_reading_ppt",
+  "paper_case": "Kimi_K2_Technical_Report",
+  "accepted_reference": {
+    "version": "rough_draft_v5",
+    "artifact": "outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v5.pptx",
+    "reason": "Human reviewer preferred v5 over v6; v5 is the current aesthetic checkpoint before further automation work.",
+    "do_not_replace_with": [
+      "rough_draft_v6"
+    ]
+  },
+  "core_principles": [
+    {
+      "id": "reuse_parsed_checkpoints",
+      "rule": "Do not reparse a paper when summary, plan, slide_spec, figures, tables, and metrics are already available and reliable.",
+      "why": "The Kimi K2 parsing chain was already strong; from-scratch means a new slide story and visual system, not a new PDF understanding pass."
+    },
+    {
+      "id": "content_first_then_style",
+      "rule": "Build a content-complete inventory and rough slide story before optimizing aesthetics.",
+      "why": "A good-looking deck that drops tables, metrics, or proof objects fails the paper-reading task."
+    },
+    {
+      "id": "human_feedback_to_rules",
+      "rule": "Every subjective complaint should be translated into a badcase, trigger signal, repair strategy, and regression check.",
+      "why": "The goal is not one manually corrected PPT, but a benchmark that helps future decks self-diagnose and improve."
+    },
+    {
+      "id": "non_visual_first_visual_selective",
+      "rule": "Use PPTX geometry, text, font, table, and layout metadata for cheap checks first; render only high-risk or representative pages.",
+      "why": "Rendering and vision judging every slide is expensive; geometry and text-density checks can catch many obvious problems."
+    },
+    {
+      "id": "human_preference_is_a_regression_guard",
+      "rule": "If an automatic heuristic produces a version the human reviewer dislikes, preserve the preferred version and record the heuristic as risky.",
+      "why": "v6 tried to optimize read path and sparse evidence cards, but the user found v5 better overall."
+    }
+  ],
+  "iteration_log": [
+    {
+      "version": "v1",
+      "human_findings": [
+        "No academic title slide.",
+        "No agenda / roadmap slide.",
+        "Most pages repeated a large right-side proof panel.",
+        "Short text evidence appeared inside oversized empty panels.",
+        "Tables were sometimes summarized instead of rendered as complete table evidence.",
+        "The system lacked a deck-render review loop."
+      ],
+      "repairs": [
+        "Add title, agenda, section, and closing slides.",
+        "Introduce layout families beyond a single right proof panel.",
+        "Treat figures, tables, text evidence, and metrics as distinct proof objects.",
+        "Add visual audit manifest and render-review hook."
+      ]
+    },
+    {
+      "version": "v2",
+      "human_findings": [
+        "Black-and-white palette felt dull and lifeless.",
+        "Cover black bar and meaningless metric chips looked unattractive.",
+        "Agenda number buttons were too heavy.",
+        "Some limitation / motivation / method evidence panels remained sparse.",
+        "Some table and card components overlapped body text.",
+        "Metric layouts were inconsistent across pages."
+      ],
+      "repairs": [
+        "Switch to warm academic palette with teal, soft gold, clay, and paper tones.",
+        "Replace heavy black cover treatment with a lighter cover system.",
+        "Replace agenda dots with module markers and a deck map.",
+        "Route short proof text to compact evidence cards.",
+        "Add table-bottom review targets and overlap-oriented badcase rules."
+      ]
+    },
+    {
+      "version": "v3",
+      "human_findings": [
+        "The deck became much better aesthetically.",
+        "Cover right rail should show paper highlights, not only source inventory counts.",
+        "Evidence-note triplets repeated too often and needed more variation.",
+        "A table panel still overlapped support text on one page.",
+        "Some body text felt too small or sparse."
+      ],
+      "repairs": [
+        "Derive cover-ready paper highlights from existing checkpoints.",
+        "Vary evidence card layouts: right stack, bottom notes, mosaic, and compact cards.",
+        "Move table panels below claim/support text with clear gutters.",
+        "Add text snapshot fallback for review when PNG rendering is unavailable."
+      ]
+    },
+    {
+      "version": "v4",
+      "human_findings": [
+        "Cover paper highlights were good, but source-depth chips at the bottom were unnecessary.",
+        "Agenda read path should use visual flow components instead of dry text.",
+        "A three-card evidence mosaic needed better proportions.",
+        "Left-side evidence triplets felt less formal than right or bottom placement.",
+        "PowerPoint rendering still had local COM reliability issues."
+      ],
+      "repairs": [
+        "Remove cover source-depth chips and keep paper highlights prominent.",
+        "Use compact read-path nodes instead of a plain text arrow chain.",
+        "Prefer right-side and bottom evidence placements; avoid left evidence triplets for formal academic pages.",
+        "Keep renderer failures explicit and continue exporting text snapshots."
+      ]
+    },
+    {
+      "version": "v5",
+      "human_findings": [
+        "This version was considered the most pleasing checkpoint.",
+        "The deck should be saved before further experiments."
+      ],
+      "repairs": [
+        "Treat rough_draft_v5 as the current accepted benchmark reference.",
+        "Use v5 as the regression target for future aesthetic changes."
+      ]
+    },
+    {
+      "version": "v6",
+      "human_findings": [
+        "v6 was less attractive than v5 and felt strange.",
+        "The 2x2 read path and aggressive sparse-card resizing did not improve the overall deck."
+      ],
+      "repairs": [
+        "Rollback v6 visual heuristics.",
+        "Record that local density optimization can hurt composition and should require human or visual-regression approval."
+      ]
+    }
+  ],
+  "badcase_rules": [
+    {
+      "id": "missing_title_slide",
+      "severity": "high",
+      "trigger_signals": [
+        "deck has no title role slide",
+        "first slide lacks paper title"
+      ],
+      "root_cause": "Paper-reading deck was treated as content pages only.",
+      "repair_strategy": "Always generate a polished academic title slide.",
+      "auto_fix": true,
+      "regression_check": "Slide 1 has role=title and includes paper title, author/team, and a concise deck thesis."
+    },
+    {
+      "id": "missing_agenda_slide",
+      "severity": "high",
+      "trigger_signals": [
+        "no agenda / roadmap slide",
+        "sections are not visible before content slides"
+      ],
+      "root_cause": "Narrative planning was not reflected in the PPT.",
+      "repair_strategy": "Generate a roadmap page from section buckets and slide counts.",
+      "auto_fix": true,
+      "regression_check": "Slide 2 has role=agenda and lists Motivation, Method, Experiments, and Takeaways or equivalent paper-specific modules."
+    },
+    {
+      "id": "layout_monotony",
+      "severity": "medium",
+      "trigger_signals": [
+        "dominant layout family ratio > 0.45",
+        "max consecutive same layout >= 4",
+        "large proof panel appears in the same position on most slides"
+      ],
+      "root_cause": "Renderer reused one macro layout for unrelated evidence types.",
+      "repair_strategy": "Rotate layout families by role and proof type: right proof, bottom proof, table bottom, metric cards, evidence stack, evidence mosaic.",
+      "auto_fix": true,
+      "regression_check": "Visual audit reports varied layout families and no long run of identical content layouts."
+    },
+    {
+      "id": "short_text_large_panel",
+      "severity": "medium",
+      "trigger_signals": [
+        "proof_object.type == text_evidence",
+        "proof text is short",
+        "assigned proof panel area is large"
+      ],
+      "root_cause": "Short text evidence was treated like a figure/table proof object.",
+      "repair_strategy": "Use compact evidence notes, bottom cards, or mosaic cards instead of a large empty proof panel.",
+      "auto_fix": true,
+      "regression_check": "Short evidence pages do not show mostly empty oversized rounded rectangles."
+    },
+    {
+      "id": "table_rows_missing",
+      "severity": "high",
+      "trigger_signals": [
+        "table proof object exists",
+        "native table has no parsed rows",
+        "slide only contains a textual table summary"
+      ],
+      "root_cause": "Table extraction was not carried through to the renderer.",
+      "repair_strategy": "Preserve parsed table rows in content inventory and render them as native PPT tables.",
+      "auto_fix": false,
+      "regression_check": "Table proof slides show row/column grammar and include at least one non-header row when source rows exist."
+    },
+    {
+      "id": "component_overlap",
+      "severity": "high",
+      "trigger_signals": [
+        "table or proof panel intersects body text box",
+        "shape bounding boxes overlap above threshold",
+        "render review shows text covered by card/panel"
+      ],
+      "root_cause": "Proof object y-position or height did not reserve enough gutter for claim/support text.",
+      "repair_strategy": "Move proof panels lower, reduce proof height, or split content across alternate layouts.",
+      "auto_fix": true,
+      "regression_check": "No high-risk overlap among title, claim, support, table, and proof panel bounding boxes."
+    },
+    {
+      "id": "boring_black_white_palette",
+      "severity": "medium",
+      "trigger_signals": [
+        "palette uses mostly black, white, and gray",
+        "section dividers use full dark backgrounds repeatedly",
+        "accent colors are absent or semantically unused"
+      ],
+      "root_cause": "Academic restraint was interpreted as monochrome.",
+      "repair_strategy": "Use a restrained warm academic palette with semantic accents.",
+      "auto_fix": false,
+      "regression_check": "Deck uses warm paper background plus 2-3 muted accent colors without becoming over-decorated."
+    },
+    {
+      "id": "meaningless_cover_stats",
+      "severity": "medium",
+      "trigger_signals": [
+        "cover highlights only counts figures/tables/metrics",
+        "cover side rail lacks paper-specific contribution summary"
+      ],
+      "root_cause": "Cover used source inventory rather than paper value proposition.",
+      "repair_strategy": "Derive 3 paper highlights from parsed checkpoints: core result, scale, design edge, or evidence scope.",
+      "auto_fix": true,
+      "regression_check": "Cover side rail includes paper-specific highlights, not just source-depth counters."
+    },
+    {
+      "id": "dry_agenda_side_panel",
+      "severity": "low",
+      "trigger_signals": [
+        "agenda right panel contains only plain arrow text",
+        "read path has no visual rhythm"
+      ],
+      "root_cause": "Narrative flow was rendered as dry copy instead of a component.",
+      "repair_strategy": "Use compact flow nodes/icons while preserving balance; do not overcomplicate if the panel becomes awkward.",
+      "auto_fix": true,
+      "regression_check": "Agenda side panel shows readable flow components and does not feel crowded."
+    },
+    {
+      "id": "overoptimized_density_regression",
+      "severity": "medium",
+      "trigger_signals": [
+        "new heuristic shrinks or rearranges cards but human preference worsens",
+        "visual composition feels less stable than accepted reference"
+      ],
+      "root_cause": "A local non-visual metric optimized sparse text boxes but ignored whole-slide composition.",
+      "repair_strategy": "Gate density-based visual changes behind accepted-reference comparison and selective rendered review.",
+      "auto_fix": false,
+      "regression_check": "Changes that alter accepted v5 visual grammar require either improved visual score or explicit human approval."
+    }
+  ],
+  "aesthetic_rubric": {
+    "score_range": [
+      1,
+      5
+    ],
+    "dimensions": [
+      {
+        "id": "academic_polish",
+        "weight": 0.18,
+        "good_signals": [
+          "title, agenda, section, content, and closing slides feel intentional",
+          "deck looks like an academic presentation rather than generated notes"
+        ],
+        "bad_signals": [
+          "missing formal opening/closing structure",
+          "decorative blocks without meaning"
+        ]
+      },
+      {
+        "id": "palette_vitality",
+        "weight": 0.14,
+        "good_signals": [
+          "restrained but lively warm academic colors",
+          "semantic accent colors are consistent"
+        ],
+        "bad_signals": [
+          "lifeless black/white theme",
+          "overly colorful or noisy palette"
+        ]
+      },
+      {
+        "id": "layout_variety",
+        "weight": 0.14,
+        "good_signals": [
+          "proof objects can appear right, bottom, compact, table, metric, or mosaic depending on content",
+          "layouts vary without feeling random"
+        ],
+        "bad_signals": [
+          "same right proof panel on most pages",
+          "left evidence triplets on formal pages if they reduce gravitas"
+        ]
+      },
+      {
+        "id": "evidence_readability",
+        "weight": 0.2,
+        "good_signals": [
+          "tables retain row/column grammar",
+          "metrics preserve value, label, and context",
+          "text evidence uses appropriately sized cards"
+        ],
+        "bad_signals": [
+          "tables become vague captions",
+          "large empty proof panels",
+          "cards cover text"
+        ]
+      },
+      {
+        "id": "typography_and_density",
+        "weight": 0.14,
+        "good_signals": [
+          "title, claim, support, card text, table text, and footer have clear hierarchy",
+          "sparse text does not create awkward empty containers"
+        ],
+        "bad_signals": [
+          "body text too small",
+          "card text too sparse for card size",
+          "over-aggressive density optimization hurts composition"
+        ]
+      },
+      {
+        "id": "visual_review_readiness",
+        "weight": 0.1,
+        "good_signals": [
+          "visual audit manifest identifies high-risk pages",
+          "text snapshots or rendered screenshots are produced when possible"
+        ],
+        "bad_signals": [
+          "system cannot inspect generated deck artifacts",
+          "renderer failure is silent"
+        ]
+      },
+      {
+        "id": "novelty_without_content_loss",
+        "weight": 0.1,
+        "good_signals": [
+          "from-scratch deck does not copy golden baseline skeleton",
+          "new visual system preserves parsed paper content"
+        ],
+        "bad_signals": [
+          "only a baseline reskin",
+          "aesthetic changes drop evidence"
+        ]
+      }
+    ]
+  },
+  "automatic_review_strategy": {
+    "cheap_non_visual_checks": [
+      "slide roles present: title, agenda, sections, content, closing",
+      "layout family distribution and max consecutive layout",
+      "shape bounding box overlap among text, tables, figures, and proof panels",
+      "font-size floors by text role",
+      "text density: words per square inch for cards and panels",
+      "table row/column availability and native table count",
+      "metric grammar: value + label + context"
+    ],
+    "selective_render_checks": [
+      "cover page",
+      "agenda page",
+      "one section divider per visual family",
+      "high-risk table pages",
+      "short text evidence pages",
+      "metric pages with low label/context confidence",
+      "pages flagged by non-visual overlap or density checks"
+    ],
+    "vision_judge_policy": {
+      "default": "Do not judge every slide with a vision model.",
+      "when_to_call": [
+        "accepted-reference comparison after major visual-system changes",
+        "pages that cheap checks cannot classify",
+        "user-identified pages that look wrong",
+        "final pre-save review of representative pages"
+      ],
+      "expected_output": [
+        "detected_badcases",
+        "aesthetic_score",
+        "repair_hints",
+        "whether change improves or regresses from accepted reference"
+      ]
+    }
+  }
+}
