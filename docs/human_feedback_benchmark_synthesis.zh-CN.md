@@ -798,3 +798,54 @@ paper checkpoints
 - 低密度是否只作为提示，而不是破坏构图的自动改版理由。
 
 这样，未来即使没有 human-in-the-loop，系统也能先通过规则发现大部分结构性和排版性问题，再把少数真正依赖人类审美的选择留给人工或未来可选视觉分支。
+
+## 12. 下一轮 Human-in-the-loop 重点：Typography / Copy Fitting
+
+当前 accepted reference 的主要问题已经不再是“有没有标题页、目录页、章节页、组件是否单调”这类第一阶段问题，而是更细的 polish 问题：
+
+```text
+组件布局好看了，
+但部分页面文字偏少、字号偏小、留白显得空，
+需要让系统在保留构图的基础上自动调节文字。
+```
+
+这类问题不能再简单理解为“低密度就缩组件”。v6 的回退说明，局部密度优化可能破坏整体美感。因此下一轮 human-in-the-loop 反馈要重点区分：
+
+- **typography problem**：字号、层级、字重、行距不合适。
+- **copy fitting problem**：文字太短、太长、重复或分配不均。
+- **geometry problem**：真正发生遮挡、越界、表格不可读或布局重复。
+
+默认修复策略：
+
+1. 先调字号和字体层级。
+2. 再调换行、行距和文案分配。
+3. 再考虑补充或压缩 evidence 文案。
+4. 只有结构性失败时才调组件大小或位置。
+
+下一轮每条人工反馈都应该记录成下面格式：
+
+```text
+badcase:
+example_slide:
+problem_type: typography | copy_fitting | geometry
+human_observation:
+non_visual_trigger:
+preferred_repair:
+forbidden_repair:
+regression_check:
+```
+
+示例：
+
+```text
+badcase: sparse_card_copy
+example_slide: rough_draft_v5 slide 15
+problem_type: copy_fitting
+human_observation: evidence cards 的组件比例好看，但卡片文字显得少。
+non_visual_trigger: card word density below preferred band, no overlap, no out-of-bounds.
+preferred_repair: 增强 card body 文案或提高字号/层级。
+forbidden_repair: 只因为文字少就缩小整组卡片。
+regression_check: 组件整体比例保持，card 字号和信息密度提高。
+```
+
+这会把下一轮“文字大小调优”的人工经验继续转成 benchmark 资产。

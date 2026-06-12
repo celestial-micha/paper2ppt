@@ -450,3 +450,66 @@ PPTX metadata-only audit
 - 修复建议要求改变 accepted reference 的主要视觉语法，但没有新的 style-contract 批准。
 
 这让 benchmark 从“生成后检查”升级为“可控自动迭代系统”：能自己发现问题、知道先修什么、知道什么时候停。
+
+## 2026-06-13 追加：布局确定后的 Typography / Copy Fitting 阶段
+
+当前 from-scratch PPT 的组件搭配、整体构图和 warm academic 风格已经基本被用户认可。下一阶段 benchmark 不应继续大改组件，而应进入第二层 polish：
+
+```text
+good component composition
+ -> typography fitting
+ -> copy density fitting
+ -> minimal geometry repair only if necessary
+```
+
+### 阶段目标
+
+让系统在不依赖截图和视觉模型的情况下，自动判断：
+
+- 哪些页面文字偏少但组件不应缩小。
+- 哪些正文、卡片、表格或 metric 字号偏小。
+- 哪些文本框接近容量上限。
+- 哪些卡片文字层级弱、显得空。
+- 哪些问题可以通过字号、行距、换行、文案分配解决。
+- 哪些问题才需要微调组件大小或位置。
+
+### 检查项
+
+下一轮 `nonvisual-audit` 或 repair runner 应逐步补充这些规则：
+
+| 维度 | 可检测信号 | 默认修复 |
+| --- | --- | --- |
+| font floor | 按 title/claim/support/card/table/footer 检查字号下限 | 提升字号或改文本角色 |
+| ideal font band | 字号虽未违规但低于推荐范围 | 轻微增大字号 |
+| text capacity | 词数 / 文本框面积接近上限 | 压缩文案、拆分 notes、调整换行 |
+| low density | 大卡片中词数过少 | 只提示；优先增强文案或层级，不缩组件 |
+| hierarchy weakness | claim/support/card 字号差距不足 | 调整字号层级和字重 |
+| card copy split | 三张 evidence cards 内容分配严重不均 | 重新分配 reading notes |
+| table readability | 表格字号过小或列宽不足 | 优先调表格字体/列宽，必要时拆页 |
+| geometry necessity | overlap/out-of-bounds/unreadable table | 才允许移动或缩放组件 |
+
+### 修复顺序
+
+本阶段的修复顺序更细化为：
+
+1. 保留当前 accepted component composition。
+2. 提升低于角色下限的字号。
+3. 调整标题、claim、support、card label、card body 的层级比例。
+4. 对短文本补充信息量或改成更强的 reading note。
+5. 对长文本做压缩、拆句、换行或 notes 分配。
+6. 只有结构性失败时才改组件大小或位置。
+7. 任何 geometry 改动都要记录原因，不能只写“文字少所以缩小”。
+
+### 需要沉淀的 badcase
+
+未来 human-in-the-loop 发现问题时，应按下面方向沉淀：
+
+- `body_font_too_small`
+- `card_font_too_small`
+- `weak_typography_hierarchy`
+- `sparse_card_copy`
+- `overcompressed_card_regression`
+- `copy_density_mismatch`
+- `geometry_changed_without_structural_need`
+
+这些 badcase 应继续写入 `benchmarks/from_scratch_human_feedback_benchmark.json`，并在测试中保护摘要字段。

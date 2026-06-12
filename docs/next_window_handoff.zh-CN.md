@@ -331,3 +331,97 @@ docs/benchmark_plan.zh-CN.md
 ```
 
 下一步如果继续改文字大小问题，应先读取 `nonvisual_audit.json` 的 findings，用 typography/copy allocation 修复；除非出现结构性失败，否则不要改变整体组件构图。
+
+## 2026-06-13 四补充：新窗口启动词与下一阶段目标
+
+用户准备打开新窗口继续沟通。新窗口的目的不是重新总结 benchmark，也不是重新设计整套 PPT 风格，而是继续 human-in-the-loop 迭代当前 from-scratch PPT，重点解决：
+
+```text
+组件摆放和整体风格已经基本被认可；
+下一步要在不破坏组件构图的前提下，
+让系统自动调节字号、行距、换行、文案分配和文本密度；
+实在不行时，再非常克制地微调组件大小或位置。
+```
+
+### 新窗口第一条消息建议直接发送
+
+```text
+codex老师，我们继续做 D:\coding\agent_paper_to_slider\Paper2Slides-main 这个项目。
+
+请先阅读并遵守这些文件：
+
+1. docs/next_window_handoff.zh-CN.md
+2. docs/human_feedback_benchmark_synthesis.zh-CN.md
+3. docs/benchmark_plan.zh-CN.md
+4. docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+5. benchmarks/from_scratch_human_feedback_benchmark.json
+6. paper2slides/benchmark/nonvisual_audit.py
+
+当前上下文：
+- 我们已经把 Kimi K2 from-scratch PPT 从 v1 迭代到 v5，v5 是当前用户认可的 accepted reference。
+- v6 因为局部自动优化导致整体观感变怪，已经作为 overoptimized_density_regression 记录下来。
+- 当前阶段默认不使用 --render-review-dir，不截图，不调用视觉模型。
+- 默认使用 PPTX metadata-only / nonvisual-audit 来检查字体、文本容量、shape overlap、table grammar、metric grammar、layout repetition 和 badcase rules。
+- 我们的目标不是重做视觉系统；v5 的组件比例、整体构图、warm academic 风格要优先保留。
+
+这次新窗口的任务：
+1. 继续 human-in-the-loop 调整 from-scratch PPT。
+2. 重点解决“文字少、文字小、留白显得空”的问题。
+3. 先用非视觉审计和 PPTX 元数据估算每页字号、文本容量、低密度和接近溢出风险。
+4. 修复优先级必须是：字体大小 / 行距 / 换行 / 文案分配 / notes 拆分，优先于组件缩放。
+5. 只有出现遮挡、越界、表格不可读、布局连续重复等结构性问题时，才允许微调组件大小或位置。
+6. 每一轮发现的问题和修复经验，都要继续写回 benchmark 文档或机器可读规则，增强后续自动生成能力。
+
+请先不要重新解析论文，也不要直接大改 PPT 风格。
+请先检查当前 git 状态，确认哪些是已提交内容、哪些是遗留脏文件。
+然后给我一个本轮 typography / copy fitting 迭代计划，再开始改。
+```
+
+### 新窗口不要做的事
+
+- 不要重新解析 Kimi K2 论文 PDF。
+- 不要重新设计整套视觉系统。
+- 不要把 v5 的组件比例因为低密度直接缩小。
+- 不要默认打开 `--render-review-dir`。
+- 不要默认调用视觉模型。
+- 不要把旧的 `paper2slides/core/*`、`paper2slides/generator/*` 脏文件误认为本轮必须提交的改动；先读 `git status` 判断。
+
+### 新窗口应该优先做的事
+
+1. 读取 `benchmarks/from_scratch_human_feedback_benchmark.json`，确认 accepted reference、badcase rules、non-visual-only policy。
+2. 读取 `nonvisual_audit.json` 或重新对目标 PPTX 跑：
+
+```powershell
+C:\Users\81001\.conda\envs\paper2slides\python.exe -m paper2slides.benchmark nonvisual-audit --pptx <deck.pptx> --output <nonvisual_audit.json>
+```
+
+3. 把 findings 分成三类：
+   - typography：字号太小、层级不清、正文/卡片字重不合适。
+   - copy fitting：文字过短、过长、重复、分配不合理。
+   - geometry：真正遮挡、越界、表格不可读、组件需要微调。
+4. 默认先修 typography / copy fitting。
+5. 如果必须修 geometry，要说明为什么不是单纯为了低密度。
+6. 每轮只修 Top 1-3 个问题，避免 v6 式过度优化。
+7. 生成新 PPT 后再跑 `nonvisual-audit` 和单测。
+8. 把新的经验继续写入 benchmark 文档和规则文件。
+
+### 本阶段要沉淀的新 benchmark 能力
+
+下一阶段 human-in-the-loop 的重点是把“文字适配”沉淀成自动规则：
+
+- 不同文本角色的字号下限和理想范围。
+- claim / support / evidence card / table / metric 的文本容量估算。
+- 低密度只提示，不直接缩组件。
+- 短文本优先增大字号、增加层级、改写为更有信息量的 bullet，而不是改组件。
+- 长文本优先拆分、改写、移动到 notes 或分配到多个 cards。
+- 组件微调必须有结构性原因，并被记录为 geometry repair。
+
+最终目标是让系统在组件摆放已经好看的基础上，自动完成第二阶段 polish：
+
+```text
+good composition
+ -> typography fitting
+ -> copy density fitting
+ -> minimal geometry repair only if necessary
+ -> benchmark rule update
+```
