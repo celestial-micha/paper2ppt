@@ -13,6 +13,7 @@ from .human_feedback import (
     load_human_feedback_benchmark,
     summarize_human_feedback_benchmark,
 )
+from .nonvisual_audit import inspect_pptx_nonvisual
 
 __all__ = [
     "DEFAULT_HUMAN_FEEDBACK_BENCHMARK",
@@ -20,6 +21,7 @@ __all__ = [
     "badcase_ids",
     "classify_warning",
     "collect_layout_qa_results",
+    "inspect_pptx_nonvisual",
     "load_human_feedback_benchmark",
     "summarize_human_feedback_benchmark",
     "summarize_layout_qa",

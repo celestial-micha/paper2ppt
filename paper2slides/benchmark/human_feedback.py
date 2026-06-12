@@ -20,6 +20,8 @@ def summarize_human_feedback_benchmark(data: Dict[str, Any]) -> Dict[str, Any]:
     accepted = data.get("accepted_reference", {}) or {}
     rubric = data.get("aesthetic_rubric", {}) or {}
     strategy = data.get("automatic_review_strategy", {}) or {}
+    workflow = data.get("autonomous_generation_workflow", []) or []
+    repair_policy = data.get("non_visual_self_repair_policy", {}) or {}
     return {
         "benchmark_track": data.get("benchmark_track", ""),
         "paper_case": data.get("paper_case", ""),
@@ -29,8 +31,12 @@ def summarize_human_feedback_benchmark(data: Dict[str, Any]) -> Dict[str, Any]:
         "iteration_count": len(data.get("iteration_log", []) or []),
         "badcase_count": len(data.get("badcase_rules", []) or []),
         "aesthetic_dimension_count": len(rubric.get("dimensions", []) or []),
+        "current_phase_policy": strategy.get("current_phase_policy", ""),
         "cheap_check_count": len(strategy.get("cheap_non_visual_checks", []) or []),
-        "selective_render_check_count": len(strategy.get("selective_render_checks", []) or []),
+        "disabled_render_check_count": len(strategy.get("disabled_render_checks_for_current_phase", []) or []),
+        "autonomous_workflow_stage_count": len(workflow),
+        "non_visual_detectable_count": len(repair_policy.get("detectable_without_screenshots", []) or []),
+        "repair_priority_count": len(repair_policy.get("repair_priority_ladder", []) or []),
     }
 
 

@@ -492,7 +492,7 @@ outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v
 1. 保存 v5。
 2. 把 v1-v6 的人类反馈沉淀成 benchmark rules。
 3. 用规则保护 v5 的主要审美方向。
-4. 再接入 `--render-review-dir`、文本快照、PPTX 几何检查和选择性视觉判断。
+4. 当前阶段先接入 PPTX 几何、字体、文本容量、表格语法和组件遮挡检查；不走截图和视觉模型判断。
 5. 后续任何视觉优化都要和 v5 对比，防止“局部指标变好、整体观感变差”。
 
 v6 的回退给出一个重要教训：自动化审美优化不能只看文本密度、组件面积或局部布局合理性。它还需要维护整页构图、学术庄重感和用户偏好的稳定性。
@@ -510,12 +510,94 @@ benchmarks/from_scratch_human_feedback_benchmark.json
 - v1-v6 iteration log。
 - badcase rule registry。
 - aesthetic rubric。
-- non-visual-first / selective-render review strategy。
+- non-visual-only review strategy。
 
 下一轮实现建议：
 
 1. 先让 benchmark runner 能读取 `benchmarks/from_scratch_human_feedback_benchmark.json`。
 2. 在 from-scratch audit 中输出这些 rule 的命中情况。
-3. 对低成本问题先做 PPTX 元数据检查，例如字体大小、shape overlap、table rows、card density、layout repetition。
-4. 只有高风险页进入截图或视觉模型评审。
-5. 自动 repair 每轮只修 Top 1-3 个问题，并记录是否比 v5 更好。
+3. 对问题做 PPTX 元数据检查，例如字体大小、shape overlap、table rows、card density、layout repetition。
+4. 当前阶段不进入截图或视觉模型评审，避免高 token 成本和复杂渲染依赖。
+5. 自动 repair 每轮只修 Top 1-3 个问题，并记录是否比 v5 更好；低密度问题默认先改字体/文案，不自动缩组件。
+
+## 2026-06-12 追加：从款式协议到非视觉自动纠偏
+
+这轮新的方向是：当前阶段彻底放弃“每页截图 + 视觉模型审美判断”作为默认路线，改为 **PPTX 元数据优先的自评与纠偏**。这不是降低目标，而是把目标拆得更工程化：先让系统能稳定判断结构、内容、组件语法、文字容量和几何风险，再把真正需要人眼的细腻审美留到可选分支。
+
+### 1. 生成不是无约束随机设计
+
+从零生成论文 PPT 时，第一步不是马上画页面，而是先生成一个 `style_contract`。它至少要回答：
+
+- 这是什么演示类型：论文汇报、学术组会、数据报告、课程讲解还是产品展示？
+- 这个类型必须有哪些页面：title、agenda、section、content、closing 是否必需？
+- 这篇论文应该怎么分模块：motivation、method、experiment、takeaway 的边界在哪里？
+- 每类内容用什么 proof object：figure、table、metric、evidence cards、mechanism diagram、pipeline。
+- 组件语法是什么：card、panel、table、metric、section divider、agenda map 各自有什么尺寸和位置偏好？
+- 禁止什么：不要 baseline 骨架换皮，不要无意义装饰块，不要因为低密度直接缩掉已验证好看的组件。
+
+也就是说，benchmark 要先检查“设计协议是否成立”，再检查“某个文本框是否过小”。这解释了为什么 v5 好看而 v6 怪：v5 的整体协议更稳定，v6 的局部密度优化破坏了协议。
+
+### 2. 非视觉审计能覆盖哪些问题
+
+PPTX 本身包含丰富元数据，因此不截图也能做大量检查：
+
+| 检查类别 | 非视觉信号 | 可自动修复方向 |
+| --- | --- | --- |
+| deck 结构 | slide role 是否含 title/agenda/section/closing | 补页或重建 section map |
+| 内容正确性 | claim/support/proof_object 是否齐全 | 回到 spec 层补 evidence |
+| 目录一致性 | agenda module count 与 slide ranges | 重算模块页码 |
+| proof object 匹配 | table slide 是否有 native table rows | 保留 parsed rows 并渲染表格 |
+| 组件遮挡 | shape bounding boxes overlap | 移动 proof/table 或换 layout family |
+| 字体层级 | role font floors | 调字号、拆行、压缩文案 |
+| 文本容量 | words-per-area、near capacity | 文案分配、notes 拆分 |
+| 空白风险 | low density in large card/panel | 只提示，默认不缩组件 |
+| 布局单调 | layout family 分布与连续重复 | 换 proof placement 或 role layout |
+| 审美回归 | 是否改动 v5 accepted grammar | 阻止或要求显式 style-contract 更新 |
+
+这张表是未来 `nonvisual_audit.json -> repair_hints -> rerender` 的核心依据。
+
+### 3. 自动修复必须有优先级
+
+当前项目应采用下面的 repair ladder：
+
+```text
+content correctness
+ -> deck architecture
+ -> semantic matching
+ -> typography / copy allocation
+ -> geometry fix
+ -> visual-system revision
+```
+
+含义是：
+
+- 内容不对时，不能靠美化遮过去。
+- deck 架构缺失时，不能只调单页。
+- claim 和 proof object 不匹配时，先改 spec。
+- 字体小、文字少，先调字号、文案、换行、notes 分配。
+- 只有遮挡、越界、表格不可读、布局重复等结构性问题，才动组件位置或大小。
+- 修改 v5 已经被认可的组件比例，需要更强理由；低密度本身不是理由。
+
+### 4. 面向未来 20 篇论文的运行方式
+
+未来可以有两种 benchmark mode：
+
+```text
+generation mode:
+  checkpoints/pdf -> inventory -> style_contract -> pptx -> nonvisual_audit -> repair -> final report
+
+evaluation mode:
+  existing pptx/spec -> nonvisual_audit -> score -> badcase report -> optional repair hints
+```
+
+generation mode 用于真正从无到有生成一篇新论文的 PPT。evaluation mode 用于 20 篇论文、多模板回归和打分。
+
+当前阶段的成功标准不是“完全替代人眼审美”，而是：
+
+- 系统能自己发现结构和排版大问题。
+- 系统知道哪些问题能自动修，哪些不能。
+- 系统能保护 v5 这类已经被人类认可的整体构图。
+- 系统每轮只修 Top 1-3 个问题，避免过度优化。
+- 系统把每次修复前后的分数、badcase 和规则命中记录下来。
+
+这样，后续即使不打开截图和视觉模型，也能让 from-scratch PPT 生成进入可回归、可比较、可自动迭代的阶段。

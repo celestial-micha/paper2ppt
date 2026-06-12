@@ -361,8 +361,8 @@ benchmarks/from_scratch_human_feedback_benchmark.json
 
 这部分经验会改变下一阶段自动 benchmark 的设计：
 
-1. **不要每页都视觉模型评审**：先做 shape overlap、字体大小、text density、table rows、metric grammar、layout repetition 等非视觉检查。
-2. **只渲染重点页**：标题页、目录页、section divider、高风险表格页、短文本证据页、metric 页、被非视觉检查命中的页面。
+1. **当前阶段不做截图/视觉模型评审**：只做 shape overlap、字体大小、text density、table rows、metric grammar、layout repetition 等非视觉检查。
+2. **低密度不是自动缩组件的理由**：组件比例和构图如果已经被人类认可，先调整字体、copy 分配、行文强弱，而不是直接改变卡片/面板尺寸。
 3. **视觉改动要和 v5 对比**：任何改变 v5 主要视觉语法的规则，都需要证明更好或获得人工确认。
 4. **把回退也记录为经验**：v6 的 2x2 read path 和过度压缩 evidence cards 不是单纯失败，而是未来自动 repair loop 需要避免重复犯的 regression case。
 5. **继续复用已解析论文内容**：from-scratch track 仍然从 checkpoint_summary / checkpoint_plan / checkpoint_slide_spec 出发，不重跑已稳定的 PDF 解析链路。
@@ -371,10 +371,82 @@ benchmarks/from_scratch_human_feedback_benchmark.json
 
 ```text
 generate vN
- -> run cheap PPTX metadata checks
- -> select high-risk pages for render-review
- -> compare against accepted reference when visual grammar changes
+ -> run PPTX metadata-only checks
+ -> estimate font, text capacity, overlap, table grammar, metric grammar
+ -> compare against accepted reference rules when visual grammar changes
  -> emit badcase hits and repair hints
- -> repair Top 1-3 issues
+ -> repair Top 1-3 issues without resizing accepted components by default
  -> record whether vN improves or regresses from v5
 ```
+
+新增非视觉审查命令：
+
+```powershell
+python -m paper2slides.benchmark nonvisual-audit --pptx <deck.pptx> --output <nonvisual_audit.json>
+```
+
+## 2026-06-12 再追加：Benchmark 驱动的非视觉自动纠偏路线
+
+当前最新共识是：下一阶段不再把 `--render-review-dir`、单页截图和视觉模型作为默认审美闭环。默认路线改为：
+
+```text
+PPTX metadata-only audit
+```
+
+也就是直接读取 PPTX 的结构化对象，检查页面角色、组件位置、文本容量、字体大小、表格语法、metric 语法、layout family 分布和 badcase rule 命中。
+
+### 自动生成流程
+
+针对一篇新论文，benchmark runner 未来应按下面顺序工作：
+
+1. **复用解析结果**：优先使用 `checkpoint_summary.json`、`checkpoint_plan.json`、`checkpoint_slide_spec.json`、figure/table/metric 结果，不重跑稳定的 PDF 解析链路。
+2. **生成 content inventory**：收集论文标题、作者、核心贡献、章节、figures、tables、metrics、source evidence。
+3. **生成 deck architecture**：确定这是 academic paper-reading deck，并生成 title、agenda、section divider、content slides、closing。
+4. **生成 slide semantic map**：每页只保留一个主 claim，配 support 和 proof object。
+5. **生成 style contract**：确定 palette、typography、layout families、proof-object grammar、metric/table/card 语法和禁止项。
+6. **渲染第一版 PPTX**：先让内容和组件语法完整，不追求靠局部参数一次到位。
+7. **运行非视觉审计**：输出 `nonvisual_audit.json`，包含 overlap、font、capacity、density、table、metric、layout repetition 等 findings。
+8. **按优先级修复**：每轮只修 Top 1-3 个 badcases。
+9. **对比 accepted reference / previous attempt**：如果改动破坏 v5 类似的已接受构图，必须阻止或记录为 style-contract 变更。
+10. **输出 benchmark report**：记录分数、badcase、修复建议、是否停止。
+
+### 非视觉纠偏原则
+
+修复顺序必须保持稳定：
+
+```text
+内容正确性 > deck 架构 > 语义匹配 > 字体/文案 > 几何位置 > 视觉系统改版
+```
+
+具体规则：
+
+- 缺表格行、缺指标值、缺 evidence 时，先回到内容/Spec 层修。
+- 缺标题页、目录页、章节页、结尾页时，先修 deck architecture。
+- claim 和 proof object 不匹配时，先修 slide semantic map。
+- 字体偏小或文字稀疏时，先改字号、换行、文案分配。
+- 只有遮挡、越界、表格不可读、连续重复布局时，才移动或缩放组件。
+- 低密度不应自动触发组件缩小；v6 已经证明这会伤害整体观感。
+- 视觉系统级改动必须显式进入 `style_contract`，并和 accepted reference 对比。
+
+### 新增评分维度落地方式
+
+当前 benchmark 的五类评分可以这样落地：
+
+- `reliability_score`：命令是否成功，产物是否完整，QA/审计是否能运行。
+- `content_score`：章节覆盖、claim/support/evidence、table/figure/metric 保存情况。
+- `visual_layout_score`：overlap、out-of-bounds、font floors、text capacity、table readability。
+- `aesthetic_score`：用非视觉代理指标估计：deck 结构完整、layout rhythm、palette 语义、组件语法一致、低密度不过度修、accepted grammar 不被破坏。
+- `novelty_score`：检查是否复用 golden baseline 的 header/key-message/numbered-point/macro skeleton。
+
+注意：当前阶段的 `aesthetic_score` 不是像素级审美真值，而是工程化代理分数。它用于自动发现大多数结构性审美问题，并保护已经被人类认可的构图方向。
+
+### Stop Condition
+
+自动修复应该有停止条件，避免越修越怪：
+
+- 没有 high / medium non-visual findings。
+- 剩余问题主要是低密度或轻微字号风险，继续修会破坏组件比例。
+- 连续两轮 content/layout 分数不再提升。
+- 修复建议要求改变 accepted reference 的主要视觉语法，但没有新的 style-contract 批准。
+
+这让 benchmark 从“生成后检查”升级为“可控自动迭代系统”：能自己发现问题、知道先修什么、知道什么时候停。

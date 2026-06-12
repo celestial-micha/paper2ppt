@@ -249,7 +249,7 @@ benchmarks/from_scratch_human_feedback_benchmark.json
 - v6 regression guard。
 - badcase rules。
 - aesthetic rubric。
-- 非视觉检查优先、重点页选择性截图的 review 策略。
+- 当前阶段 non-visual-only 的 review 策略：不截图、不调用视觉模型。
 
 下一轮推荐入口：
 
@@ -257,5 +257,77 @@ benchmarks/from_scratch_human_feedback_benchmark.json
 请先不要重新解析论文，也不要直接重做视觉系统。
 先读取 benchmarks/from_scratch_human_feedback_benchmark.json，
 让 benchmark runner / from_scratch audit 能消费这些规则，
-再接入 --render-review-dir 和低成本 PPTX 元数据检查。
+再接入 PPTX 元数据检查：字体大小、文本容量、shape overlap、table grammar、metric grammar 和低密度风险。
+当前阶段不要打开 --render-review-dir，不要调用视觉模型。
 ```
+
+## 2026-06-12 三补充：默认转为非视觉自动审计与纠偏
+
+最新用户决策：当前阶段彻底放弃“生成单页图片再让视觉模型读图”的默认路线。原因是：
+
+- 截图/视觉模型成本高。
+- PowerPoint/LibreOffice 渲染依赖复杂。
+- 很多问题可以直接从 PPTX 元数据判断。
+- v5 的组件比例已经比较好看，不能因为局部文本密度盲目缩组件。
+
+新窗口继续时应采用：
+
+```text
+non-visual metadata audit first
+```
+
+也就是用 PPTX 对象本身检查：
+
+- slide role 是否有 title / agenda / section / content / closing。
+- agenda 模块和 slide ranges 是否一致。
+- 每页 claim / support / proof object 是否完整。
+- table 是否有 native rows / columns。
+- metric 是否有 value / label / context。
+- shape bounding boxes 是否遮挡或越界。
+- 各角色字体是否低于下限。
+- text capacity 是否接近溢出。
+- low density 是否只是提示，而不是自动缩组件理由。
+- layout family 是否过度重复。
+- 是否触发 v1-v6 human feedback badcase rules。
+
+当前推荐工作流：
+
+```text
+reuse parsed checkpoints
+ -> content inventory
+ -> deck architecture contract
+ -> slide semantic contract
+ -> style contract
+ -> render PPTX
+ -> nonvisual_audit.json
+ -> repair top 1-3 badcases
+ -> compare with accepted reference / previous attempt
+ -> stop or rerun
+```
+
+修复优先级：
+
+```text
+内容正确性 > deck 架构 > 语义匹配 > 字体/文案 > 几何位置 > 视觉系统改版
+```
+
+重要约束：
+
+- 不要为了低密度直接缩组件。
+- 已经被 v5 验证过的组件比例优先保留。
+- 如果必须改组件大小，必须有 overlap、越界、表格不可读、连续重复布局等结构性理由。
+- 视觉系统级改动必须写入新的 `style_contract`，不能散落成单页 patch。
+- 默认不要打开 `--render-review-dir`。
+- 默认不要调用视觉模型。
+
+新增/更新的关键文件：
+
+```text
+benchmarks/from_scratch_human_feedback_benchmark.json
+paper2slides/benchmark/nonvisual_audit.py
+docs/human_feedback_benchmark_synthesis.zh-CN.md
+docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+docs/benchmark_plan.zh-CN.md
+```
+
+下一步如果继续改文字大小问题，应先读取 `nonvisual_audit.json` 的 findings，用 typography/copy allocation 修复；除非出现结构性失败，否则不要改变整体组件构图。

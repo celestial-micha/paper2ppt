@@ -162,3 +162,35 @@ This turns aesthetic judgment into a structured evaluation problem. The project 
 一句话版本：
 
 > 我们没有做一个自由游走的通用 ReAct agent，而是把论文转 PPT 拆成固定工具图：Plan、Act、Observe、Repair、Repeat。这样保留了 agent 的闭环迭代能力，同时保证 PPT 生成过程稳定可控。
+
+## Non-Visual Observe/Repair Extension
+
+The from-scratch paper-reading deck work adds a second kind of observation: a metadata-only PPTX audit.
+
+Instead of rendering every slide to images and asking a vision model to judge them, the system can inspect the PPTX file as a structured layout program:
+
+- slide roles and section ranges;
+- shape positions, sizes, and overlap;
+- font sizes by text role;
+- text capacity and low-density risk;
+- native table rows and columns;
+- metric value / label / context grammar;
+- layout-family repetition;
+- human-feedback badcase rules.
+
+This is still an agentic Observe/Repair loop. The observation is not pixels; it is structured evidence extracted from the generated artifact. The repair step should follow a stable priority order:
+
+```text
+content correctness
+ -> deck architecture
+ -> semantic matching
+ -> typography / copy allocation
+ -> geometry fix
+ -> visual-system revision
+```
+
+The important design lesson from the Kimi K2 v5/v6 iteration is that local density metrics must not automatically resize good components. If a component composition has already been accepted by human feedback, the first fixes should be text size, line breaks, and copy allocation. Component geometry should change only for structural failures such as overlap, out-of-bounds shapes, unreadable tables, or excessive layout repetition.
+
+In interview terms:
+
+> The project can now evaluate a generated PPT without screenshot-heavy vision review. It treats PPTX as an inspectable program, runs deterministic checks over geometry and text metadata, maps failures to benchmark badcases, and repairs only the highest-priority issues. That makes aesthetic iteration cheaper and more reproducible while still leaving pixel-level visual judgment as an optional future branch.

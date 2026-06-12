@@ -22,14 +22,19 @@
       "why": "A good-looking deck that drops tables, metrics, or proof objects fails the paper-reading task."
     },
     {
+      "id": "style_contract_before_micro_tuning",
+      "rule": "Choose the presentation archetype, deck structure, layout families, proof-object grammar, and component composition before tuning font sizes or local text density.",
+      "why": "The successful v5 iteration came from first establishing an academic paper-reading style system; v6 showed that local component resizing can hurt the whole-slide composition."
+    },
+    {
       "id": "human_feedback_to_rules",
       "rule": "Every subjective complaint should be translated into a badcase, trigger signal, repair strategy, and regression check.",
       "why": "The goal is not one manually corrected PPT, but a benchmark that helps future decks self-diagnose and improve."
     },
     {
       "id": "non_visual_first_visual_selective",
-      "rule": "Use PPTX geometry, text, font, table, and layout metadata for cheap checks first; render only high-risk or representative pages.",
-      "why": "Rendering and vision judging every slide is expensive; geometry and text-density checks can catch many obvious problems."
+      "rule": "For the current phase, use PPTX geometry, text, font, table, and layout metadata only; do not render pages or call a vision model.",
+      "why": "The user prefers preserving good component composition and avoiding costly screenshot/vision loops; metadata checks can catch many text, overlap, and density risks."
     },
     {
       "id": "human_preference_is_a_regression_guard",
@@ -350,7 +355,112 @@
       }
     ]
   },
+  "autonomous_generation_workflow": [
+    {
+      "stage": "paper_content_inventory",
+      "goal": "Reuse parsed checkpoints to collect paper metadata, thesis, highlights, sections, figures, tables, metrics, and evidence links.",
+      "non_visual_checks": [
+        "required checkpoint files exist",
+        "paper title and author/team are present",
+        "figures, tables, and metrics have stable identifiers",
+        "core sections cover motivation, method, experiments, and takeaway"
+      ],
+      "default_repair": "Return to inventory construction; do not redesign slides until missing evidence is recovered from existing checkpoints."
+    },
+    {
+      "stage": "deck_architecture_contract",
+      "goal": "Decide that the output is an academic paper-reading deck with title, agenda, section dividers, content modules, and closing slide.",
+      "non_visual_checks": [
+        "slide roles include title, agenda, section_opener, content roles, and closing",
+        "agenda modules map to contiguous slide ranges",
+        "section counts are plausible for the requested slide budget"
+      ],
+      "default_repair": "Regenerate section buckets and slide-role map before touching visual components."
+    },
+    {
+      "stage": "slide_semantic_contract",
+      "goal": "Assign one main claim, concise support text, and one matching proof object to each content slide.",
+      "non_visual_checks": [
+        "each content slide has exactly one dominant claim",
+        "support text is not empty and is not a duplicate of the claim",
+        "proof object type matches the slide role",
+        "table, figure, and metric slides retain source references"
+      ],
+      "default_repair": "Repair slide spec content first; do not hide semantic gaps with layout decoration."
+    },
+    {
+      "stage": "visual_system_contract",
+      "goal": "Define palette, typography hierarchy, layout families, evidence card grammar, metric grammar, table grammar, and forbidden baseline-like skeletons.",
+      "non_visual_checks": [
+        "layout family distribution is varied but not random",
+        "accepted component proportions are preserved unless a structural rule fails",
+        "colors and component roles follow the style contract",
+        "new deck does not collapse into the golden baseline macro skeleton"
+      ],
+      "default_repair": "Change style tokens or layout assignment rules; avoid ad-hoc per-slide resizing as the first fix."
+    },
+    {
+      "stage": "metadata_only_deck_audit",
+      "goal": "Inspect generated PPTX as a layout program: shape geometry, font sizes, text capacity, table grammar, metric grammar, and overlap risk.",
+      "non_visual_checks": [
+        "no high-risk text/proof/table overlap",
+        "font-size floors pass by role",
+        "near-capacity and low-density findings are classified separately",
+        "tables preserve rows and columns",
+        "metrics preserve value, label, and context"
+      ],
+      "default_repair": "Emit badcase hits and rank only the top issues for the next repair pass."
+    },
+    {
+      "stage": "bounded_repair_loop",
+      "goal": "Repair the highest-impact problems without breaking the accepted overall composition.",
+      "non_visual_checks": [
+        "repair changes are limited to top 1-3 badcases",
+        "copy and font fixes are preferred before resizing accepted components",
+        "component geometry changes require a structural failure such as overlap, unreadable table, or missing content",
+        "new output is compared against accepted-reference rules"
+      ],
+      "default_repair": "Stop when high/medium findings are gone or when another repair would alter the style contract without evidence."
+    }
+  ],
+  "non_visual_self_repair_policy": {
+    "design_assumption": "Treat PPTX as a structured layout program. The system cannot literally see the slide, but it can inspect the objects, positions, sizes, fonts, text length, tables, and role metadata that produce the slide.",
+    "detectable_without_screenshots": [
+      "missing title, agenda, section, or closing roles",
+      "agenda modules not aligned with slide ranges",
+      "claim/support/proof object missing or mismatched",
+      "shape bounding-box overlap and out-of-bounds objects",
+      "font-size floors and inconsistent typography hierarchy",
+      "text capacity, near-overflow risk, and low-density card/panel risk",
+      "native table row/column availability",
+      "metric value/label/context grammar",
+      "layout-family repetition and monotony",
+      "use of forbidden or risky visual grammar recorded from human feedback"
+    ],
+    "not_reliably_detectable_without_screenshots": [
+      "subtle beauty of color interaction after rendering",
+      "pixel-level crop quality of images",
+      "human emotional preference when two valid compositions differ",
+      "font rendering differences across PowerPoint installations"
+    ],
+    "repair_priority_ladder": [
+      "Fix content correctness first: missing evidence, unsupported claims, table rows, metric values.",
+      "Fix structural deck grammar second: title, agenda, section ranges, slide role balance.",
+      "Fix semantic matching third: claim/support/proof object alignment.",
+      "Fix typography fourth: font floors, text splitting, line breaks, copy allocation.",
+      "Fix geometry only when necessary: overlap, out-of-bounds, unreadable table, or repeated layout family.",
+      "Change accepted component proportions only when the audit shows a structural failure, not merely low text density.",
+      "Change the visual system only through a new style-contract revision and compare against the accepted reference."
+    ],
+    "stop_conditions": [
+      "no high or medium non-visual findings remain",
+      "remaining findings are low-density or low-font risks that would require style-contract changes",
+      "a repair would improve local density but violate accepted-reference composition",
+      "content_score, visual_layout_score, and nonvisual audit are stable across two attempts"
+    ]
+  },
   "automatic_review_strategy": {
+    "current_phase_policy": "non_visual_only_no_screenshots_no_vision_model",
     "cheap_non_visual_checks": [
       "slide roles present: title, agenda, sections, content, closing",
       "layout family distribution and max consecutive layout",
@@ -360,7 +470,7 @@
       "table row/column availability and native table count",
       "metric grammar: value + label + context"
     ],
-    "selective_render_checks": [
+    "disabled_render_checks_for_current_phase": [
       "cover page",
       "agenda page",
       "one section divider per visual family",
@@ -370,12 +480,10 @@
       "pages flagged by non-visual overlap or density checks"
     ],
     "vision_judge_policy": {
-      "default": "Do not judge every slide with a vision model.",
+      "default": "Disabled for the current phase. Do not judge slides with a vision model unless the user explicitly reopens that route.",
       "when_to_call": [
-        "accepted-reference comparison after major visual-system changes",
-        "pages that cheap checks cannot classify",
-        "user-identified pages that look wrong",
-        "final pre-save review of representative pages"
+        "future optional branch only",
+        "explicit user request to compare rendered pages"
       ],
       "expected_output": [
         "detected_badcases",

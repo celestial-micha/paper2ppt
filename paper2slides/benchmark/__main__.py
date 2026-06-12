@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from typing import List, Optional
 
-from . import from_scratch, human_feedback, qa_summary
+from . import from_scratch, human_feedback, nonvisual_audit, qa_summary
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -14,6 +14,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return from_scratch.main(args[1:])
     if args and args[0] == "human-feedback":
         return human_feedback.main(args[1:])
+    if args and args[0] == "nonvisual-audit":
+        return nonvisual_audit.main(args[1:])
     if args and args[0] == "qa-summary":
         return qa_summary.main(args[1:])
     return qa_summary.main(args)

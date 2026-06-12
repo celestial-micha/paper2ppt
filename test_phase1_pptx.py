@@ -20,6 +20,7 @@ from paper2slides.benchmark.papers import expand_paper_set, validate_paper_files
 from paper2slides.benchmark.runner import _build_command, _preflight_environment, summarize_run_results
 from paper2slides.benchmark.from_scratch import build_content_inventory, build_rough_draft_spec, render_rough_draft_pptx, write_from_scratch_artifacts
 from paper2slides.benchmark.human_feedback import badcase_ids, load_human_feedback_benchmark, summarize_human_feedback_benchmark
+from paper2slides.benchmark.nonvisual_audit import inspect_pptx_nonvisual
 from paper2slides.core.stages.rag_stage import _run_fast_queries_by_category
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
 
@@ -422,6 +423,9 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertEqual(summary["accepted_reference"], "rough_draft_v5")
         self.assertIn("rough_draft_v6", summary["avoid_versions"])
         self.assertGreaterEqual(summary["badcase_count"], 8)
+        self.assertGreaterEqual(summary["autonomous_workflow_stage_count"], 6)
+        self.assertGreaterEqual(summary["non_visual_detectable_count"], 8)
+        self.assertGreaterEqual(summary["repair_priority_count"], 6)
         self.assertIn("component_overlap", badcase_ids(data))
         self.assertIn("overoptimized_density_regression", badcase_ids(data))
 
@@ -725,11 +729,17 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertTrue(Path(paths["content_inventory"]).exists())
         self.assertTrue(Path(paths["rough_draft_spec"]).exists())
         self.assertTrue(Path(paths["rough_draft_pptx"]).exists())
+        self.assertTrue(Path(paths["nonvisual_audit"]).exists())
         self.assertTrue(Path(paths["visual_audit"]).exists())
         self.assertGreater(Path(paths["rough_draft_pptx"]).stat().st_size, 1000)
         audit = json.loads(Path(paths["visual_audit"]).read_text(encoding="utf-8"))
-        self.assertTrue(audit["visual_review_manifest"]["requires_rendered_screenshots"])
+        self.assertFalse(audit["non_visual_review_manifest"]["requires_rendered_screenshots"])
+        self.assertFalse(audit["non_visual_review_manifest"]["requires_vision_model"])
+        self.assertFalse(audit["visual_review_manifest"]["requires_rendered_screenshots"])
         self.assertGreaterEqual(len(audit["visual_review_manifest"]["render_requests"]), 2)
+        nonvisual = json.loads(Path(paths["nonvisual_audit"]).read_text(encoding="utf-8"))
+        self.assertEqual(nonvisual["review_mode"], "non_visual_metadata_only")
+        self.assertFalse(nonvisual["rendering_used"])
 
     def test_from_scratch_renderer_outputs_plain_pptx(self):
         root = Path(__file__).parent / "outputs" / "tmp" / f"rough_pptx_{uuid.uuid4().hex}"
@@ -766,6 +776,11 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         prs = Presentation(pptx_path)
         self.assertEqual(len(prs.slides), 5)
         self.assertGreaterEqual(sum(1 for slide in prs.slides for shape in slide.shapes if getattr(shape, "has_table", False)), 1)
+        nonvisual = inspect_pptx_nonvisual(pptx_path)
+        self.assertEqual(nonvisual["slide_count"], 5)
+        self.assertFalse(nonvisual["rendering_used"])
+        self.assertTrue(any("table" in slide["role_counts"] for slide in nonvisual["slides"]))
+        self.assertIn("finding_count", nonvisual["summary"])
 
 
 if __name__ == "__main__":

@@ -605,17 +605,17 @@ trigger: table or proof panel intersects body text box
 repair: move proof panel lower, reduce proof height, or split layout
 ```
 
-### 9.4 字体与密度：先做非视觉检查，再选择性截图
+### 9.4 字体与密度：当前阶段只做非视觉检查
 
 用户提出一个很关键的工程判断：不能指望每一页都截图并调用视觉模型，因为成本高、速度慢，而且很多问题其实可以从 PPTX 本身检测。
 
-因此后续 benchmark 应采用两阶段策略：
+因此当前阶段 benchmark 应采用 metadata-only 策略：
 
 ```text
-cheap non-visual checks first, selective rendered/vision checks second.
+non-visual metadata checks only; no screenshot review; no vision model judge.
 ```
 
-第一阶段，直接分析 PPTX：
+直接分析 PPTX：
 
 - 每类文本的字体大小下限。
 - text box 面积与词数的密度。
@@ -625,20 +625,24 @@ cheap non-visual checks first, selective rendered/vision checks second.
 - metric 是否有 value + label + context。
 - layout family 是否过度重复。
 
-第二阶段，只对重点页截图：
-
-- 标题页。
-- 目录页。
-- section divider。
-- 高风险表格页。
-- 短文本证据页。
-- metric 页。
-- 被非视觉检查标记为 overlap / sparse / low font 的页面。
+这一路线特别强调：组件比例和构图已经被人类认可时，低密度检查只能提示“文字/字号/内容分配可能需要调整”，不能直接驱动组件缩放。v6 的回退就是反例：局部看似更贴合文字量，但整体观感变怪。
 
 这个策略已经写入：
 
 ```text
 benchmarks/from_scratch_human_feedback_benchmark.json
+```
+
+并新增代码入口：
+
+```powershell
+python -m paper2slides.benchmark nonvisual-audit --pptx <deck.pptx> --output <nonvisual_audit.json>
+```
+
+from-scratch 生成链路也会默认写出：
+
+```text
+nonvisual_audit.json
 ```
 
 ### 9.5 v5 是当前审美参考，v6 是一次回归样本
@@ -689,3 +693,108 @@ benchmarks/from_scratch_human_feedback_benchmark.json
 - `automatic_review_strategy`: 明确哪些问题先靠 PPTX 元数据检查，哪些页面才需要截图和视觉模型。
 
 这让 benchmark 不只是文档，也可以成为后续 runner / audit / repair loop 的配置来源。
+
+## 11. 2026-06-12 追加：从人工审美迭代抽象出的自动生成流程
+
+这轮对话最重要的新结论是：我们不是让系统“漫无目的地从零生成 PPT”，而是让系统先选择一种明确的演示任务类型，再在这个任务类型约束下生成和审计。
+
+对于论文汇报 PPT，任务类型不是普通营销页，也不是纯数据报告，而是：
+
+```text
+academic paper-reading deck
+```
+
+它天然要求：
+
+1. 有正式标题页，让听众知道论文主题、作者/团队、核心亮点。
+2. 有目录页，把论文拆成 motivation / method / experiments / takeaways 等模块。
+3. 有 section divider，让听众知道当前进入哪一段论证。
+4. 有结尾页，完成汇报闭环。
+5. 每个内容页必须围绕一个主 claim，而不是堆很多平级文字。
+6. 每个 claim 都要配支持性说明和 proof object：图、表、指标、机制图、evidence cards 或简洁 notes。
+7. 视觉系统要服务论文阅读：克制、有层级、有生命力，但不能过度装饰。
+
+因此，真正可自动化的流程应该是：
+
+```text
+paper checkpoints
+ -> content inventory
+ -> deck architecture contract
+ -> slide semantic contract
+ -> visual system contract
+ -> first PPTX
+ -> non-visual metadata audit
+ -> ranked badcases
+ -> bounded repair
+ -> benchmark report
+```
+
+### 11.1 先定款式，再定结构，再定组件
+
+这次 v5 成功，不是因为某一个卡片参数偶然好看，而是因为先建立了完整的“学术论文汇报语法”：
+
+- **款式协议**：warm academic palette、纸张底色、teal/gold/clay 语义色、克制圆角和阴影。
+- **deck 架构协议**：title、agenda、section、content、closing 缺一不可。
+- **页面角色协议**：thesis、mechanism、evidence、table interpretation、metric、conclusion 各自有不同信息密度。
+- **proof object 协议**：短文本走 evidence cards，表格走 native table，指标走 metric cards，图走 figure panel。
+- **组件位置协议**：正式学术页优先右侧或底部 evidence，不默认使用左侧三彩卡片；table bottom 要预留正文 gutter。
+
+只有这些协议先稳定，后面再微调字体大小、文本截断、行距和局部排版才不会把整体弄怪。v6 的回退说明：如果直接按文字量缩组件，局部似乎更紧凑，但会破坏整页节奏和庄重感。
+
+### 11.2 无视觉条件下如何识别错误
+
+没有截图和视觉模型时，系统不能真正“看见”页面，但它可以把 PPTX 当成一个结构化布局程序来检查。PPTX 里已经有足够多的可观测信息：
+
+- shape 类型、位置、宽高、层级。
+- 文本框内容、字体大小、段落数量。
+- 表格行列数量、单元格文本长度。
+- 图片和图表的 bounding box。
+- slide role、layout family、proof object 类型。
+- claim / support / evidence 的来源关系。
+
+这些信息足以检测很多过去靠人眼发现的问题：
+
+- 缺 title / agenda / closing。
+- 目录模块和实际页码不一致。
+- claim 缺 support 或 proof object。
+- 短文本被放进巨大空 panel。
+- table panel 和正文重叠。
+- table 只有 caption，没有 native rows。
+- metric card 缺 value / label / context。
+- 字体低于角色下限。
+- 文本接近容量上限。
+- layout family 过度重复。
+- 组件位置违背已接受的学术风格规则。
+
+也就是说，当前阶段的 benchmark 不追求“像人一样审美看图”，而是先把人类反馈中可结构化的部分转成规则。审美被拆成可观测代理指标：结构完整、层级清楚、组件语义正确、留白不过度失衡、布局不过度重复、配色使用有语义。
+
+### 11.3 自动修复优先级
+
+后续自动修复不应该一发现低密度就缩组件。更稳妥的优先级是：
+
+1. 先修内容正确性：缺证据、缺表格行、缺指标值、unsupported claim。
+2. 再修 deck 结构：标题页、目录页、章节页、结尾页、模块页码。
+3. 再修语义匹配：claim / support / proof object 是否对应。
+4. 再修文字：字号下限、文案压缩、换行、拆分 notes。
+5. 只有出现遮挡、越界、表格不可读、布局连续重复时，才修改组件位置或大小。
+6. 已经被人类认可的组件比例不能因为低密度单独触发缩放。
+7. 视觉系统级变化必须作为新的 style contract 版本，并和 v5 accepted reference 对比。
+
+### 11.4 面向 20 篇论文的 benchmark 闭环
+
+最终 benchmark 应该同时支持两种任务：
+
+- **生成任务**：给定一篇论文 PDF 或已有 checkpoints，从内容库存到最终 PPT 自动生成，并通过非视觉审计做 1-3 轮 bounded repair。
+- **评估任务**：对 20 篇论文和不同模板输出打分，记录 reliability、content、visual_layout、aesthetic、novelty，并输出 badcase 和修复建议。
+
+其中 aesthetic_score 在当前非视觉阶段不是“人眼美感真值”，而是由代理规则组成：
+
+- title / agenda / section / closing 是否完整。
+- 视觉语法是否符合学术汇报风格。
+- palette 是否有克制的语义色。
+- layout family 是否有节奏变化。
+- proof object 是否根据内容类型选择。
+- 字体层级是否清楚。
+- 低密度是否只作为提示，而不是破坏构图的自动改版理由。
+
+这样，未来即使没有 human-in-the-loop，系统也能先通过规则发现大部分结构性和排版性问题，再把少数真正依赖人类审美的选择留给人工或未来可选视觉分支。

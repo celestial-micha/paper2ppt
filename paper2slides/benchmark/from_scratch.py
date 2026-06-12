@@ -192,10 +192,16 @@ def write_from_scratch_artifacts(
     }
     if pptx_output:
         render_rough_draft_pptx(inventory, rough, pptx_output)
+        from .nonvisual_audit import inspect_pptx_nonvisual
+
+        nonvisual_audit = inspect_pptx_nonvisual(pptx_output)
+        nonvisual_audit_path = output_dir / "nonvisual_audit.json"
+        _write_json(nonvisual_audit_path, nonvisual_audit)
         audit = audit_rough_draft(inventory, rough, pptx_output)
         audit_path = output_dir / "visual_audit.json"
         _write_json(audit_path, audit)
         paths["rough_draft_pptx"] = str(pptx_output)
+        paths["nonvisual_audit"] = str(nonvisual_audit_path)
         paths["visual_audit"] = str(audit_path)
         if render_review_dir:
             render_status = export_visual_review_pages(pptx_output, audit, render_review_dir)
@@ -660,9 +666,28 @@ def audit_rough_draft(inventory: Dict[str, Any], rough: Dict[str, Any], pptx_pat
         "max_consecutive_layout": repeated,
         "warnings": warnings,
         "review_targets": deduped_targets,
+        "non_visual_review_manifest": {
+            "review_mode": "pptx_metadata_only",
+            "requires_rendered_screenshots": False,
+            "requires_vision_model": False,
+            "audit_artifact": "nonvisual_audit.json",
+            "checks": [
+                "shape bounding box overlap",
+                "text capacity estimate from box size and font size",
+                "font-size floor by inferred role",
+                "low text density without auto-shrinking components",
+                "table row/column readability estimates",
+                "slide occupancy and whitespace risk",
+            ],
+            "repair_policy": [
+                "preserve accepted component composition before changing card/panel geometry",
+                "increase typography or improve copy allocation before resizing components",
+                "treat low-density warnings as review hints, not automatic shrink commands",
+            ],
+        },
         "visual_review_manifest": {
-            "requires_rendered_screenshots": True,
-            "renderer_contract": "Export the requested PPTX pages to PNG, then run visual QA against the badcase rules below.",
+            "requires_rendered_screenshots": False,
+            "renderer_contract": "Legacy optional path only. Current route prefers nonvisual_audit.json and avoids screenshot/vision review by default.",
             "render_requests": [
                 {
                     "page": target["page"],
@@ -693,7 +718,8 @@ def audit_rough_draft(inventory: Dict[str, Any], rough: Dict[str, Any], pptx_pat
             "table proof has parsed rows",
             "figure proof image path exists",
             "thin text proof candidates",
-            "machine-readable render requests for screenshot/vision QA",
+            "machine-readable non-visual geometry/text-capacity QA",
+            "legacy optional render requests only when explicitly enabled",
         ],
     }
 
@@ -1213,8 +1239,12 @@ def _add_metric_card(slide: Any, value: str, label: str, x: float, y: float, w: 
     card.fill.solid()
     card.fill.fore_color.rgb = _theme("teal_deep") if not small else _theme("panel_light")
     card.line.color.rgb = _theme("line") if small else _theme("teal_deep")
-    _add_textbox(slide, str(value or "n/a"), x + 0.18, y + 0.17, w - 0.36, max(0.22, h * 0.38), 22 if not small else 14, _theme("white") if not small else _theme("ink"), bold=True)
-    _add_textbox(slide, str(label or "Metric"), x + 0.18, y + h * 0.6, w - 0.36, max(0.18, h * 0.25), 8 if small else 10, _theme("teal_light") if not small else _theme("muted_ink"))
+    if small:
+        _add_textbox(slide, str(value or "n/a"), x + 0.18, y + 0.1, w - 0.36, 0.22, 14, _theme("ink"), bold=True)
+        _add_textbox(slide, str(label or "Metric"), x + 0.18, y + max(0.36, h * 0.64), w - 0.36, 0.16, 9, _theme("muted_ink"))
+    else:
+        _add_textbox(slide, str(value or "n/a"), x + 0.18, y + 0.17, w - 0.36, max(0.22, h * 0.38), 22, _theme("white"), bold=True)
+        _add_textbox(slide, str(label or "Metric"), x + 0.18, y + h * 0.6, w - 0.36, max(0.18, h * 0.25), 10, _theme("teal_light"))
 
 
 def _add_metric_chip(slide: Any, x: float, y: float, value: str, label: str) -> None:
@@ -1378,14 +1408,14 @@ def _evidence_card_items(proof: Dict[str, Any], slide_data: Dict[str, Any]) -> L
     support = _clean_text(slide_data.get("support", ""))
     items: List[Dict[str, str]] = []
     if proof_focus:
-        items.append({"label": proof_id, "body": _limit_words(proof_focus, 18)})
+        items.append({"label": proof_id, "body": _limit_words(proof_focus, 16)})
     sentences = [
         part.strip()
         for part in re.split(r"(?<=[.!?])\s+", support)
         if len(part.strip()) > 12
     ]
     for idx, sentence in enumerate(sentences[:3], start=1):
-        items.append({"label": f"Reading note {idx}", "body": _limit_words(sentence, 18)})
+        items.append({"label": f"Reading note {idx}", "body": _limit_words(sentence, 13)})
     if not items:
         items.append({"label": proof_id, "body": "Evidence preserved from parsed checkpoints."})
     return items[:3]
