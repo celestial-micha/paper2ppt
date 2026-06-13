@@ -41,6 +41,8 @@ NONVISUAL_AUDIT_RULES = {
     "flow_grid_col_to_row_ratio_max": 2.7,
     "flow_label_center_tolerance_in": 0.09,
     "agenda_read_path_header_min_gap_in": 0.22,
+    "table_support_claim_gap_max_in": 0.24,
+    "table_support_panel_gap_min_in": 0.28,
     "paired_text_top_delta_max_in": 0.26,
     "component_label_min_inset_in": 0.30,
     "component_frame_extra_height_max_in": 0.42,
@@ -83,6 +85,7 @@ def inspect_pptx_nonvisual(pptx_path: Path, rules: Optional[Dict[str, Any]] = No
         slide_findings.extend(_copy_distribution_findings(slide_index, records, active_rules))
         slide_findings.extend(_flow_layout_findings(slide_index, records, active_rules))
         slide_findings.extend(_agenda_read_path_header_findings(slide_index, records, active_rules))
+        slide_findings.extend(_table_support_band_findings(slide_index, records, active_rules))
         slide_findings.extend(_metric_stack_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_boundary_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_frame_fit_findings(slide_index, records, active_rules))
@@ -586,6 +589,79 @@ def _agenda_read_path_header_findings(slide_index: int, records: List[Dict[str, 
             "repair_strategy": "Lift the Read path header slightly while preserving the flow node grid and rail composition.",
         }
     ]
+
+
+def _table_support_band_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    findings = []
+    tables = [record for record in records if record.get("role") == "table"]
+    supports = [record for record in records if record.get("role") == "support_body"]
+    claims = [record for record in records if record.get("role") == "title_claim"]
+    if not tables or not supports or not claims:
+        return findings
+
+    containers = _container_records(records)
+    for table in tables:
+        table_box = table.get("bbox", {})
+        if table_box.get("y", 0.0) < 3.45 or table_box.get("w", 0.0) < 7.0:
+            continue
+        panel = _smallest_containing_container(table_box, containers)
+        if not panel:
+            continue
+        panel_box = panel.get("bbox", {})
+        if panel_box.get("y", 0.0) < 3.0 or panel_box.get("w", 0.0) < 7.0:
+            continue
+        support_candidates = [
+            support
+            for support in supports
+            if support.get("bbox", {}).get("bottom", 0.0) <= panel_box.get("y", 0.0) + 0.08
+            and _horizontal_overlap_ratio(support.get("bbox", {}), panel_box) >= 0.45
+        ]
+        if not support_candidates:
+            continue
+        support = max(support_candidates, key=lambda item: item.get("bbox", {}).get("y", 0.0))
+        support_box = support.get("bbox", {})
+        claim_candidates = [
+            claim
+            for claim in claims
+            if claim.get("bbox", {}).get("bottom", 0.0) <= support_box.get("y", 0.0) + 0.04
+            and _horizontal_overlap_ratio(claim.get("bbox", {}), support_box) >= 0.35
+        ]
+        if not claim_candidates:
+            continue
+        claim = max(claim_candidates, key=lambda item: item.get("bbox", {}).get("bottom", 0.0))
+        claim_box = claim.get("bbox", {})
+        claim_gap = support_box.get("y", 0.0) - claim_box.get("bottom", 0.0)
+        panel_gap = panel_box.get("y", 0.0) - support_box.get("bottom", 0.0)
+        max_claim_gap = float(rules["table_support_claim_gap_max_in"])
+        min_panel_gap = float(rules["table_support_panel_gap_min_in"])
+        reasons = []
+        if claim_gap > max_claim_gap:
+            reasons.append(f"claim/support gap {claim_gap:.2f}in")
+        if panel_gap < min_panel_gap:
+            reasons.append(f"support/table-panel gap {panel_gap:.2f}in")
+        if not reasons:
+            continue
+        findings.append(
+            {
+                "type": "table_support_band_off_balance",
+                "severity": "low",
+                **_finding_meta("table_support_band_off_balance", "low"),
+                "slide_page": slide_index,
+                "message": "Table-bottom support copy is optically pulled toward the table panel: " + "; ".join(reasons) + ".",
+                "evidence": {
+                    "claim": _shape_evidence(claim),
+                    "support": _shape_evidence(support),
+                    "table_panel": _shape_evidence(panel),
+                    "table": _shape_evidence(table),
+                    "claim_gap_in": round(claim_gap, 3),
+                    "max_claim_gap_in": round(max_claim_gap, 3),
+                    "panel_gap_in": round(panel_gap, 3),
+                    "min_panel_gap_in": round(min_panel_gap, 3),
+                },
+                "repair_strategy": "Treat claim and support as one upper text stack, then lower the table panel enough to preserve a visible gutter.",
+            }
+        )
+    return findings
 
 
 def _metric_stack_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -1104,6 +1180,7 @@ def _problem_type_for_finding(kind: str) -> str:
         "component_frame_overallocated_after_text_fit",
         "card_internal_spacing_not_scaled_to_frame",
         "agenda_read_path_header_too_close",
+        "table_support_band_off_balance",
     }:
         return "optical_balance"
     return "metadata"
@@ -1280,6 +1357,14 @@ def _intersection(a: Dict[str, float], b: Dict[str, float]) -> float:
     if x2 <= x1 or y2 <= y1:
         return 0.0
     return (x2 - x1) * (y2 - y1)
+
+
+def _horizontal_overlap_ratio(a: Dict[str, float], b: Dict[str, float]) -> float:
+    x1 = max(float(a.get("x", 0.0)), float(b.get("x", 0.0)))
+    x2 = min(float(a.get("right", 0.0)), float(b.get("right", 0.0)))
+    if x2 <= x1:
+        return 0.0
+    return (x2 - x1) / max(0.01, min(float(a.get("w", 0.0)), float(b.get("w", 0.0))))
 
 
 def _emu_to_inches(value: Any) -> float:

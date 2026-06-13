@@ -1024,10 +1024,10 @@ def _add_content_slide(
             11.8,
             2.3,
             claim_size=24,
-            support_offset=1.72,
+            support_offset=1.58,
             support_font_size=13.5,
         )
-        _add_proof_object(slide, proof, figure_paths, table_index, 0.75, 3.5, 11.85, 2.95, compact=True)
+        _add_proof_object(slide, proof, figure_paths, table_index, 0.75, 3.66, 11.85, 2.79, compact=True)
     elif layout == "table_left":
         _add_proof_object(slide, proof, figure_paths, table_index, 0.65, 1.15, 6.35, 5.25, compact=True)
         _add_claim_and_support(slide, slide_data, 7.35, 1.05, 5.0, 4.85, claim_size=24)

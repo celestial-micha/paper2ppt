@@ -604,10 +604,11 @@ generation mode 用于真正从无到有生成一篇新论文的 PPT。evaluatio
 
 ## 2026-06-14 补充：成功样式之后的 micro-polish 层
 
-Kimi K2 v10 和 mHC v13 说明，from-scratch 风格已经从“能不能好看”推进到“局部精致度如何稳定复现”。此阶段不应该重新发明模板，而应把人类指出的小不适翻译成局部规则：
+Kimi K2 v10 和 mHC v14 说明，from-scratch 风格已经从“能不能好看”推进到“局部精致度如何稳定复现”。此阶段不应该重新发明模板，而应把人类指出的小不适翻译成局部规则：
 
 - proof payload shape：宽图、表格、metric、text evidence 选择不同容器。
 - local component internals：浅窄卡片的 label/body 间距不能照搬高卡片。
 - agenda rail hierarchy：`Read path` header 与节点之间要有足够 breathing room。
+- table text band：table-bottom 页面的 support copy 需要贴近 claim，同时与 table panel 保持明确 gutter。
 
 这些属于 low severity polish，不应触发大范围 layout 重排。下一步 benchmark 应记录它们的命中、修复和回归结果，用来判断 candidate style 是否可以继续向 golden baseline 推进。

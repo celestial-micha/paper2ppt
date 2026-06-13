@@ -449,6 +449,7 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn("inline_table_payload_not_indexed", badcase_ids(data))
         self.assertIn("card_internal_spacing_not_scaled_to_frame", badcase_ids(data))
         self.assertIn("agenda_read_path_header_too_close", badcase_ids(data))
+        self.assertIn("table_support_band_off_balance", badcase_ids(data))
 
     def test_from_scratch_routes_wide_figures_and_inline_tables(self):
         from PIL import Image
@@ -853,6 +854,7 @@ class Phase1PptxSmokeTest(unittest.TestCase):
             _flow_layout_findings,
             _metric_stack_findings,
             _paired_text_stack_findings,
+            _table_support_band_findings,
         )
 
         def record(index, role, text, x, y, w, h, font=10.0):
@@ -941,6 +943,24 @@ class Phase1PptxSmokeTest(unittest.TestCase):
             _card_internal_spacing_findings(30, shallow_card_records, NONVISUAL_AUDIT_RULES)[0]["type"],
             "card_internal_spacing_not_scaled_to_frame",
         )
+
+        table_support_records = [
+            record(19, "title_claim", "mHC consistently improves over the baseline and typically outperforms HC.", 0.65, 1.55, 11.8, 0.87, 24),
+            record(20, "support_body", "mHC outperforms Baseline and generally surpasses HC on key tasks like BBH and DROP.", 0.67, 2.72, 10.9, 0.78, 13.5),
+            record(21, "container", "", 0.75, 3.50, 11.85, 2.95),
+            record(22, "table", "", 1.0, 4.52, 11.35, 1.28),
+        ]
+        self.assertEqual(
+            _table_support_band_findings(26, table_support_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "table_support_band_off_balance",
+        )
+        table_support_fixed_records = [
+            record(23, "title_claim", "mHC consistently improves over the baseline and typically outperforms HC.", 0.65, 1.55, 11.8, 0.87, 24),
+            record(24, "support_body", "mHC outperforms Baseline and generally surpasses HC on key tasks like BBH and DROP.", 0.67, 2.58, 10.9, 0.78, 13.5),
+            record(25, "container", "", 0.75, 3.66, 11.85, 2.79),
+            record(26, "table", "", 1.0, 4.68, 11.35, 1.14),
+        ]
+        self.assertFalse(_table_support_band_findings(26, table_support_fixed_records, NONVISUAL_AUDIT_RULES))
 
 
 if __name__ == "__main__":

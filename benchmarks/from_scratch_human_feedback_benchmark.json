@@ -29,10 +29,10 @@
       },
       {
         "paper_case": "mHC_Manifold_Constrained_Hyper_Connections",
-        "status": "passed_nonvisual_audit_pending_human_visual_review_after_agenda_read_path_polish",
-        "artifact": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v13_agenda_read_path_polish.pptx",
-        "audit": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/nonvisual_audit_mHC_v13_agenda_read_path_polish.json",
-        "finding_summary": "56 low findings; no high or medium findings after wide-figure aspect-aware reflow, inline-table payload indexing, shallow-card internal spacing, and agenda read-path header clearance repairs."
+        "status": "passed_nonvisual_audit_pending_human_visual_review_after_table_support_balance",
+        "artifact": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v14_table_support_balance.pptx",
+        "audit": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/nonvisual_audit_mHC_v14_table_support_balance.json",
+        "finding_summary": "56 low findings; no high or medium findings after wide-figure aspect-aware reflow, inline-table payload indexing, shallow-card internal spacing, agenda read-path header clearance, and table support band balance repairs."
       }
     ]
   },
@@ -244,6 +244,18 @@
         "Lift the agenda Read path header while preserving the existing two-row flow node grid.",
         "Add a metadata-only audit rule for Read path header-to-node clearance so this kind of final polish can be tracked without screenshot review.",
         "Record that not every human discomfort needs a major repair; some become scoped micro-polish rules."
+      ]
+    },
+    {
+      "version": "mHC validation 5",
+      "human_findings": [
+        "On table interpretation slides 26 and 28, the support explanation felt too close to the table panel and too far from the bold claim.",
+        "The page had no collision or table extraction failure, but the support copy's vertical center of gravity was pulled downward by the table proof object."
+      ],
+      "repairs": [
+        "Move table-bottom support copy closer to the claim and lower the table panel enough to preserve a visible gutter.",
+        "Add a metadata-only audit rule for table-bottom claim/support/table-panel spacing.",
+        "Record that table pages need a text-band balance check, not only overlap and native-table row checks."
       ]
     }
   ],
@@ -544,6 +556,19 @@
       "regression_check": "Agenda Read path header clears the nearest P/M/E/T node by the configured minimum gap."
     },
     {
+      "id": "table_support_band_off_balance",
+      "severity": "low",
+      "trigger_signals": [
+        "table_bottom slide contains a bold claim, support paragraph, and bottom table proof panel",
+        "support paragraph is farther from the claim than the configured claim/support gap",
+        "support paragraph is too close to the table panel top even though no overlap occurs"
+      ],
+      "root_cause": "The table proof panel was positioned only to avoid collision, so the support copy could sit optically low between the claim and table.",
+      "repair_strategy": "Treat claim and support as one upper text band, then lower the table panel enough to preserve a visible gutter.",
+      "auto_fix": true,
+      "regression_check": "Table-bottom pages pass claim/support gap and support/table-panel gutter checks while preserving native table rows."
+    },
+    {
       "id": "component_frame_overallocated_after_text_fit",
       "severity": "low",
       "trigger_signals": [
@@ -784,6 +809,7 @@
         "paired label/body stacks use stable local gaps",
         "2x2 flow grids keep compact columns, breathable rows, and centered labels",
         "agenda read-path header keeps enough clearance above the flow nodes",
+        "table-bottom support copy stays closer to the claim than to the table proof panel",
         "component frames are not substantially overallocated after fitted text height is estimated",
         "shallow evidence cards scale internal label/body spacing to local card height",
         "figure/table labels clear rounded component boundaries",
@@ -802,6 +828,7 @@
         "inline table rows from slide_spec are indexed when no extracted table id matches",
         "wide figure images preserve source aspect ratio when fitted into PPTX picture boxes",
         "metrics preserve value, label, and context",
+        "table-bottom claim/support/table-panel spacing passes local text-band balance checks",
         "paired text stacks, shallow-card internal spacing, component frame fit, and component boundary inset pass local optical checks"
       ],
       "default_repair": "Emit badcase hits and rank only the top issues for the next repair pass."
@@ -843,6 +870,7 @@
       "paired label/body stack proximity for cover highlights and card-like groups",
       "flow-node crowding, automatic two-row flow needs, grid proportions, and label-center drift",
       "agenda read-path header clearance above P/M/E/T flow nodes",
+      "table-bottom support proximity to the claim and clearance above the table panel",
       "component frame overallocation after fitted text height is estimated",
       "shallow evidence card label/body gap and bottom padding",
       "component label boundary inset for figure/table proof panels",
@@ -866,7 +894,7 @@
       "Fix structural deck grammar second: title, agenda, section ranges, slide role balance.",
       "Fix semantic matching third: claim/support/proof object alignment.",
       "Fix typography fourth: font floors, deck-level comfort band, text splitting, line breaks, copy allocation.",
-      "Fix content-fit optical balance fifth: paired label/body proximity, value-label gap, card padding, and proof-label boundary inset.",
+      "Fix content-fit optical balance fifth: paired label/body proximity, table support band balance, value-label gap, card padding, and proof-label boundary inset.",
       "Fix local component frame sizing sixth when fitted text makes a card clearly too empty or too full; then reflow same-slide siblings.",
       "Fix geometry only when necessary: overlap, out-of-bounds, unreadable table, failed flow grid, boundary inset violation, or repeated layout family.",
       "Change accepted component proportions only when the audit shows a structural or content-fit failure, not merely low text density.",
@@ -889,6 +917,7 @@
       "deck-level typography comfort band by repeated roles",
       "text density: words per square inch for cards and panels",
       "paired label/body stack top delta",
+      "table-bottom claim/support/table-panel vertical band balance",
       "flow-node label gap, two-row fallback need, grid gap ratio, and label-center drift",
       "component frame extra height after fitted text estimate",
       "component label boundary inset for figure/table panels",

@@ -242,3 +242,37 @@ agenda_read_path_header_too_close
 - 把这类问题标记为 low severity / micro-polish，而不是触发大范围布局重排。
 
 这说明 human-in-the-loop 到最后阶段会从“错误修复”转向“精致度校准”。这类反馈仍然值得进 benchmark，但规则要小、边界要清楚，避免把完美主义微调误升级成整体模板重构。
+
+## 11. mHC 第五轮视觉反馈：表格页也需要 text band balance
+
+第 26 页和第 28 页的 table interpretation slide 暴露了另一个低风险但稳定的问题：页面没有重叠，表格也正确渲染了 native rows，但浅色 support 解释文字离下方表格面板太近、离上方加粗 claim 太远，整体视觉重心像被表格往下拽。
+
+这说明 table page 不能只检查：
+
+- table 是否有 rows / columns；
+- support 和 table 是否 overlap；
+- table cell 是否可读。
+
+还要检查 claim、support、table panel 三者之间的垂直 band balance。support 应该首先属于上方 claim 的解释，而不是像贴在表格面板上方的 caption。
+
+对应新增 badcase：
+
+```text
+table_support_band_off_balance
+```
+
+可检测信号：
+
+- slide 含有底部 table proof panel；
+- support paragraph 位于 claim 和 table panel 之间；
+- claim/support gap 超过舒适阈值；
+- support bottom 到 table panel top 的 gutter 低于舒适阈值。
+
+修复原则：
+
+- 将 support 作为 claim 的下属解释文字整体上移；
+- 将 table panel 轻微下移，保留可见 gutter；
+- 不改变 deck-wide typography，不重做宏观布局；
+- 修复后 native table rows 和 footer/source spacing 仍然保持稳定。
+
+这条经验把 table page 的 benchmark 从“结构正确”推进到“结构正确且阅读重心舒服”。它仍然属于 micro-polish，但比单页手工挪动更有价值，因为下一篇论文只要出现 table-bottom 页面，就可以复用同一条检测。

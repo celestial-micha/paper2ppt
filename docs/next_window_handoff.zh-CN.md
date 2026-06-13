@@ -431,18 +431,19 @@ good composition
 当前 mHC 验证输出已经推进到：
 
 ```text
-outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v13_agenda_read_path_polish.pptx
+outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v14_table_support_balance.pptx
 ```
 
-这版是在 v12 基础上做的最后 micro-polish：第 2 页 agenda 右侧 `Read path` header 上移，增加与 P/M/E/T 节点之间的 clearance。对应 badcase：
+这版是在 v13 基础上继续做的 micro-polish：第 26 页和第 28 页 table-bottom 页面中，support 解释文字更靠近上方 claim，并与下方 table panel 保持更舒服的 gutter。当前相关 micro-polish badcase：
 
 ```text
 agenda_read_path_header_too_close
+table_support_band_off_balance
 ```
 
 下一窗口不要把这类问题升级为重构任务。当前阶段的正确动作是：
 
-1. 保留 v10/v13 的整体风格和构图。
+1. 保留 v10/v14 的整体风格和构图。
 2. 只接受边界清楚的局部微调。
 3. 每个微调都写入 benchmark badcase、nonvisual audit rule 和测试。
 4. 生成新 PPT 后跑 nonvisual audit 和 `test_phase1_pptx.py`。
