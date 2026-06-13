@@ -421,6 +421,9 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         data = load_human_feedback_benchmark()
         summary = summarize_human_feedback_benchmark(data)
         self.assertEqual(summary["accepted_reference"], "rough_draft_v5")
+        self.assertEqual(summary["candidate_style_reference"], "rough_draft_v10_component_reflow")
+        self.assertEqual(summary["candidate_style_status"], "successful_on_primary_case_pending_cross_paper_validation")
+        self.assertGreaterEqual(summary["candidate_validation_case_count"], 2)
         self.assertIn("rough_draft_v6", summary["avoid_versions"])
         self.assertGreaterEqual(summary["badcase_count"], 8)
         self.assertGreaterEqual(summary["autonomous_workflow_stage_count"], 6)
@@ -428,6 +431,56 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertGreaterEqual(summary["repair_priority_count"], 6)
         self.assertIn("component_overlap", badcase_ids(data))
         self.assertIn("overoptimized_density_regression", badcase_ids(data))
+        self.assertIn("card_font_too_small", badcase_ids(data))
+        self.assertIn("sparse_card_copy", badcase_ids(data))
+        self.assertIn("geometry_changed_without_structural_need", badcase_ids(data))
+        self.assertIn("cover_left_typography_underpowered", badcase_ids(data))
+        self.assertIn("flow_nodes_overpacked", badcase_ids(data))
+        self.assertIn("text_stack_off_optical_center", badcase_ids(data))
+        self.assertIn("metric_label_gap_too_large", badcase_ids(data))
+        self.assertIn("deck_type_scale_under_comfort_band", badcase_ids(data))
+        self.assertIn("paired_label_body_gap_too_large", badcase_ids(data))
+        self.assertIn("flow_grid_alignment_drift", badcase_ids(data))
+        self.assertIn("component_frame_overallocated_after_text_fit", badcase_ids(data))
+        self.assertIn("component_boundary_inset_violation", badcase_ids(data))
+        self.assertIn("cross_paper_text_compression_overflow", badcase_ids(data))
+        self.assertIn("wide_figure_forced_into_side_panel", badcase_ids(data))
+        self.assertIn("figure_picture_aspect_distortion", badcase_ids(data))
+        self.assertIn("inline_table_payload_not_indexed", badcase_ids(data))
+
+    def test_from_scratch_routes_wide_figures_and_inline_tables(self):
+        from PIL import Image
+
+        from paper2slides.benchmark.from_scratch import _figure_path_index, _layout_family, _table_index
+
+        root = Path(__file__).parent / "outputs" / "tmp" / f"wide_figure_{uuid.uuid4().hex}"
+        root.mkdir(parents=True, exist_ok=True)
+        figure_path = root / "wide.png"
+        Image.new("RGB", (800, 100), color=(255, 255, 255)).save(figure_path)
+        inventory = {
+            "paper": {"title": "Wide Figure Paper"},
+            "assets": {
+                "figures": [{"id": "Figure 4", "caption": "Wide schedule", "path": str(figure_path)}],
+                "tables": [],
+            },
+            "curated_slides": [
+                {
+                    "tables": [
+                        {
+                            "title": "Inline Table",
+                            "caption": "Rows from slide spec",
+                            "rows": [["Metric", "Value"], ["Loss", "-0.027"]],
+                        }
+                    ]
+                }
+            ],
+        }
+        slide_data = {"proof_object": {"type": "figure", "id": "Figure 4", "focus": "wide schedule"}}
+
+        self.assertEqual(_layout_family(slide_data, 1, _figure_path_index(inventory)), "figure_bottom_wide")
+        inline_table = _table_index(inventory)["Inline Table"]
+        self.assertEqual(inline_table["row_count"], 2)
+        self.assertEqual(inline_table["column_count"], 2)
 
     def test_benchmark_runner_builds_expected_command(self):
         command = _build_command(
@@ -781,6 +834,87 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertFalse(nonvisual["rendering_used"])
         self.assertTrue(any("table" in slide["role_counts"] for slide in nonvisual["slides"]))
         self.assertIn("finding_count", nonvisual["summary"])
+        self.assertIn("by_problem_type", nonvisual["summary"])
+        self.assertIn("typography_pages", nonvisual["summary"])
+        self.assertIn("optical_balance_pages", nonvisual["summary"])
+        self.assertIn("deck_flags", nonvisual["summary"])
+        self.assertTrue(all("problem_type" in finding for finding in nonvisual["findings"]))
+
+    def test_nonvisual_audit_detects_optical_balance_and_flow_risks(self):
+        from paper2slides.benchmark.nonvisual_audit import (
+            NONVISUAL_AUDIT_RULES,
+            _component_boundary_findings,
+            _component_frame_fit_findings,
+            _container_balance_findings,
+            _flow_layout_findings,
+            _metric_stack_findings,
+            _paired_text_stack_findings,
+        )
+
+        def record(index, role, text, x, y, w, h, font=10.0):
+            return {
+                "index": index,
+                "role": role,
+                "has_text": bool(text),
+                "text": text,
+                "text_words": len(text.split()),
+                "font": {"sizes_pt": [font] if text else [], "min_pt": font if text else None, "avg_pt": font if text else None},
+                "bbox": {"x": x, "y": y, "w": w, "h": h, "right": x + w, "bottom": y + h, "area": w * h},
+                "is_full_background": False,
+            }
+
+        flow_records = [
+            record(1, "small_text", "Problem", 9.1, 4.8, 0.72, 0.2, 7.2),
+            record(2, "small_text", "Method", 9.87, 4.8, 0.72, 0.2, 7.2),
+            record(3, "small_text", "Evidence", 10.64, 4.8, 0.72, 0.2, 7.2),
+            record(4, "small_text", "Takeaways", 11.41, 4.8, 0.72, 0.2, 7.2),
+        ]
+        self.assertEqual(_flow_layout_findings(2, flow_records, NONVISUAL_AUDIT_RULES)[0]["type"], "flow_nodes_overpacked")
+
+        wide_grid_records = [
+            record(20, "small_text", "P", 9.25, 4.42, 0.34, 0.34, 8.5),
+            record(21, "small_text", "M", 11.56, 4.42, 0.34, 0.34, 8.5),
+            record(22, "small_text", "E", 9.25, 4.97, 0.34, 0.34, 8.5),
+            record(23, "small_text", "T", 11.56, 4.97, 0.34, 0.34, 8.5),
+            record(24, "small_text", "Problem", 9.03, 4.79, 0.84, 0.2, 7.5),
+            record(25, "small_text", "Method", 11.34, 4.79, 0.84, 0.2, 7.5),
+            record(26, "small_text", "Evidence", 9.03, 5.34, 0.84, 0.2, 7.5),
+            record(27, "small_text", "Takeaways", 11.34, 5.34, 0.84, 0.2, 7.5),
+        ]
+        self.assertEqual(_flow_layout_findings(2, wide_grid_records, NONVISUAL_AUDIT_RULES)[0]["type"], "flow_grid_alignment_drift")
+
+        paired_records = [
+            record(28, "body_text", "Core result", 9.73, 2.10, 1.6, 0.25, 11),
+            record(29, "card_text", "Kimi K2 achieves open-source SOTA on agentic tasks.", 9.73, 2.40, 1.9, 0.45, 10),
+        ]
+        self.assertEqual(_paired_text_stack_findings(1, paired_records, NONVISUAL_AUDIT_RULES)[0]["type"], "paired_label_body_gap_too_large")
+
+        metric_records = [
+            record(5, "container", "", 7.3, 2.1, 4.3, 1.2),
+            record(6, "title_claim", "70.6", 7.5, 2.25, 3.9, 0.35, 22),
+            record(7, "small_text", "Tau2 retail", 7.5, 2.72, 3.9, 0.2, 10),
+        ]
+        self.assertEqual(_metric_stack_findings(22, metric_records, NONVISUAL_AUDIT_RULES)[0]["type"], "metric_label_gap_too_large")
+
+        balance_records = [
+            record(8, "container", "", 7.0, 1.3, 5.0, 4.4),
+            record(9, "container", "", 7.3, 2.0, 4.3, 1.1),
+            record(10, "container", "", 7.3, 3.4, 4.3, 0.6),
+        ]
+        self.assertEqual(_container_balance_findings(29, balance_records, NONVISUAL_AUDIT_RULES)[0]["type"], "container_stack_off_balance")
+
+        boundary_records = [
+            record(11, "container", "", 7.0, 1.18, 5.45, 5.15),
+            record(12, "component_label", "FIGURE", 7.20, 1.34, 1.2, 0.24, 8),
+        ]
+        self.assertEqual(_component_boundary_findings(13, boundary_records, NONVISUAL_AUDIT_RULES)[0]["type"], "component_boundary_inset_violation")
+
+        frame_records = [
+            record(13, "container", "", 0.75, 4.55, 3.6, 1.48),
+            record(14, "card_label", "Method", 0.98, 4.67, 3.1, 0.22, 11),
+            record(15, "card_text", "Before RL, the model undergoes supervised fine-tuning on high-quality instruction data.", 0.98, 4.99, 3.1, 0.9, 10),
+        ]
+        self.assertEqual(_component_frame_fit_findings(15, frame_records, NONVISUAL_AUDIT_RULES)[0]["type"], "component_frame_overallocated_after_text_fit")
 
 
 if __name__ == "__main__":

@@ -143,8 +143,8 @@ def build_rough_draft_spec(inventory: Dict[str, Any]) -> Dict[str, Any]:
                 "source_plan_id": plan_slide.get("source_id", slide_id),
                 "title": plan_slide.get("title", "") or curated.get("title", "") or f"Slide {index}",
                 "slide_role": _slide_role(plan_slide, curated, index, len(inventory.get("plan_slides", []))),
-                "claim": _limit_words(claim, 18),
-                "support": _limit_words(support, 80),
+                "claim": _limit_words(claim, _claim_word_limit(proof)),
+                "support": _limit_words(support, _support_word_limit(proof, curated, plan_slide)),
                 "proof_object": proof,
                 "source_evidence": _source_evidence(plan_slide, curated, proof),
                 "content_priority": "must_keep" if index <= 2 or proof["type"] != "text_evidence" else "normal",
@@ -523,7 +523,7 @@ def render_rough_draft_pptx(inventory: Dict[str, Any], rough: Dict[str, Any], ou
         page += 1
         for slide_data in section["slides"]:
             content_index += 1
-            layout = _layout_family(slide_data, content_index)
+            layout = _layout_family(slide_data, content_index, figure_paths)
             _add_content_slide(
                 prs=prs,
                 slide_data=slide_data,
@@ -548,7 +548,7 @@ def audit_rough_draft(inventory: Dict[str, Any], rough: Dict[str, Any], pptx_pat
     slides = rough.get("slides", []) or []
     table_index = _table_index(inventory)
     figure_paths = _figure_path_index(inventory)
-    layout_families = [_layout_family(slide, index) for index, slide in enumerate(slides, start=1)]
+    layout_families = [_layout_family(slide, index, figure_paths) for index, slide in enumerate(slides, start=1)]
     sections = _organize_deck_sections(slides)
     page_by_slide_object = _content_page_map(sections)
     warnings = []
@@ -606,6 +606,14 @@ def audit_rough_draft(inventory: Dict[str, Any], rough: Dict[str, Any], pptx_pat
                     "page": slide_page,
                     "reason": "table_bottom layout: verify the proof panel starts below the support text",
                     "severity": "high",
+                }
+            )
+        if layout == "figure_bottom_wide":
+            review_targets.append(
+                {
+                    "page": slide_page,
+                    "reason": "wide figure bottom layout: verify the long figure remains readable and undistorted",
+                    "severity": "medium",
                 }
             )
         if proof_type == "figure" and not Path(figure_paths.get(proof_id, "")).exists():
@@ -762,12 +770,14 @@ def _content_page_map(sections: List[Dict[str, Any]]) -> Dict[int, int]:
     return result
 
 
-def _layout_family(slide_data: Dict[str, Any], sequence: int) -> str:
+def _layout_family(slide_data: Dict[str, Any], sequence: int, figure_paths: Optional[Dict[str, str]] = None) -> str:
     proof_type = (slide_data.get("proof_object", {}) or {}).get("type", "")
     role = str(slide_data.get("slide_role", "")).lower()
     if proof_type == "table":
         return "table_bottom" if sequence % 2 else "table_left"
     if proof_type == "figure":
+        if _proof_figure_aspect_ratio(slide_data.get("proof_object", {}) or {}, figure_paths or {}) >= 2.8:
+            return "figure_bottom_wide"
         return "visual_right" if sequence % 2 else "visual_left"
     if proof_type == "metric" or role == "metric":
         variants = ["metric_left", "metric_compact_band", "metric_left_alt"]
@@ -803,17 +813,17 @@ def _add_academic_title_slide(prs: Any, inventory: Dict[str, Any], title: str, p
     gold_rule.fill.fore_color.rgb = _theme("gold")
     gold_rule.line.fill.background()
     _add_textbox(slide, "ACADEMIC PAPER READING", 0.72, 0.72, 4.8, 0.3, 9, _theme("teal_deep"), bold=True, letter_spaced=True)
-    _add_textbox(slide, title, 0.72, 1.52, 7.55, 1.35, 34, _theme("ink"), bold=True)
-    authors = _extract_authors(inventory.get("paper", {}).get("metadata_text", ""))
-    _add_textbox(slide, authors or "Kimi Team", 0.78, 3.18, 7.5, 0.35, 13, _theme("muted_ink"))
+    _add_textbox(slide, title, 0.72, 1.48, 7.65, 1.45, 36, _theme("ink"), bold=True)
+    authors = _compact_authors(_extract_authors(inventory.get("paper", {}).get("metadata_text", "")))
+    _add_textbox(slide, authors or "Paper authors", 0.78, 3.16, 7.5, 0.38, 14.5, _theme("muted_ink"))
     _add_textbox(
         slide,
         "A content-first paper reading deck built from existing parsed checkpoints.",
         0.78,
         3.72,
         7.2,
-        0.45,
-        15,
+        0.52,
+        16.5,
         _theme("teal_deep"),
         bold=True,
     )
@@ -823,8 +833,8 @@ def _add_academic_title_slide(prs: Any, inventory: Dict[str, Any], title: str, p
         0.78,
         4.28,
         6.85,
-        0.55,
-        13,
+        0.62,
+        14.5,
         _theme("muted_ink"),
     )
     _add_cover_highlight_rail(slide, inventory, 9.25, 1.22, 3.1, 5.12)
@@ -862,7 +872,7 @@ def _add_agenda_slide(prs: Any, sections: List[Dict[str, Any]], page: int, total
         _add_textbox(slide, section["title"], 1.55, y, 5.8, 0.33, 16, _theme("ink"), bold=True)
         _add_textbox(slide, f"{len(section['slides'])} slides", 7.25, y + 0.04, 1.0, 0.22, 9, _theme("teal_deep"), bold=True)
         sample = "; ".join(_limit_words(item.get("title", ""), 5).rstrip(".") for item in section["slides"][:2])
-        _add_textbox(slide, sample, 1.55, y + 0.38, 6.85, 0.25, 9, _theme("soft_text"))
+        _add_textbox(slide, sample, 1.55, y + 0.38, 6.85, 0.3, 10, _theme("soft_text"))
     _add_rule(slide, 0.75, 6.35, 11.45, _theme("line"))
     _add_textbox(slide, "Each module begins with a divider; tables, figures, and metric cards are treated as evidence rather than filler panels.", 0.75, 6.55, 11.2, 0.38, 10, _theme("muted_ink"))
 
@@ -878,6 +888,50 @@ def _add_read_path_flow(slide: Any, x: float, y: float, w: float, h: float) -> N
         ("T", "Takeaways", _theme("teal_deep")),
     ]
     node_d = 0.34
+    label_w = 0.84
+    if w < 3.0:
+        grid_w = min(1.75, w - 0.35)
+        col_gap = max(1.15, grid_w - node_d)
+        start_x = x + (w - grid_w) / 2
+        row_gap = 0.68
+        positions = [
+            (start_x, y),
+            (start_x + col_gap, y),
+            (start_x, y + row_gap),
+            (start_x + col_gap, y + row_gap),
+        ]
+        for idx, (letter, label, color) in enumerate(steps):
+            cx, cy = positions[idx]
+            if idx in {1, 3}:
+                line = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    Inches(positions[idx - 1][0] + node_d + 0.05),
+                    Inches(cy + 0.16),
+                    Inches(max(0.08, col_gap - node_d - 0.1)),
+                    Inches(0.025),
+                )
+                line.fill.solid()
+                line.fill.fore_color.rgb = _theme("line")
+                line.line.fill.background()
+            if idx == 2:
+                line = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    Inches(start_x + node_d / 2 - 0.012),
+                    Inches(y + node_d + 0.05),
+                    Inches(0.024),
+                    Inches(max(0.08, row_gap - node_d - 0.1)),
+                )
+                line.fill.solid()
+                line.fill.fore_color.rgb = _theme("line")
+                line.line.fill.background()
+            node = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(cx), Inches(cy), Inches(node_d), Inches(node_d))
+            node.fill.solid()
+            node.fill.fore_color.rgb = color
+            node.line.fill.background()
+            _set_shape_text(node, letter, 8.5, _theme("white"), bold=True)
+            _add_textbox(slide, label, cx + node_d / 2 - label_w / 2, cy + 0.37, label_w, 0.2, 7.5, _theme("muted_ink"))
+        return
+
     available = max(0.1, w - node_d)
     gap = available / max(1, len(steps) - 1)
     for idx, (letter, label, color) in enumerate(steps):
@@ -898,7 +952,7 @@ def _add_read_path_flow(slide: Any, x: float, y: float, w: float, h: float) -> N
         node.fill.fore_color.rgb = color
         node.line.fill.background()
         _set_shape_text(node, letter, 8, _theme("white"), bold=True)
-        _add_textbox(slide, label, cx - 0.12, y + 0.45, 0.65, 0.18, 5, _theme("muted_ink"))
+        _add_textbox(slide, label, cx + node_d / 2 - label_w / 2, y + 0.45, label_w, 0.2, 7.2, _theme("muted_ink"))
 
 
 def _add_section_divider_slide(prs: Any, section: Dict[str, Any], section_index: int, page: int, total_pages: int) -> None:
@@ -948,6 +1002,19 @@ def _add_content_slide(
     elif layout == "visual_right":
         _add_claim_and_support(slide, slide_data, 0.65, 1.05, 5.9, 4.8, claim_size=25)
         _add_proof_object(slide, proof, figure_paths, table_index, 7.0, 1.18, 5.45, 5.15, compact=False)
+    elif layout == "figure_bottom_wide":
+        _add_claim_and_support(
+            slide,
+            slide_data,
+            0.65,
+            1.0,
+            11.75,
+            2.4,
+            claim_size=23,
+            support_offset=1.72,
+            support_font_size=12.8,
+        )
+        _add_wide_figure_proof_object(slide, proof, figure_paths, 0.75, 3.5, 11.85, 3.0)
     elif layout == "table_bottom":
         _add_claim_and_support(
             slide,
@@ -956,14 +1023,14 @@ def _add_content_slide(
             1.0,
             11.8,
             2.3,
-            claim_size=22,
+            claim_size=24,
             support_offset=1.72,
-            support_font_size=13,
+            support_font_size=13.5,
         )
         _add_proof_object(slide, proof, figure_paths, table_index, 0.75, 3.5, 11.85, 2.95, compact=True)
     elif layout == "table_left":
         _add_proof_object(slide, proof, figure_paths, table_index, 0.65, 1.15, 6.35, 5.25, compact=True)
-        _add_claim_and_support(slide, slide_data, 7.35, 1.05, 5.0, 4.85, claim_size=22)
+        _add_claim_and_support(slide, slide_data, 7.35, 1.05, 5.0, 4.85, claim_size=24)
     elif layout == "metric_grid":
         _add_claim_and_support(slide, slide_data, 0.65, 1.05, 6.0, 3.15, claim_size=25)
         _add_metric_proof_grid(slide, proof, slide_data, 7.05, 1.25, 5.25, 4.65)
@@ -1001,7 +1068,7 @@ def _add_content_slide(
             2.35,
             claim_size=25,
             support_offset=1.72,
-            support_font_size=13,
+            support_font_size=13.5,
         )
         _add_evidence_mosaic(slide, proof, slide_data, 0.85, 4.02, 11.15, 1.75)
     elif layout == "argument_bottom_notes":
@@ -1014,15 +1081,18 @@ def _add_content_slide(
             2.65,
             claim_size=26,
             support_offset=1.92,
-            support_font_size=13,
+            support_font_size=13.5,
         )
         _add_evidence_bottom_cards(slide, proof, slide_data, 0.85, 4.55, 11.2, 1.48)
     elif layout == "evidence_cards":
         _add_claim_and_support(slide, slide_data, 0.72, 1.05, 7.0, 3.8, claim_size=25)
         _add_evidence_card_stack(slide, proof, slide_data, 8.15, 1.25, 3.95, 4.15)
     elif layout == "closing_summary":
-        _add_claim_and_support(slide, slide_data, 0.85, 1.35, 7.8, 3.2, claim_size=27)
-        _add_metric_proof_grid(slide, proof, slide_data, 9.05, 1.55, 3.2, 3.5)
+        _add_claim_and_support(slide, slide_data, 0.85, 1.35, 7.8, 3.2, claim_size=24, support_offset=2.05, support_font_size=13)
+        if proof.get("type") == "metric":
+            _add_metric_proof_grid(slide, proof, slide_data, 9.05, 1.55, 3.2, 3.5)
+        else:
+            _add_evidence_card_stack(slide, proof, slide_data, 9.0, 1.55, 3.35, 3.5)
     else:
         _add_claim_and_support(slide, slide_data, 0.75, 1.05, 6.1, 4.4, claim_size=24)
         _add_bottom_evidence_strip(slide, proof, 7.2, 1.45, 4.9, 3.8)
@@ -1046,7 +1116,7 @@ def _add_closing_slide(prs: Any, inventory: Dict[str, Any], page: int, total_pag
     gold.line.fill.background()
     _add_textbox(slide, "SUMMARY", 0.82, 0.85, 3.0, 0.3, 9, _theme("teal_deep"), bold=True, letter_spaced=True)
     _add_textbox(slide, "Thanks for watching", 0.8, 1.62, 6.5, 0.8, 34, _theme("ink"), bold=True)
-    _add_textbox(slide, "Kimi K2 shows how open-weight agentic intelligence depends on architecture, training stability, data synthesis, RL, and broad evaluation evidence.", 0.84, 2.85, 6.7, 1.2, 18, _theme("muted_ink"))
+    _add_textbox(slide, _closing_takeaway(inventory), 0.84, 2.85, 6.7, 1.2, 18, _theme("muted_ink"))
     _add_textbox(slide, "Content lineage", 8.75, 4.92, 3.5, 0.25, 8, _theme("gold_light"), bold=True, letter_spaced=True)
     _add_textbox(slide, inventory.get("paper", {}).get("title", ""), 8.75, 5.32, 3.6, 0.75, 16, _theme("white"), bold=True)
     _add_textbox(slide, "Parsed checkpoints -> authored slide narrative -> visual QA manifest", 8.75, 6.22, 3.55, 0.55, 10, _theme("teal_light"))
@@ -1054,11 +1124,38 @@ def _add_closing_slide(prs: Any, inventory: Dict[str, Any], page: int, total_pag
 
 
 def _table_index(inventory: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    return {
+    result = {
         str(item.get("id", "")): item
         for item in inventory.get("assets", {}).get("tables", []) or []
         if isinstance(item, dict)
     }
+    for slide in inventory.get("curated_slides", []) or []:
+        if not isinstance(slide, dict):
+            continue
+        for item in slide.get("tables", []) or []:
+            if not isinstance(item, dict):
+                continue
+            table_id = _first_non_empty([item.get("id", ""), item.get("table_id", ""), item.get("title", "")])
+            if not table_id:
+                continue
+            rows = _normalize_table_rows(item.get("rows", []))
+            if not rows:
+                rows = _html_table_to_rows(str(item.get("html", "") or item.get("html_content", "")))
+            if not rows:
+                continue
+            existing = result.get(table_id)
+            if existing and existing.get("rows"):
+                continue
+            result[table_id] = {
+                "id": table_id,
+                "caption": _clean_text(item.get("caption", "")),
+                "rows": rows,
+                "row_count": len(rows),
+                "column_count": max((len(row) for row in rows), default=0),
+                "html_preview": "",
+                "asset_type": "inline_curated_table",
+            }
+    return result
 
 
 def _add_page_marker(slide: Any, page: int, total_pages: int, label: str) -> None:
@@ -1075,9 +1172,9 @@ def _add_claim_and_support(
     h: float,
     claim_size: int = 24,
     support_offset: float = 2.3,
-    support_font_size: int = 13,
+    support_font_size: float = 14,
 ) -> None:
-    _add_textbox(slide, slide_data.get("title", ""), x, y, min(w, 5.4), 0.34, 14, _theme("teal_deep"), bold=True)
+    _add_textbox(slide, _limit_chars(slide_data.get("title", ""), 58), x, y, min(w, 6.2), 0.42, 14.5, _theme("teal_deep"), bold=True)
     _add_textbox(slide, slide_data.get("claim", ""), x, y + 0.55, w, min(1.45, h * 0.38), claim_size, _theme("ink"), bold=True)
     support_height = max(0.72, h - support_offset - 0.15)
     _add_textbox(slide, slide_data.get("support", ""), x + 0.02, y + support_offset, w * 0.92, support_height, support_font_size, _theme("muted_ink"))
@@ -1104,11 +1201,11 @@ def _add_proof_object(
     panel.fill.solid()
     panel.fill.fore_color.rgb = _theme("panel_light")
     panel.line.color.rgb = _theme("line")
-    _add_textbox(slide, proof_type.upper(), x + 0.22, y + 0.18, w - 0.45, 0.24, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
-    _add_textbox(slide, proof_id or "source evidence", x + 0.22, y + 0.55, w - 0.45, 0.38, 16 if compact else 18, _theme("ink"), bold=True)
+    _add_textbox(slide, proof_type.upper(), x + 0.36, y + 0.32, w - 0.72, 0.24, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
+    _add_textbox(slide, proof_id or "source evidence", x + 0.36, y + 0.69, w - 0.72, 0.38, 16 if compact else 18, _theme("ink"), bold=True)
 
     if proof_type == "figure":
-        _add_figure_proof(slide, figure_paths.get(proof_id, ""), proof_focus, x + 0.25, y + 1.05, w - 0.5, h - 1.35)
+        _add_figure_proof(slide, figure_paths.get(proof_id, ""), proof_focus, x + 0.32, y + 1.2, w - 0.64, h - 1.52)
     elif proof_type == "table":
         table = table_index.get(proof_id, {})
         rows = table.get("rows", []) or []
@@ -1122,20 +1219,63 @@ def _add_proof_object(
         _add_textbox(slide, proof_focus or "Evidence preserved from parsed checkpoints.", x + 0.35, y + 1.25, w - 0.7, h - 1.55, 12, _theme("muted_ink"))
 
 
-def _add_figure_proof(slide: Any, figure_path: str, caption: str, x: float, y: float, w: float, h: float) -> None:
+def _add_wide_figure_proof_object(
+    slide: Any,
+    proof: Dict[str, Any],
+    figure_paths: Dict[str, str],
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+) -> None:
+    from pptx.enum.shapes import MSO_SHAPE
     from pptx.util import Inches
 
-    caption_h = 0.48 if caption else 0
+    proof_id = str(proof.get("id", ""))
+    proof_focus = str(proof.get("focus", ""))
+    panel = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+    panel.fill.solid()
+    panel.fill.fore_color.rgb = _theme("panel_light")
+    panel.line.color.rgb = _theme("line")
+    _add_textbox(slide, "FIGURE", x + 0.36, y + 0.32, w - 0.72, 0.22, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
+    _add_textbox(slide, proof_id or "source figure", x + 0.36, y + 0.64, w - 0.72, 0.34, 16, _theme("ink"), bold=True)
+    _add_figure_proof(slide, figure_paths.get(proof_id, ""), proof_focus, x + 0.42, y + 1.04, w - 0.84, h - 1.22, caption_height=0.3)
+
+
+def _add_figure_proof(
+    slide: Any,
+    figure_path: str,
+    caption: str,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    caption_height: Optional[float] = None,
+) -> None:
+    from pptx.util import Inches
+
+    caption_h = (caption_height if caption_height is not None else 0.48) if caption else 0
     image_h = max(0.6, h - caption_h)
     if figure_path and Path(figure_path).exists():
         try:
-            slide.shapes.add_picture(figure_path, Inches(x), Inches(y), width=Inches(w), height=Inches(image_h))
+            fit = _fit_picture_box(figure_path, x, y, w, image_h)
+            if fit:
+                slide.shapes.add_picture(
+                    figure_path,
+                    Inches(fit["x"]),
+                    Inches(fit["y"]),
+                    width=Inches(fit["w"]),
+                    height=Inches(fit["h"]),
+                )
+            else:
+                slide.shapes.add_picture(figure_path, Inches(x), Inches(y), width=Inches(w))
         except Exception:
             _add_textbox(slide, "Figure image could not be embedded.", x, y + 0.2, w, 0.5, 11, _theme("clay"))
     else:
         _add_textbox(slide, "Figure image missing; check extracted asset path.", x, y + 0.2, w, 0.5, 11, _theme("clay"))
     if caption:
-        _add_textbox(slide, caption, x, y + image_h + 0.08, w, caption_h, 9, _theme("soft_text"))
+        caption_font = 9.0 if caption_h < 0.4 else 10.0
+        _add_textbox(slide, caption, x, y + image_h + 0.08, w, caption_h, caption_font, _theme("soft_text"))
 
 
 def _add_table_proof(slide: Any, rows: List[List[str]], caption: str, x: float, y: float, w: float, h: float) -> None:
@@ -1162,7 +1302,7 @@ def _add_table_proof(slide: Any, rows: List[List[str]], caption: str, x: float, 
             cell.margin_bottom = Inches(0.02)
             paragraph = cell.text_frame.paragraphs[0]
             paragraph.font.name = "Aptos"
-            paragraph.font.size = Pt(6.5 if max_cols >= 5 else 7.5)
+            paragraph.font.size = Pt(7.0 if max_cols >= 5 else 8.0)
             paragraph.font.bold = row_idx == 0
             paragraph.font.color.rgb = _theme("ink")
             cell.fill.solid()
@@ -1172,10 +1312,10 @@ def _add_table_proof(slide: Any, rows: List[List[str]], caption: str, x: float, 
                 cell.fill.fore_color.rgb = _theme("white")
             else:
                 cell.fill.fore_color.rgb = _theme("paper")
-    note = caption or ""
+    note = _limit_words(caption or "", 8)
     if len(rows) > max_rows:
         note = f"{note} Showing {max_rows}/{len(rows)} parsed rows.".strip()
-    _add_textbox(slide, note, x, y + h - 0.33, w, 0.28, 8, _theme("soft_text"))
+    _add_textbox(slide, note, x, y + h - 0.33, w, 0.32, 10.0, _theme("soft_text"))
 
 
 def _add_metric_proof_grid(slide: Any, proof: Dict[str, Any], slide_data: Dict[str, Any], x: float, y: float, w: float, h: float) -> None:
@@ -1199,10 +1339,15 @@ def _add_metric_side_cluster(slide: Any, proof: Dict[str, Any], slide_data: Dict
     _add_textbox(slide, "KEY EVIDENCE", x + 0.25, y + 0.25, w - 0.5, 0.24, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
     value = proof.get("focus", "") or _first_metric_value(slide_data.get("support", "")) or "n/a"
     label = proof.get("id", "") or "Key metric"
-    _add_metric_card(slide, value, label, x + 0.3, y + 0.75, w - 0.6, 1.15)
     metrics = _extract_metric_pairs(slide_data.get("support", ""))[:3]
+    card_gap = 0.22
+    small_h = 0.55
+    stack_h = 1.15 + (card_gap + small_h) * len(metrics)
+    available_h = max(1.8, h - 0.78)
+    stack_y = y + 0.58 + max(0.0, (available_h - stack_h) * 0.34)
+    _add_metric_card(slide, value, label, x + 0.3, stack_y, w - 0.6, 1.15)
     for idx, (metric_value, metric_label) in enumerate(metrics):
-        _add_metric_card(slide, metric_value, metric_label, x + 0.3, y + 2.1 + idx * 0.72, w - 0.6, 0.55, small=True)
+        _add_metric_card(slide, metric_value, metric_label, x + 0.3, stack_y + 1.15 + card_gap + idx * (small_h + 0.17), w - 0.6, small_h, small=True)
 
 
 def _add_compact_metric_band(slide: Any, proof: Dict[str, Any], slide_data: Dict[str, Any], x: float, y: float, w: float, h: float) -> None:
@@ -1240,11 +1385,21 @@ def _add_metric_card(slide: Any, value: str, label: str, x: float, y: float, w: 
     card.fill.fore_color.rgb = _theme("teal_deep") if not small else _theme("panel_light")
     card.line.color.rgb = _theme("line") if small else _theme("teal_deep")
     if small:
-        _add_textbox(slide, str(value or "n/a"), x + 0.18, y + 0.1, w - 0.36, 0.22, 14, _theme("ink"), bold=True)
-        _add_textbox(slide, str(label or "Metric"), x + 0.18, y + max(0.36, h * 0.64), w - 0.36, 0.16, 9, _theme("muted_ink"))
+        value_h = 0.23
+        label_h = 0.18
+        gap = 0.035
+        stack_h = value_h + gap + label_h
+        stack_y = y + max(0.06, (h - stack_h) * 0.5)
+        _add_textbox(slide, str(value or "n/a"), x + 0.18, stack_y, w - 0.36, value_h, 15, _theme("ink"), bold=True)
+        _add_textbox(slide, str(label or "Metric"), x + 0.18, stack_y + value_h + gap, w - 0.36, label_h, 9.8, _theme("muted_ink"))
     else:
-        _add_textbox(slide, str(value or "n/a"), x + 0.18, y + 0.17, w - 0.36, max(0.22, h * 0.38), 22, _theme("white"), bold=True)
-        _add_textbox(slide, str(label or "Metric"), x + 0.18, y + h * 0.6, w - 0.36, max(0.18, h * 0.25), 10, _theme("teal_light"))
+        value_h = min(0.46, max(0.28, h * 0.34))
+        label_h = min(0.28, max(0.20, h * 0.20))
+        gap = 0.055
+        stack_h = value_h + gap + label_h
+        stack_y = y + max(0.14, (h - stack_h) * 0.43)
+        _add_textbox(slide, str(value or "n/a"), x + 0.18, stack_y, w - 0.36, value_h, 24, _theme("white"), bold=True)
+        _add_textbox(slide, str(label or "Metric"), x + 0.18, stack_y + value_h + gap, w - 0.36, label_h, 11, _theme("teal_light"))
 
 
 def _add_metric_chip(slide: Any, x: float, y: float, value: str, label: str) -> None:
@@ -1261,7 +1416,7 @@ def _add_bottom_evidence_strip(slide: Any, proof: Dict[str, Any], x: float, y: f
     strip.line.color.rgb = _theme("line")
     _add_textbox(slide, str(proof.get("type", "evidence")).upper(), x + 0.22, y + 0.18, 1.8, 0.24, 8, _theme("teal_deep"), bold=True, letter_spaced=True)
     _add_textbox(slide, str(proof.get("id", "source evidence")), x + 2.1, y + 0.15, 2.4, 0.3, 13, _theme("ink"), bold=True)
-    _add_textbox(slide, str(proof.get("focus", "Evidence preserved from parsed checkpoints.")), x + 0.22, y + 0.52, w - 0.45, h - 0.6, 11, _theme("muted_ink"))
+    _add_textbox(slide, str(proof.get("focus", "Evidence preserved from parsed checkpoints.")), x + 0.22, y + 0.48, w - 0.45, h - 0.54, 12.5, _theme("muted_ink"))
 
 
 def _add_evidence_note_card(
@@ -1285,10 +1440,23 @@ def _add_evidence_note_card(
     stripe.fill.solid()
     stripe.fill.fore_color.rgb = [_theme("teal"), _theme("gold"), _theme("clay")][index % 3]
     stripe.line.fill.background()
-    label_size = 9 if compact else 10
-    body_size = 9 if compact else 10
-    _add_textbox(slide, item["label"], x + 0.18, y + 0.13, w - 0.36, 0.22, label_size, _theme("ink"), bold=True)
-    _add_textbox(slide, item["body"], x + 0.18, y + 0.43, w - 0.36, max(0.28, h - 0.5), body_size, _theme("muted_ink"))
+    body_text = str(item.get("body", ""))
+    if compact and h < 0.85:
+        body_text = _limit_chars(body_text, 68)
+    label_size = 10.0 if compact else 11.0
+    body_char_count = len(body_text)
+    body_word_count = len(body_text.split())
+    if compact:
+        body_size = 10.5 if body_word_count <= 9 and body_char_count <= 62 else 10.0
+    else:
+        body_size = 11.0 if body_word_count <= 10 and body_char_count <= 70 else 10.0
+    compact_tight = compact and h < 0.85
+    label_y = y + (0.08 if compact_tight else 0.12)
+    label_h = 0.2 if compact_tight else 0.24
+    body_y = y + (0.34 if compact_tight else 0.44)
+    body_h = max(0.18, h - (0.38 if compact_tight else 0.52))
+    _add_textbox(slide, item["label"], x + 0.18, label_y, w - 0.36, label_h, label_size, _theme("ink"), bold=True)
+    _add_textbox(slide, body_text, x + 0.18, body_y, w - 0.36, body_h, body_size, _theme("muted_ink"))
 
 
 def _add_evidence_mosaic(
@@ -1327,8 +1495,12 @@ def _add_evidence_bottom_cards(
     count = max(1, min(3, len(items)))
     gap = 0.16
     card_w = (w - gap * (count - 1)) / count
+    max_words = max((len(str(item.get("body", "")).split()) for item in items[:count]), default=0)
+    target_h = 1.12 if max_words <= 10 else 1.24 if max_words <= 16 else h
+    card_h = min(h, max(1.08, target_h))
+    card_y = y + max(0.0, (h - card_h) * 0.25)
     for idx, item in enumerate(items[:count]):
-        _add_evidence_note_card(slide, item, x + idx * (card_w + gap), y, card_w, h, idx, compact=True)
+        _add_evidence_note_card(slide, item, x + idx * (card_w + gap), card_y, card_w, card_h, idx, compact=True)
 
 
 def _add_evidence_card_stack(
@@ -1348,7 +1520,7 @@ def _add_evidence_card_stack(
     card_h = min(1.05, (h - 0.38) / max(1, len(items)) - 0.08)
     for idx, item in enumerate(items):
         cy = y + 0.35 + idx * (card_h + 0.17)
-        _add_evidence_note_card(slide, item, x, cy, w, card_h, idx)
+        _add_evidence_note_card(slide, item, x, cy, w, card_h, idx, compact=w < 3.7 or card_h < 1.0)
 
 
 def _add_cover_highlight_rail(slide: Any, inventory: Dict[str, Any], x: float, y: float, w: float, h: float) -> None:
@@ -1368,15 +1540,34 @@ def _add_cover_highlight_rail(slide: Any, inventory: Dict[str, Any], x: float, y
         marker.fill.solid()
         marker.fill.fore_color.rgb = color
         marker.line.fill.background()
-        _add_textbox(slide, item.get("label", f"Highlight {idx + 1}"), x + 0.48, yy, w - 0.76, 0.22, 9, _theme("ink"), bold=True)
-        _add_textbox(slide, item.get("body", ""), x + 0.48, yy + 0.28, w - 0.76, 0.54, 9, _theme("muted_ink"))
+        _add_textbox(slide, item.get("label", f"Highlight {idx + 1}"), x + 0.48, yy, w - 0.76, 0.25, 10, _theme("ink"), bold=True)
+        _add_textbox(slide, _limit_words(item.get("body", ""), 9), x + 0.48, yy + 0.23, w - 0.76, 0.62, 10, _theme("muted_ink"))
 
 
 def _extract_authors(metadata_text: str) -> str:
     match = re.search(r"Authors?\s*:\s*(.+)$", _clean_text(metadata_text), flags=re.IGNORECASE)
     if not match:
         return ""
-    return _limit_words(match.group(1), 18)
+    return _clean_text(match.group(1))
+
+
+def _compact_authors(authors: str) -> str:
+    authors = _clean_text(authors)
+    if not authors:
+        return ""
+    parts = [part.strip() for part in re.split(r"\s*,\s*|\s+;\s*", authors) if part.strip()]
+    if len(parts) >= 5:
+        return ", ".join(parts[:4]) + ", et al."
+    return _limit_words(authors, 12)
+
+
+def _closing_takeaway(inventory: Dict[str, Any]) -> str:
+    title = inventory.get("paper", {}).get("title", "This paper")
+    highlights = inventory.get("paper_highlights", []) or []
+    bodies = [str(item.get("body", "")) for item in highlights[:2] if item.get("body")]
+    if bodies:
+        return _limit_words(f"{title} centers on " + " ".join(bodies), 22)
+    return _limit_words(f"{title} is summarized through motivation, method, evidence, and takeaways.", 22)
 
 
 def _first_metric_value(text: str) -> str:
@@ -1386,11 +1577,26 @@ def _first_metric_value(text: str) -> str:
 
 def _extract_metric_pairs(text: str) -> List[tuple[str, str]]:
     pairs = []
-    for match in re.finditer(r"([A-Za-z][A-Za-z0-9 +&/-]{2,24})\s+(\d+(?:\.\d+)?%?|\d+/\d+)", text or ""):
+    seen = set()
+    value_pattern = r"\d+(?:\.\d+)?(?:%|[TBMK])?|\d+/\d+"
+    for match in re.finditer(rf"([A-Za-z][A-Za-z0-9 +&/-]{{2,24}})\s+({value_pattern})", text or ""):
         label = _clean_text(match.group(1)).strip(" ,.;:")
         value = match.group(2)
-        if label and value:
+        key = (value, label.lower())
+        if label and value and key not in seen:
+            seen.add(key)
             pairs.append((value, _limit_words(label, 4)))
+    for match in re.finditer(rf"(?<![A-Za-z0-9])({value_pattern})\s+([A-Za-z][A-Za-z0-9 +&/-]{{2,30}})", text or ""):
+        value = match.group(1)
+        label = _clean_text(match.group(2)).strip(" ,.;:")
+        label = re.split(r"[,.]", label, maxsplit=1)[0].strip()
+        if not label or label.lower().startswith(("and ", "or ", "with ")) or re.search(r"\d", label):
+            continue
+        key = (value, label.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        pairs.append((value, _limit_words(label, 4)))
     return pairs
 
 
@@ -1408,14 +1614,14 @@ def _evidence_card_items(proof: Dict[str, Any], slide_data: Dict[str, Any]) -> L
     support = _clean_text(slide_data.get("support", ""))
     items: List[Dict[str, str]] = []
     if proof_focus:
-        items.append({"label": proof_id, "body": _limit_words(proof_focus, 16)})
+        items.append({"label": proof_id, "body": _limit_words(proof_focus, 9)})
     sentences = [
         part.strip()
         for part in re.split(r"(?<=[.!?])\s+", support)
         if len(part.strip()) > 12
     ]
     for idx, sentence in enumerate(sentences[:3], start=1):
-        items.append({"label": f"Reading note {idx}", "body": _limit_words(sentence, 13)})
+        items.append({"label": f"Reading note {idx}", "body": _limit_words(sentence, 8)})
     if not items:
         items.append({"label": proof_id, "body": "Evidence preserved from parsed checkpoints."})
     return items[:3]
@@ -1630,7 +1836,7 @@ def _paper_highlights(
         ("sota", "state-of-the-art", "surpass", "lead", "best", "competitive", "benchmark", "agentic"),
     )
     if result_text:
-        highlights.append({"label": "Core result", "body": _limit_words(result_text, 15)})
+        highlights.append({"label": "Core result", "body": _limit_words(result_text, 12)})
 
     scale_text = _scale_highlight(text_pool, metrics)
     if scale_text:
@@ -1638,20 +1844,38 @@ def _paper_highlights(
 
     method_text = _best_highlight_sentence(
         text_pool,
-        ("qk-clip", "qk clip", "muon", "optimizer", "moe", "sparsity", "experts", "rl", "self-critique", "tool"),
+        (
+            "qk-clip",
+            "qk clip",
+            "muon",
+            "optimizer",
+            "moe",
+            "sparsity",
+            "experts",
+            "rl",
+            "self-critique",
+            "tool",
+            "manifold",
+            "sinkhorn",
+            "doubly stochastic",
+            "birkhoff",
+            "kernel fusion",
+            "dualpipe",
+            "projection",
+        ),
     )
     if method_text:
-        highlights.append({"label": "Design edge", "body": _limit_words(method_text, 15)})
+        highlights.append({"label": "Design edge", "body": _limit_words(method_text, 12)})
 
     contribution_text = _best_highlight_sentence(
         text_pool,
         ("contribution", "pipeline", "data synthesis", "training recipe", "safety", "evaluation", "open"),
     )
     if contribution_text:
-        highlights.append({"label": "Evidence scope", "body": _limit_words(contribution_text, 15)})
+        highlights.append({"label": "Evidence scope", "body": _limit_words(contribution_text, 12)})
 
     for fallback in _fallback_highlight_sentences(text_pool):
-        highlights.append({"label": "Takeaway", "body": _limit_words(fallback, 15)})
+        highlights.append({"label": "Takeaway", "body": _limit_words(fallback, 12)})
         if len(highlights) >= 4:
             break
 
@@ -1945,6 +2169,43 @@ def _figure_path_index(inventory: Dict[str, Any]) -> Dict[str, str]:
     return result
 
 
+def _proof_figure_aspect_ratio(proof: Dict[str, Any], figure_paths: Dict[str, str]) -> float:
+    proof_id = str(proof.get("id", ""))
+    figure_path = figure_paths.get(proof_id, "")
+    return _image_aspect_ratio(figure_path) or 0.0
+
+
+def _image_aspect_ratio(figure_path: str) -> Optional[float]:
+    if not figure_path or not Path(figure_path).exists():
+        return None
+    try:
+        from PIL import Image
+
+        with Image.open(figure_path) as image:
+            if image.height <= 0:
+                return None
+            return image.width / image.height
+    except Exception:
+        return None
+
+
+def _fit_picture_box(figure_path: str, x: float, y: float, w: float, h: float) -> Optional[Dict[str, float]]:
+    aspect = _image_aspect_ratio(figure_path)
+    if not aspect or w <= 0 or h <= 0:
+        return None
+    target_w = w
+    target_h = target_w / aspect
+    if target_h > h:
+        target_h = h
+        target_w = target_h * aspect
+    return {
+        "x": x + (w - target_w) / 2,
+        "y": y + (h - target_h) / 2,
+        "w": max(0.1, target_w),
+        "h": max(0.1, target_h),
+    }
+
+
 def _rgb(hex_color: str) -> Any:
     from pptx.dml.color import RGBColor
 
@@ -1969,7 +2230,7 @@ def _add_textbox(
     y: float,
     w: float,
     h: float,
-    font_size: int,
+    font_size: float,
     color: Any,
     bold: bool = False,
     letter_spaced: bool = False,
@@ -2001,7 +2262,7 @@ def _add_textbox(
     return shape
 
 
-def _set_shape_text(shape: Any, text: str, font_size: int, color: Any, bold: bool = False) -> None:
+def _set_shape_text(shape: Any, text: str, font_size: float, color: Any, bold: bool = False) -> None:
     from pptx.enum.text import PP_ALIGN
     from pptx.util import Pt
 
@@ -2076,7 +2337,17 @@ def _add_proof_panel(
 
     if proof_type == "figure" and figure_path and Path(figure_path).exists():
         try:
-            slide.shapes.add_picture(figure_path, Inches(7.55), Inches(2.45), width=Inches(4.75), height=Inches(2.75))
+            fit = _fit_picture_box(figure_path, 7.55, 2.45, 4.75, 2.75)
+            if fit:
+                slide.shapes.add_picture(
+                    figure_path,
+                    Inches(fit["x"]),
+                    Inches(fit["y"]),
+                    width=Inches(fit["w"]),
+                    height=Inches(fit["h"]),
+                )
+            else:
+                slide.shapes.add_picture(figure_path, Inches(7.55), Inches(2.45), width=Inches(4.75))
             y = 5.35
             h = 0.62
         except Exception:
@@ -2130,6 +2401,22 @@ def _html_table_to_rows(table_html: str) -> List[List[str]]:
     if max_columns:
         rows = [row + [""] * (max_columns - len(row)) for row in rows]
     return rows
+
+
+def _normalize_table_rows(rows: Any) -> List[List[str]]:
+    if not isinstance(rows, list):
+        return []
+    normalized: List[List[str]] = []
+    for row in rows:
+        if isinstance(row, list):
+            cells = [_clean_text(str(cell)) for cell in row]
+        elif isinstance(row, dict):
+            cells = [_clean_text(str(value)) for value in row.values()]
+        else:
+            cells = [_clean_text(str(row))]
+        if any(cells):
+            normalized.append(cells)
+    return normalized
 
 
 def _clean_table_cell(value: str) -> str:
@@ -2197,6 +2484,34 @@ def _limit_words(text: str, max_words: int) -> str:
     if len(words) <= max_words:
         return " ".join(words)
     return " ".join(words[:max_words]).rstrip(" ,;:") + "."
+
+
+def _claim_word_limit(proof: Dict[str, Any]) -> int:
+    proof_type = str((proof or {}).get("type", ""))
+    if proof_type in {"figure", "table"}:
+        return 10
+    if proof_type == "metric":
+        return 12
+    return 13
+
+
+def _support_word_limit(proof: Dict[str, Any], curated: Dict[str, Any], plan_slide: Dict[str, Any]) -> int:
+    role_hint = " ".join(
+        [
+            str(curated.get("layout", "")),
+            str(curated.get("section_label", "")),
+            str(plan_slide.get("section_title", "")),
+            str(plan_slide.get("title", "")),
+        ]
+    ).lower()
+    proof_type = str((proof or {}).get("type", ""))
+    if "conclusion" in role_hint or proof_type == "text_evidence":
+        return 38
+    if proof_type in {"figure", "table"}:
+        return 42
+    if proof_type == "metric":
+        return 36
+    return 46
 
 
 def _limit_chars(text: str, max_chars: int) -> str:

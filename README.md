@@ -313,7 +313,10 @@ The next planned phase protects the current `academic` template as a golden base
 docs/benchmark_plan.zh-CN.md
 docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
 docs/next_window_handoff.zh-CN.md
+docs/hitl_v10_component_reflow_lessons.zh-CN.md
 ```
+
+The Kimi K2 from-scratch track now records `rough_draft_v10_component_reflow` as a successful candidate style reference, not yet a golden baseline. It must pass cross-paper validation before promotion; the next validation case is `mHC: Manifold-Constrained Hyper-Connections`.
 
 To validate the `ai20` paper set:
 

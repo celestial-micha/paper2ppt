@@ -10,6 +10,32 @@
       "rough_draft_v6"
     ]
   },
+  "candidate_style_reference": {
+    "version": "rough_draft_v10_component_reflow",
+    "artifact": "outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v10_component_reflow.pptx",
+    "status": "successful_on_primary_case_pending_cross_paper_validation",
+    "reason": "Human reviewer considered v10 very successful after the content-fit component reflow pass, but it should not become a reusable golden style until it survives additional papers.",
+    "promotion_criteria": [
+      "passes nonvisual audit with no high or medium findings on at least two non-Kimi papers",
+      "human review confirms the style still feels polished when figures, tables, and evidence density differ",
+      "new cross-paper failures are converted into badcases before promotion"
+    ],
+    "validation_cases": [
+      {
+        "paper_case": "Kimi_K2_Technical_Report",
+        "status": "passed_primary_human_review",
+        "artifact": "outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v10_component_reflow.pptx",
+        "audit": "outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/nonvisual_audit_v10_component_reflow.json"
+      },
+      {
+        "paper_case": "mHC_Manifold_Constrained_Hyper_Connections",
+        "status": "passed_nonvisual_audit_pending_human_visual_review_after_figure_table_reflow",
+        "artifact": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v11_figure_aspect_reflow.pptx",
+        "audit": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/nonvisual_audit_mHC_v11_figure_aspect_reflow.json",
+        "finding_summary": "59 low findings; no high or medium findings after wide-figure aspect-aware reflow and inline-table payload indexing repairs."
+      }
+    ]
+  },
   "core_principles": [
     {
       "id": "reuse_parsed_checkpoints",
@@ -27,6 +53,11 @@
       "why": "The successful v5 iteration came from first establishing an academic paper-reading style system; v6 showed that local component resizing can hurt the whole-slide composition."
     },
     {
+      "id": "content_fit_then_local_reflow",
+      "rule": "Keep typography roles deck-consistent, then fit real text into each component; if a local component becomes clearly too empty or too full, resize that component and reflow its same-slide siblings.",
+      "why": "v9 showed that single-page text tweaks are not enough: component size, internal spacing, and local page composition form one loop after content is inserted."
+    },
+    {
       "id": "human_feedback_to_rules",
       "rule": "Every subjective complaint should be translated into a badcase, trigger signal, repair strategy, and regression check.",
       "why": "The goal is not one manually corrected PPT, but a benchmark that helps future decks self-diagnose and improve."
@@ -40,6 +71,11 @@
       "id": "human_preference_is_a_regression_guard",
       "rule": "If an automatic heuristic produces a version the human reviewer dislikes, preserve the preferred version and record the heuristic as risky.",
       "why": "v6 tried to optimize read path and sparse evidence cards, but the user found v5 better overall."
+    },
+    {
+      "id": "candidate_style_requires_cross_paper_validation",
+      "rule": "A style that succeeds on one paper becomes a candidate reference, not a golden baseline, until it passes other papers with different evidence shapes.",
+      "why": "A visual system can fit one paper's content distribution while failing on denser figures, different tables, or less regular proof objects."
     }
   ],
   "iteration_log": [
@@ -130,6 +166,60 @@
       "repairs": [
         "Rollback v6 visual heuristics.",
         "Record that local density optimization can hurt composition and should require human or visual-regression approval."
+      ]
+    },
+    {
+      "version": "v9",
+      "human_findings": [
+        "Cover highlight bodies sat too far below their labels, weakening the colored-rail pairing.",
+        "The agenda read path correctly wrapped to two rows, but the columns were too far apart and labels were not visually anchored under nodes.",
+        "Bottom evidence cards could become too tall after text fitting; this should be treated as local component reflow, not deck-wide font drift.",
+        "Figure component labels sat too close to rounded panel boundaries."
+      ],
+      "repairs": [
+        "Add paired label-body spacing checks for cover highlight rail stacks.",
+        "Add 2x2 read-path grid checks for column gap, row gap, and label-center drift.",
+        "Add content-fit component frame checks so sparse cards can shrink locally and trigger same-slide reflow.",
+        "Add component label boundary-inset checks for figure/table proof panels."
+      ]
+    },
+    {
+      "version": "v10",
+      "human_findings": [
+        "Human reviewer considered the v10 PPT very successful and aesthetically satisfying on the Kimi K2 primary case.",
+        "The current style should be preserved as a candidate reference but not promoted to golden baseline before cross-paper validation."
+      ],
+      "repairs": [
+        "Record v10 as a candidate style reference with promotion criteria instead of replacing the accepted v5 checkpoint immediately.",
+        "Use the mHC paper as the next validation case for detecting cross-paper style failures.",
+        "Keep the human-in-the-loop loop active: generate, inspect, translate complaints into badcases, then repair and rerun."
+      ]
+    },
+    {
+      "version": "mHC validation 1",
+      "human_findings": [
+        "Directly applying the v10 visual style to mHC initially produced many text overflow findings because mHC claims, author list, highlights, and conclusion evidence are longer and more theoretical.",
+        "The style grammar itself did not trigger geometry or optical-balance failures after repair; the main cross-paper issue was text compression and narrow-card fitting."
+      ],
+      "repairs": [
+        "Add cross-paper claim/support word limits by proof type.",
+        "Compact long author lists on cover slides.",
+        "Remove Kimi-specific closing copy and derive closing takeaway from paper highlights.",
+        "Route non-metric closing summaries to evidence cards instead of metric grids.",
+        "Use compact typography for narrow evidence-card stacks."
+      ]
+    },
+    {
+      "version": "mHC validation 2",
+      "human_findings": [
+        "Wide figures such as Figure 4 and Figure 6 were forced into the generic right-side rounded rectangle, making long horizontal diagrams visually unclear and sometimes distorted.",
+        "A slide_spec inline table with real rows was referenced by its display title, but the renderer only indexed extracted asset-table ids, so the proof panel fell back to a near-empty text block."
+      ],
+      "repairs": [
+        "Route figure proof objects by source image aspect ratio: very wide figures use a long bottom proof panel rather than a side proof panel.",
+        "Fit figure images into their content box while preserving the original aspect ratio.",
+        "Index curated inline table rows alongside extracted asset tables so title-referenced tables still render as native PPT tables.",
+        "Add benchmark badcases for wide-figure layout mismatch and inline table payload indexing failures."
       ]
     }
   ],
@@ -258,6 +348,239 @@
       "repair_strategy": "Gate density-based visual changes behind accepted-reference comparison and selective rendered review.",
       "auto_fix": false,
       "regression_check": "Changes that alter accepted v5 visual grammar require either improved visual score or explicit human approval."
+    },
+    {
+      "id": "body_font_too_small",
+      "severity": "medium",
+      "trigger_signals": [
+        "support/body role font size is below metadata floor",
+        "support/body role font size falls below preferred band while capacity is safe"
+      ],
+      "root_cause": "A readable academic composition was kept, but secondary prose was authored with too little typographic presence.",
+      "repair_strategy": "Increase body/support font size, improve hierarchy, or shorten copy before changing the component box.",
+      "auto_fix": true,
+      "regression_check": "Body/support text clears the metadata floor and no new near-overflow finding is introduced."
+    },
+    {
+      "id": "card_font_too_small",
+      "severity": "medium",
+      "trigger_signals": [
+        "evidence card body font size is below metadata floor",
+        "cover highlight or evidence note body sits below preferred font band"
+      ],
+      "root_cause": "Compact evidence cards preserved the v5 composition but made card copy feel underpowered.",
+      "repair_strategy": "Raise card label/body typography within the existing card group and split notes only if capacity becomes risky.",
+      "auto_fix": true,
+      "regression_check": "Evidence card text clears the card font floor while card group geometry remains close to the accepted reference."
+    },
+    {
+      "id": "weak_typography_hierarchy",
+      "severity": "low",
+      "trigger_signals": [
+        "claim/support/card text roles are too close in font size",
+        "component labels visually compete with evidence body text"
+      ],
+      "root_cause": "The slide has the right components but insufficient type contrast between claim, support, labels, and notes.",
+      "repair_strategy": "Adjust font hierarchy and weight first; avoid moving components unless overlap or capacity fails.",
+      "auto_fix": true,
+      "regression_check": "Claim remains dominant, support is readable, and card body text has clearer hierarchy."
+    },
+    {
+      "id": "sparse_card_copy",
+      "severity": "low",
+      "trigger_signals": [
+        "low_text_density finding on evidence card text",
+        "card copy has very few words while the card group has accepted geometry"
+      ],
+      "root_cause": "A card sized for a reading note received a thin label or fragment instead of useful evidence copy.",
+      "repair_strategy": "Enrich the card body from existing support/proof text or rebalance reading notes; do not shrink the whole card group.",
+      "auto_fix": true,
+      "regression_check": "Card information density improves without changing the accepted component composition."
+    },
+    {
+      "id": "copy_density_mismatch",
+      "severity": "low",
+      "trigger_signals": [
+        "evidence cards have strongly uneven word counts",
+        "one note is near capacity while a sibling card is sparse"
+      ],
+      "root_cause": "Support text was split mechanically instead of being allocated to balanced reading notes.",
+      "repair_strategy": "Redistribute note copy, shorten the dense card, and enrich sparse siblings before resizing cards.",
+      "auto_fix": true,
+      "regression_check": "Sibling card word counts move into a comparable range and no overflow finding appears."
+    },
+    {
+      "id": "geometry_changed_without_structural_need",
+      "severity": "medium",
+      "trigger_signals": [
+        "a repair changes component size or position when only low-density findings were present",
+        "no overlap, out-of-bounds, unreadable table, or repeated-layout structural finding exists"
+      ],
+      "root_cause": "The repair loop treated low density as a geometry problem and risked repeating the v6 regression.",
+      "repair_strategy": "Reject geometry changes unless a structural finding exists; prefer typography, line breaks, copy allocation, or notes splitting.",
+      "auto_fix": false,
+      "regression_check": "Low-density-only repairs preserve component geometry and update only typography/copy fields."
+    },
+    {
+      "id": "cover_left_typography_underpowered",
+      "severity": "medium",
+      "trigger_signals": [
+        "cover title/support metadata remains below the cover comfort font band",
+        "right highlight rail typography is lifted but left title narrative is not lifted as a group"
+      ],
+      "root_cause": "Cover typography was tuned per component, so the right rail could improve while the left title, author, thesis, and focus copy stayed visually underpowered.",
+      "repair_strategy": "Lift the cover's left-side typography as one hierarchy group, then recheck wrapping and vertical spacing before moving components.",
+      "auto_fix": true,
+      "regression_check": "Cover left title narrative clears the comfort band and no new wrap, overlap, or out-of-bounds warning appears."
+    },
+    {
+      "id": "flow_nodes_overpacked",
+      "severity": "medium",
+      "trigger_signals": [
+        "agenda read-path labels sit in one row with too little horizontal gap",
+        "four compact flow buttons are squeezed into a narrow side panel"
+      ],
+      "root_cause": "The flow component only knew one horizontal layout and did not choose a two-row arrangement when labels became crowded.",
+      "repair_strategy": "Switch compact flow nodes to a 2x2 or two-row path when label gaps fall below the comfort threshold; do not solve this by shrinking labels.",
+      "auto_fix": true,
+      "regression_check": "Read-path node labels have comfortable gaps or use two rows while preserving the P/M/E/T sequence."
+    },
+    {
+      "id": "text_stack_off_optical_center",
+      "severity": "low",
+      "trigger_signals": [
+        "a rounded container has strongly uneven top and bottom padding around its internal content stack",
+        "metric or evidence cards occupy only the upper or lower part of their parent panel"
+      ],
+      "root_cause": "The audit treated each textbox separately and did not evaluate the visual center of the grouped text/card stack inside a container.",
+      "repair_strategy": "Rebalance the internal stack or enrich sparse cards before changing the whole slide macro-layout; allow slight optical bias for emphasized values.",
+      "auto_fix": true,
+      "regression_check": "Container text/card stacks stay within the optical padding tolerance without forcing mathematically perfect centering."
+    },
+    {
+      "id": "metric_label_gap_too_large",
+      "severity": "low",
+      "trigger_signals": [
+        "metric value and label are positioned with a card-height proportional gap",
+        "two text lines inside one metric card feel disconnected after the card gets taller"
+      ],
+      "root_cause": "Metric card internals used fixed y ratios rather than a value+label text stack with a stable gap.",
+      "repair_strategy": "Lay out metric value and label as one optical text stack with a fixed gap; keep the value slightly dominant rather than blindly centering both lines.",
+      "auto_fix": true,
+      "regression_check": "Metric cards preserve value dominance while the value-label gap remains within the stack comfort threshold."
+    },
+    {
+      "id": "deck_type_scale_under_comfort_band",
+      "severity": "medium",
+      "trigger_signals": [
+        "many slides have below-ideal typography findings even though no individual slide has a severe font violation",
+        "support, card body, or cover metadata repeatedly feels slightly too small across the deck"
+      ],
+      "root_cause": "Low-severity typography warnings were ranked locally, so a deck-wide weak type scale never became a repair target.",
+      "repair_strategy": "Run a deck-level typography pass that safely lifts repeated roles, checks capacity, then repairs line breaks or copy allocation if needed.",
+      "auto_fix": true,
+      "regression_check": "Deck-level below-ideal typography count decreases without introducing near-overflow, overlap, or geometry-only repairs."
+    },
+    {
+      "id": "paired_label_body_gap_too_large",
+      "severity": "low",
+      "trigger_signals": [
+        "a label and its explanatory body belong to the same semantic rail but their starts are too far apart",
+        "colored marker, label, and explanation no longer read as one grouped item"
+      ],
+      "root_cause": "Typography repair lifted or moved text boxes independently instead of treating label and explanation as one optical stack.",
+      "repair_strategy": "Move the body closer to the label within the same rail group before moving the whole group or changing font size.",
+      "auto_fix": true,
+      "regression_check": "Cover highlight label-body top delta stays within the paired-stack threshold while each group still aligns with its colored rail."
+    },
+    {
+      "id": "flow_grid_alignment_drift",
+      "severity": "low",
+      "trigger_signals": [
+        "2x2 read-path nodes have an overly wide column gap",
+        "row gap is too tight after wrapping",
+        "node labels are not centered under their circles"
+      ],
+      "root_cause": "The repair knew to wrap the flow into two rows but did not define grid proportions and label anchoring rules.",
+      "repair_strategy": "Use a compact 2x2 flow grid with smaller column gap, larger row gap, and label boxes centered on node centers.",
+      "auto_fix": true,
+      "regression_check": "Read-path grid passes column-gap, row-gap, column-to-row ratio, and label-center tolerance checks."
+    },
+    {
+      "id": "component_frame_overallocated_after_text_fit",
+      "severity": "low",
+      "trigger_signals": [
+        "a card frame remains much taller than the fitted label/body stack",
+        "local evidence card feels empty after text has been inserted"
+      ],
+      "root_cause": "The system froze component dimensions before seeing the real text, then tried to judge the result only by font size or text density.",
+      "repair_strategy": "Keep deck-wide typography roles stable, shrink or expand the affected local frame after content fitting, and reflow sibling components on the same slide.",
+      "auto_fix": true,
+      "regression_check": "Card frame extra height stays within the fitted-text threshold and sibling card alignment remains coherent."
+    },
+    {
+      "id": "component_boundary_inset_violation",
+      "severity": "low",
+      "trigger_signals": [
+        "figure/table label sits too close to a rounded panel edge",
+        "component heading appears to cross or kiss the boundary curve"
+      ],
+      "root_cause": "Proof-object labels were placed by a fixed small offset without accounting for rounded-corner optical padding.",
+      "repair_strategy": "Inset proof-object labels farther from rounded panel corners and reduce the content viewport if needed.",
+      "auto_fix": true,
+      "regression_check": "Figure/table component labels clear the minimum boundary inset before figure/table content is fitted."
+    },
+    {
+      "id": "cross_paper_text_compression_overflow",
+      "severity": "medium",
+      "trigger_signals": [
+        "candidate style passes the primary paper but produces high text overflow findings on another paper",
+        "long author lists, theoretical claims, dense support paragraphs, or conclusion evidence exceed the fixed style frames",
+        "non-metric closing evidence is routed into metric card grammar"
+      ],
+      "root_cause": "The visual style was reusable, but the text compression contract was tuned to the primary paper's content shape.",
+      "repair_strategy": "Set claim/support/highlight word limits by proof type, compact long author lists, derive closing copy from the current paper, and use compact typography for narrow evidence stacks.",
+      "auto_fix": true,
+      "regression_check": "Cross-paper validation decks have no high/medium text overflow findings while preserving the candidate style grammar."
+    },
+    {
+      "id": "wide_figure_forced_into_side_panel",
+      "severity": "medium",
+      "trigger_signals": [
+        "figure proof object has an image aspect ratio above the wide-figure threshold",
+        "layout family is still visual_left or visual_right",
+        "figure is inserted with both fixed width and fixed height that do not match the original aspect ratio"
+      ],
+      "root_cause": "The renderer treated all figures as the same proof-object type and ignored the source image shape when choosing the component frame.",
+      "repair_strategy": "Compute figure aspect ratio from the extracted asset and route very wide figures to a long bottom proof panel; fit the image inside the box without distortion.",
+      "auto_fix": true,
+      "regression_check": "Very wide figure assets use figure_bottom_wide or another horizontal figure layout, and inserted picture dimensions preserve the source aspect ratio."
+    },
+    {
+      "id": "figure_picture_aspect_distortion",
+      "severity": "medium",
+      "trigger_signals": [
+        "PPTX picture shape aspect ratio differs materially from the embedded source image aspect ratio",
+        "figure was inserted with both fixed width and fixed height instead of a fitted aspect-preserving box",
+        "human reviewer describes the figure as squeezed, stretched, or unclear after resizing"
+      ],
+      "root_cause": "The renderer filled the component viewport by forcing picture width and height rather than fitting the source image into the available box.",
+      "repair_strategy": "Compute a centered fit rectangle from source image dimensions and component content bounds; supply fitted width and height that preserve the source aspect ratio.",
+      "auto_fix": true,
+      "regression_check": "Nonvisual audit reports no figure_picture_aspect_distortion findings for generated figure proof panels."
+    },
+    {
+      "id": "inline_table_payload_not_indexed",
+      "severity": "high",
+      "trigger_signals": [
+        "slide proof object references a table by display title rather than extracted asset id",
+        "slide_spec inline table contains rows but table_index lookup returns no rows",
+        "table proof panel renders as a fallback text block instead of a native table"
+      ],
+      "root_cause": "The proof-object resolver could select curated slide tables, but the table renderer only indexed extracted asset tables.",
+      "repair_strategy": "Index curated inline table rows together with extracted table assets before rendering and auditing table proof objects.",
+      "auto_fix": true,
+      "regression_check": "Title-referenced inline tables render as native PPT tables with row/column grammar instead of empty-looking text panels."
     }
   ],
   "aesthetic_rubric": {
@@ -307,11 +630,13 @@
         "weight": 0.2,
         "good_signals": [
           "tables retain row/column grammar",
+          "wide figures use frames that respect their original shape",
           "metrics preserve value, label, and context",
           "text evidence uses appropriately sized cards"
         ],
         "bad_signals": [
           "tables become vague captions",
+          "wide figures are squeezed into side panels or distorted",
           "large empty proof panels",
           "cards cover text"
         ]
@@ -321,12 +646,14 @@
         "weight": 0.14,
         "good_signals": [
           "title, claim, support, card text, table text, and footer have clear hierarchy",
-          "sparse text does not create awkward empty containers"
+          "sparse text does not create awkward empty containers",
+          "component frames adapt after content fitting without changing deck-wide type roles"
         ],
         "bad_signals": [
           "body text too small",
           "card text too sparse for card size",
-          "over-aggressive density optimization hurts composition"
+          "over-aggressive density optimization hurts composition",
+          "label/body stacks or proof labels feel visually detached from their component"
         ]
       },
       {
@@ -384,7 +711,8 @@
         "each content slide has exactly one dominant claim",
         "support text is not empty and is not a duplicate of the claim",
         "proof object type matches the slide role",
-        "table, figure, and metric slides retain source references"
+        "table, figure, and metric slides retain source references",
+        "title-referenced inline tables with rows remain renderable proof payloads"
       ],
       "default_repair": "Repair slide spec content first; do not hide semantic gaps with layout decoration."
     },
@@ -400,6 +728,18 @@
       "default_repair": "Change style tokens or layout assignment rules; avoid ad-hoc per-slide resizing as the first fix."
     },
     {
+      "stage": "content_fit_component_reflow",
+      "goal": "Insert real slide text into the chosen components, then adjust only components whose fitted text makes them visibly too empty, too full, detached, or boundary-unsafe.",
+      "non_visual_checks": [
+        "paired label/body stacks use stable local gaps",
+        "2x2 flow grids keep compact columns, breathable rows, and centered labels",
+        "component frames are not substantially overallocated after fitted text height is estimated",
+        "figure/table labels clear rounded component boundaries",
+        "very wide figures are assigned a horizontal proof frame instead of a side frame"
+      ],
+      "default_repair": "Resize or reposition the local component and its same-slide siblings; preserve deck-wide type roles and avoid changing unrelated pages."
+    },
+    {
       "stage": "metadata_only_deck_audit",
       "goal": "Inspect generated PPTX as a layout program: shape geometry, font sizes, text capacity, table grammar, metric grammar, and overlap risk.",
       "non_visual_checks": [
@@ -407,7 +747,10 @@
         "font-size floors pass by role",
         "near-capacity and low-density findings are classified separately",
         "tables preserve rows and columns",
-        "metrics preserve value, label, and context"
+        "inline table rows from slide_spec are indexed when no extracted table id matches",
+        "wide figure images preserve source aspect ratio when fitted into PPTX picture boxes",
+        "metrics preserve value, label, and context",
+        "paired text stacks, component frame fit, and component boundary inset pass local optical checks"
       ],
       "default_repair": "Emit badcase hits and rank only the top issues for the next repair pass."
     },
@@ -417,10 +760,22 @@
       "non_visual_checks": [
         "repair changes are limited to top 1-3 badcases",
         "copy and font fixes are preferred before resizing accepted components",
-        "component geometry changes require a structural failure such as overlap, unreadable table, or missing content",
+        "component geometry changes require a structural or content-fit failure such as overlap, unreadable table, missing content, failed flow grid, boundary violation, or overallocated frame",
+        "same-slide sibling components are reflowed after any local frame resize",
         "new output is compared against accepted-reference rules"
       ],
       "default_repair": "Stop when high/medium findings are gone or when another repair would alter the style contract without evidence."
+    },
+    {
+      "stage": "cross_paper_style_validation",
+      "goal": "Before promoting a successful style to a golden baseline, rerun it on papers with different figure, table, metric, and text-evidence profiles.",
+      "non_visual_checks": [
+        "candidate style passes nonvisual audit without high or medium findings on each validation paper",
+        "new findings are separated into style-specific failures versus paper-content extraction failures",
+        "human reviewer approves the contact-sheet rhythm on at least two non-primary papers",
+        "every recurring cross-paper complaint becomes a badcase before promotion"
+      ],
+      "default_repair": "Keep the style as a candidate reference, add or tune badcases, and rerun validation instead of declaring a golden baseline from one paper."
     }
   ],
   "non_visual_self_repair_policy": {
@@ -431,8 +786,17 @@
       "claim/support/proof object missing or mismatched",
       "shape bounding-box overlap and out-of-bounds objects",
       "font-size floors and inconsistent typography hierarchy",
+      "deck-level typography comfort band across repeated text roles",
       "text capacity, near-overflow risk, and low-density card/panel risk",
+      "paired label/body stack proximity for cover highlights and card-like groups",
+      "flow-node crowding, automatic two-row flow needs, grid proportions, and label-center drift",
+      "component frame overallocation after fitted text height is estimated",
+      "component label boundary inset for figure/table proof panels",
+      "figure source aspect ratio and whether the chosen layout family matches it",
+      "inserted figure picture box aspect ratio versus source image aspect ratio",
+      "container internal stack optical balance and metric value-label gap",
       "native table row/column availability",
+      "curated inline table row/column availability when table ids do not match extracted assets",
       "metric value/label/context grammar",
       "layout-family repetition and monotony",
       "use of forbidden or risky visual grammar recorded from human feedback"
@@ -447,9 +811,11 @@
       "Fix content correctness first: missing evidence, unsupported claims, table rows, metric values.",
       "Fix structural deck grammar second: title, agenda, section ranges, slide role balance.",
       "Fix semantic matching third: claim/support/proof object alignment.",
-      "Fix typography fourth: font floors, text splitting, line breaks, copy allocation.",
-      "Fix geometry only when necessary: overlap, out-of-bounds, unreadable table, or repeated layout family.",
-      "Change accepted component proportions only when the audit shows a structural failure, not merely low text density.",
+      "Fix typography fourth: font floors, deck-level comfort band, text splitting, line breaks, copy allocation.",
+      "Fix content-fit optical balance fifth: paired label/body proximity, value-label gap, card padding, and proof-label boundary inset.",
+      "Fix local component frame sizing sixth when fitted text makes a card clearly too empty or too full; then reflow same-slide siblings.",
+      "Fix geometry only when necessary: overlap, out-of-bounds, unreadable table, failed flow grid, boundary inset violation, or repeated layout family.",
+      "Change accepted component proportions only when the audit shows a structural or content-fit failure, not merely low text density.",
       "Change the visual system only through a new style-contract revision and compare against the accepted reference."
     ],
     "stop_conditions": [
@@ -466,7 +832,13 @@
       "layout family distribution and max consecutive layout",
       "shape bounding box overlap among text, tables, figures, and proof panels",
       "font-size floors by text role",
+      "deck-level typography comfort band by repeated roles",
       "text density: words per square inch for cards and panels",
+      "paired label/body stack top delta",
+      "flow-node label gap, two-row fallback need, grid gap ratio, and label-center drift",
+      "component frame extra height after fitted text estimate",
+      "component label boundary inset for figure/table panels",
+      "container internal padding balance and metric value-label stack gap",
       "table row/column availability and native table count",
       "metric grammar: value + label + context"
     ],

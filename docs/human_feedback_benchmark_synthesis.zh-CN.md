@@ -849,3 +849,39 @@ regression_check: 组件整体比例保持，card 字号和信息密度提高。
 ```
 
 这会把下一轮“文字大小调优”的人工经验继续转成 benchmark 资产。
+
+## 10. 2026-06-13 补充：从 v10/mHC 学到的跨论文规则
+
+Kimi K2 的 v10 样式已经被人工认为非常成功，但 mHC 交叉验证说明：一个样式在主论文上成功，并不等于可以立刻成为 golden baseline。跨论文验证的价值在于暴露不同 proof payload 的形状。
+
+本轮新增两类问题：
+
+- **宽图布局问题**：Figure 4 / Figure 6 这种超宽图不能继续使用普通右侧竖向 proof panel。布局选择要看图片原始长宽比，超宽图应使用底部横向 proof panel，并且图片插入必须保持原始比例。
+- **inline table payload 问题**：slide_spec 里已经有 rows 的表格，如果 proof id 使用展示标题而不是 extracted table id，渲染器也必须能索引到这些 inline rows，不能退化成一个空感很强的文本面板。
+
+新增 badcase：
+
+```text
+wide_figure_forced_into_side_panel
+inline_table_payload_not_indexed
+figure_picture_aspect_distortion
+```
+
+这把 benchmark 的判断从“proof object 类型正确”推进到：
+
+```text
+proof object type correct
+ -> proof payload exists
+ -> payload shape understood
+ -> component frame chosen by payload shape
+ -> payload rendered without distortion or empty fallback
+```
+
+因此新的修复优先级应补充为：
+
+1. 内容 payload 是否存在：table rows、figure file、metric value。
+2. payload id 是否能解析：asset id、curated title、inline rows 都要能被索引。
+3. payload 形状是否适配布局：宽图、长表、密集 metric 不应共用同一种容器。
+4. 渲染是否保持语义：图片不拉伸，表格保持 native row/column grammar。
+
+这条经验很关键：human-in-the-loop 不是让 Codex 手工修某一页，而是把“这一页为什么不舒服”转成下一篇论文也能复用的规则。

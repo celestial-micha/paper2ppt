@@ -185,12 +185,33 @@ content correctness
  -> deck architecture
  -> semantic matching
  -> typography / copy allocation
+ -> content-fit optical balance
+ -> local component reflow
  -> geometry fix
  -> visual-system revision
 ```
 
-The important design lesson from the Kimi K2 v5/v6 iteration is that local density metrics must not automatically resize good components. If a component composition has already been accepted by human feedback, the first fixes should be text size, line breaks, and copy allocation. Component geometry should change only for structural failures such as overlap, out-of-bounds shapes, unreadable tables, or excessive layout repetition.
+The important design lesson from the Kimi K2 v5/v6/v10 iterations is that local density metrics must not automatically resize good components, but component geometry also cannot be frozen forever. The stable pattern is:
+
+1. lock the deck-level style contract and typography roles;
+2. insert the real slide text into the chosen components;
+3. detect whether the fitted content is too empty, too full, visually detached, or boundary-unsafe;
+4. resize or reposition only that local component when a content-fit failure exists;
+5. reflow same-slide sibling components after any local frame change.
+
+This is why v10 is recorded as a successful candidate style rather than immediately replacing the golden baseline. A style that works on one paper must still be validated on other papers with different figure, table, metric, and text-evidence shapes before promotion.
+
+The human-in-the-loop workflow should convert every useful subjective complaint into a durable benchmark rule:
+
+- "the label and explanation feel disconnected" becomes a paired label/body spacing check;
+- "the two-row read path looks stretched" becomes flow-grid column gap, row gap, and label-center checks;
+- "the card frame is too empty after the text is placed" becomes a fitted-text frame overallocation check;
+- "the figure label kisses the rounded border" becomes a component boundary-inset check.
+- "the long figure becomes unreadable in a side panel" becomes a figure aspect-ratio layout-routing check;
+- "the table panel looks empty even though the slide spec has rows" becomes an inline-table payload indexing check.
+
+This keeps human taste in the loop without turning the process into manual slide polishing. The human names the visual failure; the system records the badcase, trigger signal, repair strategy, and regression check.
 
 In interview terms:
 
-> The project can now evaluate a generated PPT without screenshot-heavy vision review. It treats PPTX as an inspectable program, runs deterministic checks over geometry and text metadata, maps failures to benchmark badcases, and repairs only the highest-priority issues. That makes aesthetic iteration cheaper and more reproducible while still leaving pixel-level visual judgment as an optional future branch.
+> The project can now evaluate a generated PPT without screenshot-heavy vision review. It treats PPTX as an inspectable program, runs deterministic checks over geometry and text metadata, maps human feedback to benchmark badcases, and repairs only the highest-priority issues. Successful styles become candidate references and must pass cross-paper validation before becoming golden baselines.

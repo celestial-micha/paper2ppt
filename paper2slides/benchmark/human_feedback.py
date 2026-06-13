@@ -18,6 +18,7 @@ def load_human_feedback_benchmark(path: Path = DEFAULT_HUMAN_FEEDBACK_BENCHMARK)
 def summarize_human_feedback_benchmark(data: Dict[str, Any]) -> Dict[str, Any]:
     """Return a compact summary suitable for benchmark reports."""
     accepted = data.get("accepted_reference", {}) or {}
+    candidate = data.get("candidate_style_reference", {}) or {}
     rubric = data.get("aesthetic_rubric", {}) or {}
     strategy = data.get("automatic_review_strategy", {}) or {}
     workflow = data.get("autonomous_generation_workflow", []) or []
@@ -26,6 +27,9 @@ def summarize_human_feedback_benchmark(data: Dict[str, Any]) -> Dict[str, Any]:
         "benchmark_track": data.get("benchmark_track", ""),
         "paper_case": data.get("paper_case", ""),
         "accepted_reference": accepted.get("version", ""),
+        "candidate_style_reference": candidate.get("version", ""),
+        "candidate_style_status": candidate.get("status", ""),
+        "candidate_validation_case_count": len(candidate.get("validation_cases", []) or []),
         "avoid_versions": list(accepted.get("do_not_replace_with", []) or []),
         "principle_count": len(data.get("core_principles", []) or []),
         "iteration_count": len(data.get("iteration_log", []) or []),
