@@ -858,6 +858,8 @@ Kimi K2 的 v10 样式已经被人工认为非常成功，但 mHC 交叉验证�
 
 - **宽图布局问题**：Figure 4 / Figure 6 这种超宽图不能继续使用普通右侧竖向 proof panel。布局选择要看图片原始长宽比，超宽图应使用底部横向 proof panel，并且图片插入必须保持原始比例。
 - **inline table payload 问题**：slide_spec 里已经有 rows 的表格，如果 proof id 使用展示标题而不是 extracted table id，渲染器也必须能索引到这些 inline rows，不能退化成一个空感很强的文本面板。
+- **浅窄卡片内部间距问题**：同一种 evidence card 在高卡片或宽卡片里舒服，不代表在矮且窄的卡片里也舒服。卡片内部 label/body gap、body box 高度和底部 padding 要随局部 frame 高度变化。
+- **agenda rail 微间距问题**：Read path header 和 P/M/E/T 节点之间距离太近时，组件虽然没有错位，但会少一点最终 polish 的呼吸感。
 
 新增 badcase：
 
@@ -865,6 +867,8 @@ Kimi K2 的 v10 样式已经被人工认为非常成功，但 mHC 交叉验证�
 wide_figure_forced_into_side_panel
 inline_table_payload_not_indexed
 figure_picture_aspect_distortion
+card_internal_spacing_not_scaled_to_frame
+agenda_read_path_header_too_close
 ```
 
 这把 benchmark 的判断从“proof object 类型正确”推进到：
@@ -883,5 +887,7 @@ proof object type correct
 2. payload id 是否能解析：asset id、curated title、inline rows 都要能被索引。
 3. payload 形状是否适配布局：宽图、长表、密集 metric 不应共用同一种容器。
 4. 渲染是否保持语义：图片不拉伸，表格保持 native row/column grammar。
+5. 组件内部文字栈是否适配局部容器：浅窄卡片不能照搬高卡片或宽卡片的固定间距。
+6. 最终 polish 是否需要低风险小规则：例如 agenda rail header 到节点的 clearance，不应触发大范围布局重排。
 
 这条经验很关键：human-in-the-loop 不是让 Codex 手工修某一页，而是把“这一页为什么不舒服”转成下一篇论文也能复用的规则。

@@ -425,3 +425,24 @@ good composition
  -> minimal geometry repair only if necessary
  -> benchmark rule update
 ```
+
+## 2026-06-14 最新交接补充
+
+当前 mHC 验证输出已经推进到：
+
+```text
+outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v13_agenda_read_path_polish.pptx
+```
+
+这版是在 v12 基础上做的最后 micro-polish：第 2 页 agenda 右侧 `Read path` header 上移，增加与 P/M/E/T 节点之间的 clearance。对应 badcase：
+
+```text
+agenda_read_path_header_too_close
+```
+
+下一窗口不要把这类问题升级为重构任务。当前阶段的正确动作是：
+
+1. 保留 v10/v13 的整体风格和构图。
+2. 只接受边界清楚的局部微调。
+3. 每个微调都写入 benchmark badcase、nonvisual audit rule 和测试。
+4. 生成新 PPT 后跑 nonvisual audit 和 `test_phase1_pptx.py`。

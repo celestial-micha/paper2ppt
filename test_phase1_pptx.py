@@ -447,6 +447,8 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn("wide_figure_forced_into_side_panel", badcase_ids(data))
         self.assertIn("figure_picture_aspect_distortion", badcase_ids(data))
         self.assertIn("inline_table_payload_not_indexed", badcase_ids(data))
+        self.assertIn("card_internal_spacing_not_scaled_to_frame", badcase_ids(data))
+        self.assertIn("agenda_read_path_header_too_close", badcase_ids(data))
 
     def test_from_scratch_routes_wide_figures_and_inline_tables(self):
         from PIL import Image
@@ -843,6 +845,8 @@ class Phase1PptxSmokeTest(unittest.TestCase):
     def test_nonvisual_audit_detects_optical_balance_and_flow_risks(self):
         from paper2slides.benchmark.nonvisual_audit import (
             NONVISUAL_AUDIT_RULES,
+            _agenda_read_path_header_findings,
+            _card_internal_spacing_findings,
             _component_boundary_findings,
             _component_frame_fit_findings,
             _container_balance_findings,
@@ -883,6 +887,18 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         ]
         self.assertEqual(_flow_layout_findings(2, wide_grid_records, NONVISUAL_AUDIT_RULES)[0]["type"], "flow_grid_alignment_drift")
 
+        agenda_header_records = [
+            record(30, "body_text", "Read path", 9.3, 4.05, 2.2, 0.25, 11),
+            record(31, "small_text", "P", 9.7, 4.42, 0.34, 0.34, 8.5),
+            record(32, "small_text", "M", 11.11, 4.42, 0.34, 0.34, 8.5),
+            record(33, "small_text", "E", 9.7, 5.1, 0.34, 0.34, 8.5),
+            record(34, "small_text", "T", 11.11, 5.1, 0.34, 0.34, 8.5),
+        ]
+        self.assertEqual(
+            _agenda_read_path_header_findings(2, agenda_header_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "agenda_read_path_header_too_close",
+        )
+
         paired_records = [
             record(28, "body_text", "Core result", 9.73, 2.10, 1.6, 0.25, 11),
             record(29, "card_text", "Kimi K2 achieves open-source SOTA on agentic tasks.", 9.73, 2.40, 1.9, 0.45, 10),
@@ -915,6 +931,16 @@ class Phase1PptxSmokeTest(unittest.TestCase):
             record(15, "card_text", "Before RL, the model undergoes supervised fine-tuning on high-quality instruction data.", 0.98, 4.99, 3.1, 0.9, 10),
         ]
         self.assertEqual(_component_frame_fit_findings(15, frame_records, NONVISUAL_AUDIT_RULES)[0]["type"], "component_frame_overallocated_after_text_fit")
+
+        shallow_card_records = [
+            record(16, "container", "", 9.0, 1.9, 3.35, 0.96),
+            record(17, "card_label", "Conclusion", 9.18, 2.02, 2.99, 0.24, 10),
+            record(18, "card_text", "This concluding slide summarizes the main contributions, key findings.", 9.18, 2.34, 2.99, 0.44, 10),
+        ]
+        self.assertEqual(
+            _card_internal_spacing_findings(30, shallow_card_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "card_internal_spacing_not_scaled_to_frame",
+        )
 
 
 if __name__ == "__main__":

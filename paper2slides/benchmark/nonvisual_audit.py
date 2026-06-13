@@ -40,9 +40,14 @@ NONVISUAL_AUDIT_RULES = {
     "flow_grid_min_row_gap_in": 0.62,
     "flow_grid_col_to_row_ratio_max": 2.7,
     "flow_label_center_tolerance_in": 0.09,
+    "agenda_read_path_header_min_gap_in": 0.22,
     "paired_text_top_delta_max_in": 0.26,
     "component_label_min_inset_in": 0.30,
     "component_frame_extra_height_max_in": 0.42,
+    "card_internal_gap_max_in": 0.055,
+    "card_internal_min_bottom_padding_in": 0.09,
+    "card_internal_shallow_max_h_in": 1.15,
+    "card_internal_narrow_max_w_in": 3.8,
     "metric_label_gap_max_in": 0.065,
     "metric_card_min_area_sq_in": 0.40,
     "balance_container_min_area_sq_in": 3.6,
@@ -77,9 +82,11 @@ def inspect_pptx_nonvisual(pptx_path: Path, rules: Optional[Dict[str, Any]] = No
         slide_findings.extend(_paired_text_stack_findings(slide_index, records, active_rules))
         slide_findings.extend(_copy_distribution_findings(slide_index, records, active_rules))
         slide_findings.extend(_flow_layout_findings(slide_index, records, active_rules))
+        slide_findings.extend(_agenda_read_path_header_findings(slide_index, records, active_rules))
         slide_findings.extend(_metric_stack_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_boundary_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_frame_fit_findings(slide_index, records, active_rules))
+        slide_findings.extend(_card_internal_spacing_findings(slide_index, records, active_rules))
         slide_findings.extend(_container_balance_findings(slide_index, records, active_rules))
         slide_findings.extend(_overlap_findings(slide_index, records, active_rules))
         slide_findings.extend(_table_findings(slide_index, records))
@@ -250,7 +257,7 @@ def _infer_role(record: Dict[str, Any], slide_h: float) -> str:
         "SUMMARY",
     }:
         return "component_label"
-    if text in {"Method", "Limitations", "Reading note 1", "Reading note 2", "Reading note 3"}:
+    if text in {"Conclusion", "Method", "Limitations", "Reading note 1", "Reading note 2", "Reading note 3"}:
         return "card_label"
     if text.isupper() and len(text) < 70 and font_avg <= 12:
         return "component_label"
@@ -542,6 +549,45 @@ def _flow_layout_findings(slide_index: int, records: List[Dict[str, Any]], rules
     return findings
 
 
+def _agenda_read_path_header_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if slide_index != 2:
+        return []
+    headers = [record for record in records if record.get("text") == "Read path"]
+    nodes = [record for record in records if record.get("text") in {"P", "M", "E", "T"}]
+    if not headers or not nodes:
+        return []
+    header = min(headers, key=lambda record: record.get("bbox", {}).get("y", 0.0))
+    header_box = header.get("bbox", {})
+    lower_nodes = [
+        node
+        for node in nodes
+        if node.get("bbox", {}).get("y", 0.0) > header_box.get("y", 0.0)
+    ]
+    if not lower_nodes:
+        return []
+    nearest_node_top = min(node.get("bbox", {}).get("y", 0.0) for node in lower_nodes)
+    gap = nearest_node_top - header_box.get("bottom", 0.0)
+    min_gap = float(rules["agenda_read_path_header_min_gap_in"])
+    if gap >= min_gap:
+        return []
+    return [
+        {
+            "type": "agenda_read_path_header_too_close",
+            "severity": "low",
+            **_finding_meta("agenda_read_path_header_too_close", "low"),
+            "slide_page": slide_index,
+            "message": f"Agenda Read path header sits only {gap:.2f}in above the flow nodes, making the rail feel cramped.",
+            "evidence": {
+                "header": _shape_evidence(header),
+                "nodes": [_shape_evidence(node) for node in sorted(nodes, key=lambda item: item.get("text", ""))],
+                "gap_in": round(gap, 3),
+                "minimum_gap_in": round(min_gap, 3),
+            },
+            "repair_strategy": "Lift the Read path header slightly while preserving the flow node grid and rail composition.",
+        }
+    ]
+
+
 def _metric_stack_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
     findings = []
     for container in _container_records(records):
@@ -662,6 +708,75 @@ def _component_frame_fit_findings(slide_index: int, records: List[Dict[str, Any]
                     "extra_height_in": round(extra_h, 3),
                 },
                 "repair_strategy": "After fitting text, resize the local card frame and reflow sibling cards on the same slide instead of changing deck-wide type roles.",
+            }
+        )
+    return findings
+
+
+def _card_internal_spacing_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    findings = []
+    max_gap = float(rules["card_internal_gap_max_in"])
+    min_bottom = float(rules["card_internal_min_bottom_padding_in"])
+    shallow_max_h = float(rules["card_internal_shallow_max_h_in"])
+    narrow_max_w = float(rules["card_internal_narrow_max_w_in"])
+    for container in _container_records(records):
+        bbox = container.get("bbox", {})
+        if (
+            bbox.get("h", 0.0) > shallow_max_h
+            or bbox.get("w", 0.0) > narrow_max_w
+            or bbox.get("w", 0.0) < 1.4
+            or bbox.get("area", 0.0) < 0.9
+        ):
+            continue
+        children = [
+            child
+            for child in _contained_records(container, records, include_containers=False)
+            if child.get("has_text") and child.get("role") not in {"source_footer", "page_marker", "component_label"}
+        ]
+        labels = [child for child in children if child.get("role") == "card_label"]
+        bodies = [
+            child
+            for child in children
+            if child.get("role") in {"card_text", "body_text", "support_body"}
+            and int(child.get("text_words") or 0) >= 3
+        ]
+        if not labels or not bodies:
+            continue
+        label = min(labels, key=lambda child: child.get("bbox", {}).get("y", 0.0))
+        body_candidates = [
+            body
+            for body in bodies
+            if body.get("bbox", {}).get("y", 0.0) >= label.get("bbox", {}).get("y", 0.0)
+        ]
+        if not body_candidates:
+            continue
+        body = min(body_candidates, key=lambda child: child.get("bbox", {}).get("y", 0.0))
+        label_box = label.get("bbox", {})
+        body_box = body.get("bbox", {})
+        gap = body_box.get("y", 0.0) - label_box.get("bottom", 0.0)
+        bottom_padding = bbox.get("bottom", 0.0) - body_box.get("bottom", 0.0)
+        if gap <= max_gap and bottom_padding >= min_bottom:
+            continue
+        reasons = []
+        if gap > max_gap:
+            reasons.append(f"label/body gap {gap:.2f}in")
+        if bottom_padding < min_bottom:
+            reasons.append(f"bottom padding {bottom_padding:.2f}in")
+        findings.append(
+            {
+                "type": "card_internal_spacing_not_scaled_to_frame",
+                "severity": "low",
+                **_finding_meta("card_internal_spacing_not_scaled_to_frame", "low"),
+                "slide_page": slide_index,
+                "message": f"Shallow evidence card uses fixed internal spacing ({', '.join(reasons)}), making the text stack feel low in the frame.",
+                "evidence": {
+                    "container": _shape_evidence(container),
+                    "label": _shape_evidence(label),
+                    "body": _shape_evidence(body),
+                    "gap_in": round(gap, 3),
+                    "bottom_padding_in": round(bottom_padding, 3),
+                },
+                "repair_strategy": "Scale label/body gap and body box height to the local card height before changing deck-wide typography.",
             }
         )
     return findings
@@ -987,6 +1102,8 @@ def _problem_type_for_finding(kind: str) -> str:
         "container_stack_off_balance",
         "paired_label_body_gap_too_large",
         "component_frame_overallocated_after_text_fit",
+        "card_internal_spacing_not_scaled_to_frame",
+        "agenda_read_path_header_too_close",
     }:
         return "optical_balance"
     return "metadata"

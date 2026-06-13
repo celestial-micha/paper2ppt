@@ -205,7 +205,9 @@ The human-in-the-loop workflow should convert every useful subjective complaint 
 
 - "the label and explanation feel disconnected" becomes a paired label/body spacing check;
 - "the two-row read path looks stretched" becomes flow-grid column gap, row gap, and label-center checks;
+- "the Read path header feels too close to its nodes" becomes an agenda rail header-clearance check;
 - "the card frame is too empty after the text is placed" becomes a fitted-text frame overallocation check;
+- "the same card spacing feels low in a shallower card" becomes a height-aware internal card stack check;
 - "the figure label kisses the rounded border" becomes a component boundary-inset check.
 - "the long figure becomes unreadable in a side panel" becomes a figure aspect-ratio layout-routing check;
 - "the table panel looks empty even though the slide spec has rows" becomes an inline-table payload indexing check.

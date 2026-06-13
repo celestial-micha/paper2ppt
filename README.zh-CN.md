@@ -307,7 +307,7 @@ python -m paper2slides.benchmark --outputs outputs --report-dir benchmark_runs\l
 
 当前已用 `Kimi_K2_Technical_Report.pdf` 做过一次单篇端到端验证：从 `summary` 阶段续跑，文本调用使用 `deepseek-v4-flash`，图片输入/多模态调用使用 `gpt-5-mini`，最终 1/1 通过、23 页、2 个 warning。报告位于 `benchmark_runs/ai20_20260607_005847/aggregate_report.md`。
 
-下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 golden baseline，并扩展多模板与审美 benchmark。最新路线拆成两条：
+下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 golden baseline，并扩展多模板与审美 benchmark。当前 from-scratch track 已把 Kimi K2 的 `rough_draft_v10_component_reflow` 记录为 candidate style，并在 mHC 验证中推进到 `mHC_v13_agenda_read_path_polish`；benchmark 规则已经覆盖宽图比例路由、inline table payload、浅窄卡片内部间距和 agenda Read path 标题 clearance。最新路线拆成两条：
 
 - 成熟套件回归：保留 `academic`，并将 `academic_warm`、`editorial`、`editorial_mono`、`data_report` 作为 baseline companion styles，用于稳定生成和 ai20 回归。
 - 从零模板实验：不模仿 golden baseline 的视觉骨架，从已解析论文内容出发，先生成 content inventory 和无审美草稿，再逐步设计章节、页面角色、proof object、视觉系统和自动评估规则。

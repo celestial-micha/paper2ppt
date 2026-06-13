@@ -860,7 +860,7 @@ def _add_agenda_slide(prs: Any, sections: List[Dict[str, Any]], page: int, total
     _add_textbox(slide, "content slides", 10.45, 2.35, 1.45, 0.25, 9, _theme("soft_text"))
     _add_textbox(slide, f"{len(sections)}", 9.3, 3.0, 1.0, 0.45, 22, _theme("gold"), bold=True)
     _add_textbox(slide, "modules", 10.1, 3.17, 1.5, 0.22, 9, _theme("soft_text"))
-    _add_textbox(slide, "Read path", 9.3, 4.05, 2.2, 0.25, 11, _theme("ink"), bold=True)
+    _add_textbox(slide, "Read path", 9.3, 3.92, 2.2, 0.25, 11, _theme("ink"), bold=True)
     _add_read_path_flow(slide, 9.25, 4.42, 2.65, 1.0)
     for idx, section in enumerate(sections, start=1):
         y = 2.3 + (idx - 1) * 0.9
@@ -1451,10 +1451,22 @@ def _add_evidence_note_card(
     else:
         body_size = 11.0 if body_word_count <= 10 and body_char_count <= 70 else 10.0
     compact_tight = compact and h < 0.85
-    label_y = y + (0.08 if compact_tight else 0.12)
-    label_h = 0.2 if compact_tight else 0.24
-    body_y = y + (0.34 if compact_tight else 0.44)
-    body_h = max(0.18, h - (0.38 if compact_tight else 0.52))
+    compact_shallow = compact and h < 1.08
+    if compact_tight:
+        label_y = y + 0.08
+        label_h = 0.2
+        body_y = y + 0.31
+        body_h = max(0.18, h - 0.41)
+    elif compact_shallow:
+        label_y = y + 0.12
+        label_h = 0.22
+        body_y = y + 0.36
+        body_h = max(0.22, h - 0.46)
+    else:
+        label_y = y + 0.12
+        label_h = 0.24
+        body_y = y + 0.44
+        body_h = max(0.18, h - 0.52)
     _add_textbox(slide, item["label"], x + 0.18, label_y, w - 0.36, label_h, label_size, _theme("ink"), bold=True)
     _add_textbox(slide, body_text, x + 0.18, body_y, w - 0.36, body_h, body_size, _theme("muted_ink"))
 

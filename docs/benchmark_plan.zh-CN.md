@@ -513,3 +513,24 @@ good component composition
 - `geometry_changed_without_structural_need`
 
 这些 badcase 应继续写入 `benchmarks/from_scratch_human_feedback_benchmark.json`，并在测试中保护摘要字段。
+
+## 2026-06-14 状态补充：from-scratch 已进入 micro-polish 规则阶段
+
+mHC 交叉验证已经推进到 `mHC_v13_agenda_read_path_polish`。当前经验说明，benchmark 不只要抓结构错误，还要能记录低风险但稳定的审美微调：
+
+- 宽图不能强塞右侧 proof panel，要按原始长宽比选择横向容器。
+- slide_spec inline table rows 不能因为 proof id 是展示标题而丢失。
+- 浅窄 evidence card 的 label/body 间距要随局部高度变化。
+- agenda `Read path` header 与 P/M/E/T 节点之间要保留足够 clearance。
+
+新增/保留的 micro-polish badcase：
+
+```text
+wide_figure_forced_into_side_panel
+figure_picture_aspect_distortion
+inline_table_payload_not_indexed
+card_internal_spacing_not_scaled_to_frame
+agenda_read_path_header_too_close
+```
+
+这些规则的共同原则是：只修局部，不重排整页；只在元数据能稳定检测时自动化；人类审美反馈必须先被翻译成边界清楚的小规则。

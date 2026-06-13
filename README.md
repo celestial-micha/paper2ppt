@@ -316,7 +316,7 @@ docs/next_window_handoff.zh-CN.md
 docs/hitl_v10_component_reflow_lessons.zh-CN.md
 ```
 
-The Kimi K2 from-scratch track now records `rough_draft_v10_component_reflow` as a successful candidate style reference, not yet a golden baseline. It must pass cross-paper validation before promotion; the next validation case is `mHC: Manifold-Constrained Hyper-Connections`.
+The Kimi K2 from-scratch track now records `rough_draft_v10_component_reflow` as a successful candidate style reference, not yet a golden baseline. The mHC validation deck has reached micro-polish iteration (`mHC_v13_agenda_read_path_polish`), with benchmark rules covering wide-figure aspect routing, inline-table payload indexing, shallow-card internal spacing, and agenda Read path header clearance.
 
 To validate the `ai20` paper set:
 

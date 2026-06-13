@@ -183,3 +183,62 @@ inline_table_payload_not_indexed
 - 如果 proof object 有展示标题但没有 asset id，先尝试用 inline rows 渲染，不要直接掉到空文本 fallback。
 
 这一步把 benchmark 从“按证明类型排版”推进到“按证明类型 + 证明载荷形状排版”。这是跨论文验证真正有价值的地方：Kimi K2 没暴露的问题，mHC 会暴露；暴露以后，规则就变成下一篇论文的自动经验。
+
+## 9. mHC 第三轮视觉反馈：组件内部间距也要随局部高度变化
+
+第 30 页右侧三个 evidence note 卡片暴露了一个更细的问题：这些卡片和其他页面使用了同一套 label/body 间距，但第 30 页的卡片更矮，所以 body 文字看起来偏低，像是没有落在卡片内部的舒适视觉位置。
+
+这里不能简单总结为“label/body 间距应该统一变小”。因为其他更高的 evidence card 用同样间距是舒服的。真正的规则应该是：
+
+```text
+same component type
+ -> same typography role
+ -> local frame height changes
+ -> internal label/body gap and body box height must adapt
+```
+
+对应新增 badcase：
+
+```text
+card_internal_spacing_not_scaled_to_frame
+```
+
+可检测信号：
+
+- card 高度小于浅卡片阈值；
+- label/body 之间的垂直 gap 超过浅卡片允许值；
+- body text box 的底部 padding 太小；
+- label 位置看起来合理，但 body 文字栈整体下坠。
+
+修复原则：
+
+- 保持 deck-wide 字号角色不乱跳；
+- 只给 shallow 且 narrow 的 card 增加 compact-shallow 内部布局；
+- body 往上收一点，同时增大 body text box 的可用高度；
+- 不因为这一页的问题去改所有 evidence cards。
+
+这条经验进一步说明：我们现在的 benchmark 不能只检测“组件外框是否过大/过小”，还要检测“组件内部文字栈是否适配这个局部外框”。
+
+## 10. mHC 第四轮视觉反馈：最终 polish 也可以沉淀成小规则
+
+第 2 页 agenda 右侧的 `Read path` 标题和下面 P/M/E/T 四个节点之间距离偏近。这个问题不属于内容缺失，也不属于结构错误；它更像最终审美 polish：组件已经对齐，但局部层级之间还需要一点呼吸感。
+
+对应新增 badcase：
+
+```text
+agenda_read_path_header_too_close
+```
+
+可检测信号：
+
+- agenda slide 存在 `Read path` header；
+- header 底部到第一行 P/M/E/T 节点顶部的 gap 低于阈值；
+- flow grid 自身的 node/label 对齐没有问题，但局部 rail 显得拥挤。
+
+修复原则：
+
+- 只上移 `Read path` header；
+- 不移动 P/M/E/T 节点，不破坏已经调好的 flow grid；
+- 把这类问题标记为 low severity / micro-polish，而不是触发大范围布局重排。
+
+这说明 human-in-the-loop 到最后阶段会从“错误修复”转向“精致度校准”。这类反馈仍然值得进 benchmark，但规则要小、边界要清楚，避免把完美主义微调误升级成整体模板重构。

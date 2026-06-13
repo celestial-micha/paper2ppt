@@ -601,3 +601,13 @@ generation mode 用于真正从无到有生成一篇新论文的 PPT。evaluatio
 - 系统把每次修复前后的分数、badcase 和规则命中记录下来。
 
 这样，后续即使不打开截图和视觉模型，也能让 from-scratch PPT 生成进入可回归、可比较、可自动迭代的阶段。
+
+## 2026-06-14 补充：成功样式之后的 micro-polish 层
+
+Kimi K2 v10 和 mHC v13 说明，from-scratch 风格已经从“能不能好看”推进到“局部精致度如何稳定复现”。此阶段不应该重新发明模板，而应把人类指出的小不适翻译成局部规则：
+
+- proof payload shape：宽图、表格、metric、text evidence 选择不同容器。
+- local component internals：浅窄卡片的 label/body 间距不能照搬高卡片。
+- agenda rail hierarchy：`Read path` header 与节点之间要有足够 breathing room。
+
+这些属于 low severity polish，不应触发大范围 layout 重排。下一步 benchmark 应记录它们的命中、修复和回归结果，用来判断 candidate style 是否可以继续向 golden baseline 推进。
