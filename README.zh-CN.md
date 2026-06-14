@@ -307,16 +307,18 @@ python -m paper2slides.benchmark --outputs outputs --report-dir benchmark_runs\l
 
 当前已用 `Kimi_K2_Technical_Report.pdf` 做过一次单篇端到端验证：从 `summary` 阶段续跑，文本调用使用 `deepseek-v4-flash`，图片输入/多模态调用使用 `gpt-5-mini`，最终 1/1 通过、23 页、2 个 warning。报告位于 `benchmark_runs/ai20_20260607_005847/aggregate_report.md`。
 
-下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 golden baseline，并扩展多模板与审美 benchmark。当前 from-scratch track 已把 Kimi K2 的 `rough_draft_v10_component_reflow` 记录为 candidate style，并在 mHC 验证中推进到 `mHC_v14_table_support_balance`；benchmark 规则已经覆盖宽图比例路由、inline table payload、浅窄卡片内部间距、agenda Read path 标题 clearance 和 table-bottom support band balance。最新路线拆成两条：
+下一阶段计划不是继续只打磨单一模板，而是保护当前 `academic` 模板作为 original golden baseline，同时保存从零 warm academic proof-panel 风格作为 `golden_baseline1_from_scratch_warm_academic`。当前 from-scratch track 已把 Kimi K2 的 `rough_draft_v10_component_reflow`、mHC 的 `mHC_v14_table_support_balance` 和 DeepSeek_V4 的 `DeepSeek_V4_v25_panel_identity_label_centered` 总结为第二套黄金参考；benchmark 规则已经覆盖 figure 原始长宽比到容器形状的路由、figure 在 proof panel 中的居中、figure 标签锚定到图片本体、proof panel 身份标题对齐、inline table payload、浅窄卡片内部间距、agenda Read path 标题 clearance、table-bottom support band balance 和 proof caption 容量适配。最新路线拆成三步：
 
-- 成熟套件回归：保留 `academic`，并将 `academic_warm`、`editorial`、`editorial_mono`、`data_report` 作为 baseline companion styles，用于稳定生成和 ai20 回归。
-- 从零模板实验：不模仿 golden baseline 的视觉骨架，从已解析论文内容出发，先生成 content inventory 和无审美草稿，再逐步设计章节、页面角色、proof object、视觉系统和自动评估规则。
+- 单篇三路验证：同一篇新论文解析一次，同时生成 original `academic`、`golden_baseline1`、以及 benchmark 改进版 `academic`。
+- ai20 三路批量：比较生成成功率、finding count、修复收益、style drift risk 和 speaker script 产物。
+- blind from-scratch loop：不复用两个 golden baselines 的视觉骨架，只复用 checkpoint 和 benchmark badcases，自动迭代出第三种新风格。
 
 详细计划见：
 
 ```text
 docs/benchmark_plan.zh-CN.md
 docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+docs/from_scratch_benchmark_final_synthesis.zh-CN.md
 docs/next_window_handoff.zh-CN.md
 ```
 

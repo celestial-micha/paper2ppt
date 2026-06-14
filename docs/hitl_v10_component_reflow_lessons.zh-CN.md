@@ -6,12 +6,15 @@
 
 `rough_draft_v10_component_reflow` 已经被人工认为在 Kimi K2 主案例上非常成功，但它还不应该立刻升级为 golden baseline。
 
+2026-06-15 更新：这句话描述的是 v10 当时的状态。经过 mHC 和 DeepSeek_V4 的跨论文验证、badcase 沉淀和局部 micro-polish 后，该 from-scratch warm academic proof-panel 风格已在 DeepSeek_V4 v25 被保存为 `golden_baseline1_from_scratch_warm_academic`。它不替换原 `academic` golden baseline，而是作为第二个黄金参考并列存在。
+
 更准确的状态是：
 
 ```text
 successful style candidate
- -> pending cross-paper validation
- -> promote only after other papers expose no serious style failure
+ -> cross-paper validation on mHC and DeepSeek_V4
+ -> badcases and scoped repairs
+ -> golden_baseline1_from_scratch_warm_academic
 ```
 
 原因很简单：一个 PPT 样式可能非常适合 Kimi K2 的证据结构，但换成图更复杂、表更密、数学符号更多或 proof object 类型不同的论文时，仍可能暴露新问题。
@@ -276,3 +279,115 @@ table_support_band_off_balance
 - 修复后 native table rows 和 footer/source spacing 仍然保持稳定。
 
 这条经验把 table page 的 benchmark 从“结构正确”推进到“结构正确且阅读重心舒服”。它仍然属于 micro-polish，但比单页手工挪动更有价值，因为下一篇论文只要出现 table-bottom 页面，就可以复用同一条检测。
+
+## 12. DeepSeek_V4 验证：proof caption 也要按框容量适配
+
+把同一套 candidate style 用到 DeepSeek_V4 时，没有重新调用大模型，只复用了已有的 summary / plan / slide_spec checkpoint。第一次生成可以完成，但 nonvisual audit 发现若干 high-risk overflow，主要来自很长的 figure proof caption：DeepSeek_V4 的图注比 mHC 更长，固定高度 caption box 承载不了完整描述。
+
+对应新增 badcase：
+
+```text
+proof_caption_overflow_after_cross_paper_transfer
+```
+
+修复原则：
+
+- proof object 的完整说明继续保留在 inventory / source evidence；
+- PPT 页面上的 caption 只放入框内容量允许的摘要；
+- caption 截断要根据 box width、box height、font size 估算，而不是固定截断字符数；
+- 很长论文标题可以轻微降低 cover title 字号，但不改变封面整体构图。
+
+这说明跨论文验证不仅会暴露 proof object 的形状问题，也会暴露 proof metadata 的长度问题。caption 是辅助阅读层，不应抢占正文或撑爆组件。
+
+## 13. DeepSeek_V4 第二轮验证：figure 容器要匹配图片原始形状
+
+DeepSeek_V4 的人工检查进一步说明，`figure` 不能只分成“普通图”和“超宽图”。这篇论文里同时出现了三种不同的图片形状：
+
+- **高图**：例如 Figure 1、Figure 7。图片本身偏竖，如果仍放进接近正方形的右侧 proof panel，就算没有拉伸，图片也会因为可用高度/宽度不匹配而显得小、挤、看不清。
+- **中宽图**：例如 Figure 5。它没有 mHC 的 schedule 图那么极端宽，但仍然更适合底部长条 proof panel，而不是普通右侧 panel。
+- **底部长图**：例如 Figure 6。宏观位置已经对了，但 `FIGURE / Figure 6` 作为顶部标题行会抢走图片高度，导致图没有被充分放大。
+
+新的规则是：
+
+```text
+proof_object.type == figure
+ -> read source image aspect ratio
+ -> tall figure: vertical side panel
+ -> medium-wide/wide figure: bottom horizontal panel
+ -> label/title: compact annotation, not a reserved side column
+ -> image viewport: preserve aspect ratio and maximize readable size
+```
+
+对应新增 badcase：
+
+```text
+figure_panel_aspect_mismatch
+```
+
+这条规则和 `figure_picture_aspect_distortion` 不一样。后者检查图片是否被拉伸；前者检查“图片没被拉伸，但被放进了不适合的容器”。这就是用户肉眼看到的“看起来被压缩”的另一种来源。
+
+## 14. DeepSeek_V4 第三轮验证：标签不能偷走图片中心
+
+第二轮 v16 把 `FIGURE / Figure N` 做成侧边标签栏，虽然释放了图片上方高度，但它带来了新的审美问题：标签栏保留了一整列，图片被推离圆角矩形的视觉中心，caption 也被标签区域影响，整块 proof panel 显得空、偏、丑。
+
+因此新的规则不是“标签一律侧栏”，而是：
+
+```text
+figure label/title = compact annotation
+image/caption = centered subject of the proof panel
+reserved label column = avoid unless the label carries real content
+```
+
+对应新增 badcase：
+
+```text
+figure_image_off_center_in_panel
+```
+
+同时，底部长图阈值不能太宽松。只有图片宽高比达到约 `1.9x` 以上时，才默认使用底部横向 proof panel；否则仍应使用左/右 proof panel，避免“不太宽”的图被错误拉到页面底部。
+
+## 15. DeepSeek_V4 第七轮验证：Figure N 采用横排图片左上角标
+
+v18 继续暴露了一个更细的语义问题：绿色 `FIGURE` 和黑色 `Figure N` 不是同一种标签。绿色 `FIGURE` 表示“这个圆角矩形是 figure proof panel”，所以它应该放在圆角矩形内部左上角；黑色 `Figure N` 才表示“当前这张源图的编号”，应靠近 fitted image 的左上侧。
+
+如果把绿色 `FIGURE` 也贴在图片上方，它的语义会从“面板类型角标”误变成“图片标题”。v20 曾把 `Figure N` 改成逐字竖排 `F / I / G / U / R / E / N`，但人工复核认为这比横排更不好看。v21 又把 `Figure N` 放在图片左上角，仍然和绿色角标偏近。因此最终折中是：绿色 `FIGURE` 留在 panel 左上角，黑色 `Figure N` 横排放在图片外部上方，并按图片水平中心线对齐。注意这里既要让文本框按 fitted image 居中，也要让文本框内部段落居中；只让文本框居中但文字左对齐，会视觉上偏离图片中心。这个规则不只适用于宽图/高图专用 panel，普通 `visual_left` / `visual_right` 的 figure proof panel 也必须使用同一套 fitted-image anchor。
+
+```text
+先根据原图宽高比 fit image
+绿色 FIGURE 贴到圆角 panel 内部左上角
+黑色 Figure N 横排，放在 fitted image 外部上方并水平居中
+Figure N 段落本身也居中对齐
+最后放置 caption
+```
+
+具体规则：
+
+- 底部横向 figure panel：绿色 `FIGURE` 放在圆角矩形内部左上角；`Figure N` 横排放在图片上方，按图片水平中心线对齐，贴近图片但不进入图片内部；
+- 左/右侧高图 panel：绿色 `FIGURE` 同样放在圆角矩形内部左上角；`Figure N` 也横排居中放在图片外部上方，不使用旋转或逐字堆叠；
+- 普通左图/右图 figure panel：不能继续把 `Figure N` 当作整行 proof 标题；它也要先 fit image，再按图片中心线放在图片上方；
+- 左侧高图 panel 占住左下区域时，sources footer 应放到页面右下角并右对齐，不要继续挤在左侧；
+- caption 是辅助层，应按固定框高做容量截断，不能通过自动增高把文字框撑出圆角 panel。
+
+对应 badcase：
+
+```text
+figure_label_anchor_drift
+figure_badge_identity_label_conflation
+figure_label_text_alignment_off_center
+stacked_figure_identity_label_overcorrection
+```
+
+这条经验说明，figure 组件至少有三层语义：panel 类型、图片身份、caption 说明。绿色 `FIGURE` 服务 panel，黑色 `Figure N` 服务 fitted image，caption 服务阅读解释；三者不能被合并成一条图片上方标题行。同时也要避免把审美反馈过度字面化：逐字竖排虽然解决了“不是旋转”的问题，但整体观感更差，应作为 overcorrection 记录。
+
+## 16. DeepSeek_V4 第八轮验证：Proof panel 身份标题锚定主体内容
+
+v24 之后同类问题扩展到非 figure panel：`Motivation`、`Method`、`Doc Table 1`、`Table 2` 等黑色身份标题仍像普通 header row 一样左对齐，视觉上贴着绿色类型角标，而不是贴着它们真正说明的主体内容。
+
+通用规则是：绿色类型角标说明“这个圆角矩形是什么类型的 proof panel”，所以留在 panel 内部左上角；黑色身份标题说明“这个 proof panel 的主体内容是什么”，所以要锚定下方主体内容的水平中心线。主体可以是图片、表格、指标卡，也可以是一段解释文字。和 figure 标签一样，只让文本框几何居中还不够，段落本身也要居中。
+
+对应 badcase：
+
+```text
+panel_identity_label_anchor_drift
+panel_identity_label_text_alignment_off_center
+```

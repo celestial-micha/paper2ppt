@@ -307,16 +307,17 @@ This scans existing `layout_qa.json` files, groups warnings into stable badcase 
 
 `Kimi_K2_Technical_Report.pdf` has been used for one single-paper end-to-end validation run: resumed from the `summary` stage, text calls used `deepseek-v4-flash`, image/multimodal calls used `gpt-5-mini`, and the final result passed 1/1 with 23 slides and 2 warnings. The report is under `benchmark_runs/ai20_20260607_005847/aggregate_report.md`.
 
-The next planned phase protects the current `academic` template as a golden baseline, then adds multi-template and aesthetic benchmarking. The intended order is template-first: discuss template concepts, implement a small subset, validate on one paper and a small set, then run the full ai20 benchmark. See:
+The next planned phase protects the current `academic` template as the original golden baseline, while preserving the from-scratch warm academic proof-panel style as `golden_baseline1_from_scratch_warm_academic`. The latest route is a three-way validation plan: ordinary `academic`, `golden_baseline1`, and benchmark-improved `academic` on one fresh paper first, then the same three-way comparison on ai20, followed by a blind from-scratch loop that proves the benchmark can guide a new style rather than only maintain existing ones. See:
 
 ```text
 docs/benchmark_plan.zh-CN.md
 docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+docs/from_scratch_benchmark_final_synthesis.zh-CN.md
 docs/next_window_handoff.zh-CN.md
 docs/hitl_v10_component_reflow_lessons.zh-CN.md
 ```
 
-The Kimi K2 from-scratch track now records `rough_draft_v10_component_reflow` as a successful candidate style reference, not yet a golden baseline. The mHC validation deck has reached micro-polish iteration (`mHC_v14_table_support_balance`), with benchmark rules covering wide-figure aspect routing, inline-table payload indexing, shallow-card internal spacing, agenda Read path header clearance, and table-bottom support band balance.
+The Kimi K2 from-scratch track produced `rough_draft_v10_component_reflow`; mHC cross-paper validation reached `mHC_v14_table_support_balance`; DeepSeek_V4 reached the accepted checkpoint `DeepSeek_V4_v25_panel_identity_label_centered`. Benchmark rules now cover figure aspect-to-panel routing, centered figure placement inside proof panels, image-anchored figure labels, proof-panel identity label anchoring, inline-table payload indexing, shallow-card internal spacing, agenda Read path header clearance, table-bottom support band balance, and capacity-aware proof-caption fitting.
 
 To validate the `ai20` paper set:
 

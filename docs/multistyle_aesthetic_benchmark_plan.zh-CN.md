@@ -604,11 +604,77 @@ generation mode 用于真正从无到有生成一篇新论文的 PPT。evaluatio
 
 ## 2026-06-14 补充：成功样式之后的 micro-polish 层
 
-Kimi K2 v10 和 mHC v14 说明，from-scratch 风格已经从“能不能好看”推进到“局部精致度如何稳定复现”。此阶段不应该重新发明模板，而应把人类指出的小不适翻译成局部规则：
+Kimi K2 v10、mHC v14 和 DeepSeek_V4 v18 说明，from-scratch 风格已经从“能不能好看”推进到“局部精致度如何稳定复现”。此阶段不应该重新发明模板，而应把人类指出的小不适翻译成局部规则：
 
-- proof payload shape：宽图、表格、metric、text evidence 选择不同容器。
+- proof payload shape：高图、明确宽图、表格、metric、text evidence 选择不同容器；轻微宽图不应误判为底部长图。
+- figure image centering：`FIGURE / Figure N` 应是紧凑注释，不应作为硬侧栏把图片推离 panel 中心。
+- figure label anchoring：`FIGURE / Figure N` 应锚定 fitted image，而不是锚定圆角面板角落；侧边高图可用竖排 `Figure N`，底部长图仍保持横排。
 - local component internals：浅窄卡片的 label/body 间距不能照搬高卡片。
 - agenda rail hierarchy：`Read path` header 与节点之间要有足够 breathing room。
 - table text band：table-bottom 页面的 support copy 需要贴近 claim，同时与 table panel 保持明确 gutter。
+- proof caption capacity：很长的 figure/table caption 需要按 caption 框容量截断，不能撑爆 proof panel。
 
 这些属于 low severity polish，不应触发大范围 layout 重排。下一步 benchmark 应记录它们的命中、修复和回归结果，用来判断 candidate style 是否可以继续向 golden baseline 推进。
+
+## 2026-06-15 补充：从 candidate style 到 golden baseline1
+
+DeepSeek_V4 v25 已经把 from-scratch warm academic proof-panel 风格推进到可保存的第二个黄金参考：
+
+```text
+golden_baseline1_from_scratch_warm_academic
+```
+
+这改变了后续 multistyle benchmark 的组织方式：我们不再只比较“成熟 baseline suite”和“从零实验”，而应同时维护两个黄金参考：
+
+```text
+original golden baseline: academic
+golden baseline1: from-scratch warm academic proof-panel style
+```
+
+二者的关系是并列，不是替换。
+
+### 三路对比评测
+
+下一篇新论文应解析一次，生成三路：
+
+1. `academic` 普通生成；
+2. `golden_baseline1_from_scratch_warm_academic` 生成，并启用 scoped benchmark repair；
+3. `academic` + global benchmark repair，风格相关 polish 只建议不自动套用。
+
+这样可以同时回答三个问题：
+
+- 原 golden baseline 有没有被新 benchmark 破坏？
+- golden baseline1 能不能泛化？
+- benchmark 能不能帮助原 baseline 修内容/结构错误，同时不造成 style drift？
+
+### 风格隔离原则
+
+从 DeepSeek_V4 v25 学到的规则很多都依赖 rounded proof panel grammar：
+
+```text
+figure_label_anchor_drift
+panel_identity_label_anchor_drift
+table_support_band_off_balance
+card_internal_spacing_not_scaled_to_frame
+```
+
+这些规则不能无条件套到所有模板上。默认策略：
+
+```text
+style contract matches -> auto repair allowed
+style contract differs -> report / suggest only
+```
+
+### 20 篇论文批量验证
+
+三路单篇通过后，在 `ai20` 上做批量验证。报告不只看通过率，还要记录：
+
+- style drift risk；
+- novelty / baseline similarity；
+- repaired vs unresolved findings；
+- speaker script 是否随三路稳定生成；
+- 每个 repair profile 的成本和收益。
+
+### Blind from-scratch loop
+
+最后再选一篇新论文，要求 agent 不复用 `academic` 或 `golden_baseline1` 的视觉骨架，只复用 checkpoint 内容和 benchmark badcases，自动迭代出第三种风格。这个实验用于证明 benchmark 的能力不是“记住两套模板”，而是能驱动新的审美系统形成。

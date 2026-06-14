@@ -210,11 +210,46 @@ The human-in-the-loop workflow should convert every useful subjective complaint 
 - "the same card spacing feels low in a shallower card" becomes a height-aware internal card stack check;
 - "the figure label kisses the rounded border" becomes a component boundary-inset check;
 - "the support paragraph on a table page feels dragged toward the table" becomes a table-bottom claim/support/table-panel band-balance check;
+- "a long proof caption overflows a short caption box" becomes capacity-aware proof-caption fitting;
 - "the long figure becomes unreadable in a side panel" becomes a figure aspect-ratio layout-routing check;
+- "the picture is not distorted but still feels squeezed because the panel is the wrong shape" becomes a figure panel aspect-mismatch check;
+- "figure labels steal the image's height" becomes a side figure-label rail rule;
+- "figure labels stay with the panel corner instead of the fitted image" becomes an image-anchored figure-label check;
 - "the table panel looks empty even though the slide spec has rows" becomes an inline-table payload indexing check.
 
 This keeps human taste in the loop without turning the process into manual slide polishing. The human names the visual failure; the system records the badcase, trigger signal, repair strategy, and regression check.
 
+## Benchmark Harness Extension
+
+After the DeepSeek_V4 v25 iteration, the from-scratch warm academic proof-panel style is preserved as `golden_baseline1_from_scratch_warm_academic`. This does not replace the original `academic` golden baseline; it creates a second reference style.
+
+The next workflow layer should be a benchmark harness:
+
+```text
+parse PDF once
+ -> persist checkpoints
+ -> generate multiple style branches
+ -> run nonvisual audit
+ -> apply style-scoped repair profiles
+ -> generate speaker scripts
+ -> compare style drift, findings, repairs, cost, and artifacts
+ -> write a benchmark report
+```
+
+The important change is style scope. Some rules are global correctness rules, such as missing slides, text overflow, table rows missing, image distortion, or shape overlap. Other rules are style-specific polish rules, such as rounded proof-panel identity label anchoring. A style-specific rule can be reported on any deck, but it should only auto-repair a deck when the active style contract matches.
+
+The first harness target should generate three branches from one fresh-paper parse:
+
+1. ordinary `academic`;
+2. `golden_baseline1_from_scratch_warm_academic`;
+3. `academic` with global benchmark repair, while style-specific polish remains report-only.
+
+This answers the main regression question: can the benchmark improve new decks without damaging the already-good original golden baseline?
+
 In interview terms:
 
 > The project can now evaluate a generated PPT without screenshot-heavy vision review. It treats PPTX as an inspectable program, runs deterministic checks over geometry and text metadata, maps human feedback to benchmark badcases, and repairs only the highest-priority issues. Successful styles become candidate references and must pass cross-paper validation before becoming golden baselines.
+
+Updated phrasing after v25:
+
+> The project now has two protected references: the original `academic` golden baseline and a from-scratch `golden_baseline1`. The benchmark harness parses a paper once, generates multiple style branches, audits them, and applies repairs with style scope so a rule learned from one visual grammar cannot silently damage another.

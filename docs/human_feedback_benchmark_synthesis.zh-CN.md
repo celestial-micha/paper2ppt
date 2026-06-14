@@ -856,11 +856,13 @@ Kimi K2 的 v10 样式已经被人工认为非常成功，但 mHC 交叉验证�
 
 本轮新增两类问题：
 
-- **宽图布局问题**：Figure 4 / Figure 6 这种超宽图不能继续使用普通右侧竖向 proof panel。布局选择要看图片原始长宽比，超宽图应使用底部横向 proof panel，并且图片插入必须保持原始比例。
+- **非正方 figure 布局问题**：Figure 4 / Figure 6 这种超宽图不能继续使用普通右侧竖向 proof panel；DeepSeek_V4 的 Figure 1 / Figure 7 这类高图也不能放入接近正方形的 panel。布局选择要看图片原始长宽比，高图使用竖向 proof panel，中宽/宽图使用底部横向 proof panel，并且图片插入必须保持原始比例。
+- **figure 图片居中问题**：v16 的硬侧边标签栏虽然释放了图片上方高度，但保留整列会把图片推离 panel 中心。标签应是紧凑注释，图片和 caption 才是圆角 proof panel 的居中主体。
 - **inline table payload 问题**：slide_spec 里已经有 rows 的表格，如果 proof id 使用展示标题而不是 extracted table id，渲染器也必须能索引到这些 inline rows，不能退化成一个空感很强的文本面板。
 - **浅窄卡片内部间距问题**：同一种 evidence card 在高卡片或宽卡片里舒服，不代表在矮且窄的卡片里也舒服。卡片内部 label/body gap、body box 高度和底部 padding 要随局部 frame 高度变化。
 - **agenda rail 微间距问题**：Read path header 和 P/M/E/T 节点之间距离太近时，组件虽然没有错位，但会少一点最终 polish 的呼吸感。
 - **table support band 问题**：table-bottom 页面即使没有 overlap，support 解释文字也可能离表格太近、离 claim 太远，导致阅读重心被 proof panel 往下拉。
+- **proof caption 容量问题**：DeepSeek_V4 这类图注更长的论文会让固定高度 caption box 溢出；页面 caption 应按框容量截断，完整说明保留在 source evidence 中。
 
 新增 badcase：
 
@@ -871,7 +873,13 @@ figure_picture_aspect_distortion
 card_internal_spacing_not_scaled_to_frame
 agenda_read_path_header_too_close
 table_support_band_off_balance
+proof_caption_overflow_after_cross_paper_transfer
+figure_panel_aspect_mismatch
+figure_image_off_center_in_panel
+figure_label_anchor_drift
 ```
+
+DeepSeek_V4 v18 继续补充了 figure 标签的锚点问题：`FIGURE / Figure N` 不能只看作 proof panel 的标题，而要看作 fitted image 的附属注释。底部横向图的标签应贴在图片左上方；侧边高图可以让 `Figure N` 竖排贴在图片左侧；caption 固定高度并按容量截断，不能自动增高撑出圆角 panel。
 
 这把 benchmark 的判断从“proof object 类型正确”推进到：
 
@@ -887,9 +895,92 @@ proof object type correct
 
 1. 内容 payload 是否存在：table rows、figure file、metric value。
 2. payload id 是否能解析：asset id、curated title、inline rows 都要能被索引。
-3. payload 形状是否适配布局：宽图、长表、密集 metric 不应共用同一种容器。
+3. payload 形状是否适配布局：高图、明确宽图、长表、密集 metric 不应共用同一种容器；只有约 1.9x 以上宽高比才默认下沉到底部长条 panel。
 4. 渲染是否保持语义：图片不拉伸，表格保持 native row/column grammar。
 5. 组件内部文字栈是否适配局部容器：浅窄卡片不能照搬高卡片或宽卡片的固定间距。
-6. 最终 polish 是否需要低风险小规则：例如 agenda rail header 到节点的 clearance，或 table 页 claim/support/table-panel 的垂直 band balance，不应触发大范围布局重排。
+6. 最终 polish 是否需要低风险小规则：例如 agenda rail header 到节点的 clearance，figure image 到 panel center 的偏移，table 页 claim/support/table-panel 的垂直 band balance，或 proof caption 的容量适配，不应触发大范围布局重排。
 
 这条经验很关键：human-in-the-loop 不是让 Codex 手工修某一页，而是把“这一页为什么不舒服”转成下一篇论文也能复用的规则。
+
+## 11. 2026-06-15 收官：从单页审美到 style-scoped benchmark
+
+DeepSeek_V4 v25 被用户确认为满意版本，并被保存为：
+
+```text
+golden_baseline1_from_scratch_warm_academic
+```
+
+这轮收官让 benchmark 从“记录某个坏例子”进一步升级为“维护多个风格参考”的系统。
+
+### 11.1 Proof panel 标签的最终语义拆分
+
+后期最多的反馈集中在圆角 proof panel 的标签上。最终结论是：
+
+```text
+绿色类型角标：说明这个圆角矩形是什么类型的 proof panel。
+黑色身份标题：说明这个 proof panel 的主体内容是什么。
+主体内容：图片、表格、指标卡或解释文字。
+```
+
+因此：
+
+- 绿色 `FIGURE` / `TABLE` / `TEXT_EVIDENCE` 留在 panel 内部左上角；
+- 黑色 `Figure N`、`Doc Table 1`、`Table 2`、`Motivation`、`Method` 等，应锚定下方主体内容的水平中心线；
+- 文本框几何居中还不够，段落本身也要居中；
+- 这些规则只适用于采用 rounded proof-panel grammar 的风格，不应无条件套到所有模板。
+
+对应新增或强化的 badcase：
+
+```text
+figure_label_text_alignment_off_center
+panel_identity_label_anchor_drift
+panel_identity_label_text_alignment_off_center
+figure_badge_identity_label_conflation
+stacked_figure_identity_label_overcorrection
+```
+
+### 11.2 Style scope 成为 benchmark 必需字段
+
+用户担心：新 benchmark 会不会反过来破坏已经迭代好的原 golden baseline。
+
+答案是：如果不加 scope，会有风险。
+
+所以从 v25 起，benchmark 应区分：
+
+```text
+global correctness rules
+mature academic baseline rules
+golden_baseline1 rounded proof-panel rules
+experimental style rules
+```
+
+默认策略：
+
+```text
+全局 correctness rule 可以 auto-repair；
+风格相关 polish rule 先 detect/report；
+只有 active style contract 匹配时才 auto-repair。
+```
+
+这让 benchmark 同时具备两种能力：
+
+- 保护原 `academic` golden baseline；
+- 继续用 `golden_baseline1` 的经验自动改进同类风格。
+
+### 11.3 下一阶段验证方式
+
+下一篇新论文不应只生成一个 PPT，而应解析一次、生成三路：
+
+1. 原 `academic` golden baseline；
+2. `golden_baseline1_from_scratch_warm_academic`；
+3. 原 `academic` + global benchmark repair。
+
+这样可以同时观察：
+
+- 原 baseline 是否回退；
+- golden_baseline1 是否泛化；
+- benchmark 是否能修内容/结构错误，但不造成 style drift。
+
+单篇稳定后，再扩展到 `ai20`。最后再做一个 blind from-scratch loop：不复用 `academic` 或 `golden_baseline1` 的视觉骨架，只复用 checkpoint 内容和 benchmark badcases，让 agent 自动迭代出第三种风格。
+
+这就是最终可以包装成 benchmark harness 的核心故事。

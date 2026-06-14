@@ -10,16 +10,35 @@
       "rough_draft_v6"
     ]
   },
+  "golden_baseline1_reference": {
+    "style_id": "golden_baseline1_from_scratch_warm_academic",
+    "version": "DeepSeek_V4_v25_panel_identity_label_centered",
+    "artifact": "outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.pptx",
+    "audit": "outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/nonvisual_audit_DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.json",
+    "source_artifact": "outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/DeepSeek_V4_v25_panel_identity_label_centered.pptx",
+    "status": "promoted_after_human_acceptance",
+    "reason": "The from-scratch warm academic style survived Kimi K2 primary iteration, mHC cross-paper validation, and DeepSeek_V4 figure/table/text proof-panel micro-polish; the reviewer considered v25 satisfactory enough to preserve as a second golden reference.",
+    "relationship_to_original_golden_baseline": "Do not replace the mature academic golden baseline. Use golden_baseline1 as an independent from-scratch style reference and as a benchmark-driven self-repair target.",
+    "protected_style_traits": [
+      "warm paper background with restrained teal/gold/clay accents",
+      "academic title, agenda, section, content, and closing rhythm",
+      "one claim plus one proof object per content slide",
+      "rounded proof panels whose green type badge stays at the panel corner",
+      "black proof identity labels anchored to the underlying figure, table, metric, or explanation text",
+      "figure/table/caption geometry driven by the fitted content box rather than by the rounded panel alone"
+    ]
+  },
   "candidate_style_reference": {
     "version": "rough_draft_v10_component_reflow",
     "artifact": "outputs/Kimi_K2_Technical_Report/paper/fast/from_scratch_inventory/rough_draft_v10_component_reflow.pptx",
-    "status": "successful_on_primary_case_pending_cross_paper_validation",
-    "reason": "Human reviewer considered v10 very successful after the content-fit component reflow pass, but it should not become a reusable golden style until it survives additional papers.",
+    "status": "promoted_to_golden_baseline1_after_cross_paper_validation",
+    "reason": "Human reviewer considered Kimi K2 v10 successful; subsequent mHC and DeepSeek_V4 validation converted cross-paper failures into badcases and repairs, culminating in DeepSeek_V4 v25 as the preserved golden_baseline1 artifact.",
     "promotion_criteria": [
       "passes nonvisual audit with no high or medium findings on at least two non-Kimi papers",
       "human review confirms the style still feels polished when figures, tables, and evidence density differ",
       "new cross-paper failures are converted into badcases before promotion"
     ],
+    "promotion_result": "promoted_as_golden_baseline1_from_scratch_warm_academic",
     "validation_cases": [
       {
         "paper_case": "Kimi_K2_Technical_Report",
@@ -33,6 +52,13 @@
         "artifact": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/mHC_v14_table_support_balance.pptx",
         "audit": "outputs/mHC：Manifold-Constrained Hyper-Connections/paper/fast/from_scratch_inventory/nonvisual_audit_mHC_v14_table_support_balance.json",
         "finding_summary": "56 low findings; no high or medium findings after wide-figure aspect-aware reflow, inline-table payload indexing, shallow-card internal spacing, agenda read-path header clearance, and table support band balance repairs."
+      },
+      {
+        "paper_case": "DeepSeek_V4",
+        "status": "passed_nonvisual_audit_pending_human_visual_review_after_panel_identity_label_centering",
+        "artifact": "outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/DeepSeek_V4_v25_panel_identity_label_centered.pptx",
+        "audit": "outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/nonvisual_audit_DeepSeek_V4_v25_panel_identity_label_centered.json",
+        "finding_summary": "56 low findings; no high or medium findings after centering non-figure proof identity labels over their underlying content."
       }
     ]
   },
@@ -76,6 +102,16 @@
       "id": "candidate_style_requires_cross_paper_validation",
       "rule": "A style that succeeds on one paper becomes a candidate reference, not a golden baseline, until it passes other papers with different evidence shapes.",
       "why": "A visual system can fit one paper's content distribution while failing on denser figures, different tables, or less regular proof objects."
+    },
+    {
+      "id": "benchmark_rules_are_style_scoped",
+      "rule": "Every badcase should declare whether it is global, mature-baseline-specific, golden-baseline1-specific, or experimental-style-specific before it is allowed to auto-repair a deck.",
+      "why": "Rules learned from rounded proof panels can improve golden_baseline1 while harming the original academic golden baseline if they are applied without checking the active style contract."
+    },
+    {
+      "id": "parallel_style_regression_before_promotion",
+      "rule": "New benchmark or repair rules must be tested on the original golden baseline, golden_baseline1, and at least one fresh-paper trial before they become default auto-repair behavior.",
+      "why": "The benchmark is intended to protect style quality across templates, not force every template into the latest successful visual grammar."
     }
   ],
   "iteration_log": [
@@ -257,8 +293,170 @@
         "Add a metadata-only audit rule for table-bottom claim/support/table-panel spacing.",
         "Record that table pages need a text-band balance check, not only overlap and native-table row checks."
       ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 1",
+      "human_findings": [
+        "The v14 style could be generated from existing DeepSeek_V4 checkpoints without new model calls, but nonvisual audit caught high-risk overflow in long proof captions.",
+        "DeepSeek_V4 figure captions are substantially longer than the mHC caption payloads, so fixed-height caption boxes need capacity-aware truncation."
+      ],
+      "repairs": [
+        "Add capacity-aware proof-caption fitting based on caption box width, height, and font size.",
+        "Use a slightly smaller cover title size for very long paper titles.",
+        "Record DeepSeek_V4 as another cross-paper validation case for the candidate style."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 2",
+      "human_findings": [
+        "Tall figures such as Figure 1 and Figure 7 were preserved in aspect ratio but placed inside near-square side panels, making the figures feel visually compressed and too small.",
+        "Medium-wide figures such as Figure 5 were still routed to ordinary side panels because the previous threshold only caught very wide figures.",
+        "Bottom wide figures such as Figure 6 used the right macro-layout, but the FIGURE/Figure label row consumed vertical space that should have belonged to the image."
+      ],
+      "repairs": [
+        "Route tall figures to vertical proof panels and medium-wide/wide figures to horizontal bottom proof panels based on source image aspect ratio.",
+        "Move FIGURE and Figure N labels out of the image's top row so the image viewport can use more of the proof panel height.",
+        "Add a metadata-only audit rule for figure panel aspect mismatch, separate from picture aspect distortion."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 3",
+      "human_findings": [
+        "The v16 side label rail repaired image height but made the slides uglier because the labels reserved a full left column and pushed the image away from the proof panel center.",
+        "Some only mildly-wide figures were sent to bottom horizontal panels; the bottom-wide threshold was too permissive.",
+        "Figure captions inside wide and tall proof panels should span the panel width and be centered, not be constrained by the label area."
+      ],
+      "repairs": [
+        "Raise the bottom-wide figure threshold so only figures at least about 1.9x wider than tall use the bottom horizontal panel.",
+        "Treat figure labels as compact annotations rather than reserved layout columns; center the image and caption in the full rounded panel.",
+        "Let side proof panels extend lower when the source footer lives on the opposite side, and move the footer away from left-side proof panels."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 4",
+      "human_findings": [
+        "On bottom-wide figure slides, FIGURE/Figure N labels were still anchored to the panel corner instead of the fitted image, leaving unnecessary top whitespace and making the image feel lower than the proof panel.",
+        "Side tall figure panels benefited from a taller frame, but horizontal Figure N labels repeated the green FIGURE label and did not attach tightly enough to the image.",
+        "When a left-side figure panel consumes the left bottom area, the source footer should move to the open right-bottom side and align right."
+      ],
+      "repairs": [
+        "Compute the fitted image rectangle first, then anchor bottom-wide FIGURE/Figure N labels to the image's left edge above the image.",
+        "Use a vertical Figure N label only for side tall figure panels, with its top aligned to the image top while the green FIGURE label remains compact above the image.",
+        "Expand tall side proof panels slightly downward and keep source footers right-aligned on the open side.",
+        "Keep caption boxes fixed-height and apply stricter capacity-aware truncation so captions do not grow outside rounded proof panels."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 5",
+      "human_findings": [
+        "The green FIGURE badge describes the rounded proof panel type, not the fitted source image, so placing it directly above the image misuses the visual grammar.",
+        "Putting the green FIGURE badge and the black Figure N identity label in the same row above the image creates crowding and pushes the Figure N label off its intended optical anchor.",
+        "Bottom-wide and side-tall figure panels should use the same semantic split: FIGURE stays inside the rounded panel's top-left corner, while Figure N becomes a vertical image identity label near the fitted image's upper-left side."
+      ],
+      "repairs": [
+        "Pin the green FIGURE badge to the rounded figure panel's inner top-left corner for both side-tall and bottom-wide figure panels.",
+        "Render Figure N as a vertical identity label beside the fitted image, top-aligned near the image instead of sharing a horizontal title row with the green badge.",
+        "Add a metadata-only audit rule and badcase for figure badge / identity-label conflation so future decks catch this regression without screenshots or model calls."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 6",
+      "human_findings": [
+        "The intended left-side Figure N label is not a rotated 'Figure N' string; it should be true stacked text: F / I / G / U / R / E / N.",
+        "The stacked Figure N identity label should sit closer to the fitted image's left edge than the previous rotated label."
+      ],
+      "repairs": [
+        "Render the identity label as explicit multi-line text such as F\\nI\\nG\\nU\\nR\\nE\\n7 instead of using PowerPoint rotation.",
+        "Move the stacked identity label closer to the fitted image while keeping it inside the figure panel.",
+        "Tighten the metadata audit so rotated 'Figure N' text is still reported even if its bbox is vertical."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 7",
+      "human_findings": [
+        "True stacked F/I/G/U/R/E/N labels were technically faithful to the previous wording but looked worse than the original horizontal Figure N label.",
+        "The preferred compromise is to keep Figure N horizontal, outside the image, just above and left-aligned to the fitted image's upper-left corner.",
+        "This feedback is a caution that literal vertical text can overcorrect a spacing issue and hurt visual taste."
+      ],
+      "repairs": [
+        "Revert the image identity label to horizontal Figure N text while keeping the green FIGURE badge at the panel's inner top-left corner.",
+        "Anchor horizontal Figure N to the fitted image's upper-left outside edge with a small vertical gap.",
+        "Add a badcase for stacked_figure_identity_label_overcorrection so future repair passes do not reintroduce the stacked label."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 8",
+      "human_findings": [
+        "Placing Figure N at the image's upper-left outside corner is workable but still too close to the green FIGURE badge on side tall panels.",
+        "The preferred micro-polish is to keep Figure N horizontal and place it centered above the fitted image so it separates from the panel badge."
+      ],
+      "repairs": [
+        "Center the horizontal Figure N label above the fitted image.",
+        "Keep the green FIGURE panel badge unchanged at the rounded panel's inner top-left corner.",
+        "Update metadata audit to check Figure N center alignment against the fitted image centerline."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 9",
+      "human_findings": [
+        "The Figure N textbox was centered above the fitted image, but the paragraph remained left-aligned inside the textbox, so the visible text still looked off-center.",
+        "The intended alignment target is the fitted image itself, not the rounded proof panel."
+      ],
+      "repairs": [
+        "Center-align the Figure N paragraph inside the textbox after centering the textbox above the fitted image.",
+        "Add a badcase for figure_label_text_alignment_off_center so metadata audit catches centered boxes with left-aligned visible text."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 10",
+      "human_findings": [
+        "Slide 12 used the generic visual_left figure proof panel, where Figure N was still rendered as a wide left-aligned title row rather than visible text centered above the fitted image.",
+        "The same issue can recur in visual_left and visual_right layouts whenever a normal-aspect figure is routed through the generic proof-object renderer."
+      ],
+      "repairs": [
+        "Route generic figure proof panels through the same fitted-image label placement used by wide and tall figure panels.",
+        "Extend metadata audit beyond wide/tall figure panel aspects so any rounded panel with FIGURE/Figure N semantics and a picture checks the Figure N image-center anchor and paragraph alignment."
+      ]
+    },
+    {
+      "version": "DeepSeek_V4 validation 11",
+      "human_findings": [
+        "Non-figure proof panels had the same visual problem: black identity labels such as Motivation, Method, Doc Table 1, and Table 2 were left-aligned in a header row instead of being visually centered over the underlying explanation text or table.",
+        "The desired target is the main panel content, not the rounded rectangle itself; green type badges remain panel-corner labels."
+      ],
+      "repairs": [
+        "Center proof identity labels over the underlying content box for text evidence, table, and metric proof panels.",
+        "Add metadata audit rules for panel_identity_label_anchor_drift and panel_identity_label_text_alignment_off_center."
+      ]
     }
   ],
+  "style_scope_policy": {
+    "default_rule_scope": "detect_only_until_style_contract_matches",
+    "global_rules": [
+      "missing_title_slide",
+      "missing_agenda_slide",
+      "estimated_text_overflow",
+      "shape_overlap_risk",
+      "table_rows_missing",
+      "inline_table_payload_not_indexed",
+      "figure_picture_aspect_distortion"
+    ],
+    "golden_baseline1_rules": [
+      "component_frame_overallocated_after_text_fit",
+      "card_internal_spacing_not_scaled_to_frame",
+      "agenda_read_path_header_too_close",
+      "table_support_band_off_balance",
+      "figure_image_off_center_in_panel",
+      "figure_label_anchor_drift",
+      "figure_label_text_alignment_off_center",
+      "figure_badge_identity_label_conflation",
+      "stacked_figure_identity_label_overcorrection",
+      "panel_identity_label_anchor_drift",
+      "panel_identity_label_text_alignment_off_center"
+    ],
+    "mature_academic_baseline_policy": "Run new rules as warnings first. Do not auto-apply golden_baseline1 rounded-panel repairs to the original academic golden baseline unless the deck contains the same rounded proof-panel grammar and the original baseline regression suite passes.",
+    "promotion_gate": "A rule can become default auto-repair only after it improves or preserves the original academic baseline, golden_baseline1, and one fresh-paper trial."
+  },
   "badcase_rules": [
     {
       "id": "missing_title_slide",
@@ -569,6 +767,19 @@
       "regression_check": "Table-bottom pages pass claim/support gap and support/table-panel gutter checks while preserving native table rows."
     },
     {
+      "id": "proof_caption_overflow_after_cross_paper_transfer",
+      "severity": "medium",
+      "trigger_signals": [
+        "figure or table proof focus text is copied into a short caption box",
+        "caption estimated text fill ratio exceeds the overflow threshold",
+        "cross-paper validation paper has longer figure captions than the primary style paper"
+      ],
+      "root_cause": "Proof captions reused fixed-height boxes while accepting arbitrary-length source figure or table descriptions.",
+      "repair_strategy": "Limit proof captions by estimated box capacity using caption width, height, and font size; keep the full caption in source evidence rather than the visible caption.",
+      "auto_fix": true,
+      "regression_check": "Generated proof captions no longer trigger estimated_text_overflow while figure/table proof objects remain present."
+    },
+    {
       "id": "component_frame_overallocated_after_text_fit",
       "severity": "low",
       "trigger_signals": [
@@ -630,6 +841,113 @@
       "repair_strategy": "Compute figure aspect ratio from the extracted asset and route very wide figures to a long bottom proof panel; fit the image inside the box without distortion.",
       "auto_fix": true,
       "regression_check": "Very wide figure assets use figure_bottom_wide or another horizontal figure layout, and inserted picture dimensions preserve the source aspect ratio."
+    },
+    {
+      "id": "figure_panel_aspect_mismatch",
+      "severity": "medium",
+      "trigger_signals": [
+        "figure proof object has a tall or medium-wide source image aspect ratio",
+        "the containing rounded proof panel has a near-square or opposite-aspect frame",
+        "picture aspect is preserved but the image remains too small because the panel shape is wrong",
+        "figure labels occupy a top header row that reduces the image viewport"
+      ],
+      "root_cause": "The layout router matched only proof type and ultra-wide figures, but did not treat source image shape as part of the component contract.",
+      "repair_strategy": "Route tall figures to vertical side proof panels, route only clearly-wide figures to bottom horizontal panels, and keep labels as compact annotations that do not steer image centering.",
+      "auto_fix": true,
+      "regression_check": "Tall figures use figure_tall_left/right, medium-wide figures use figure_bottom_wide, and nonvisual audit reports no figure_panel_aspect_mismatch findings."
+    },
+    {
+      "id": "figure_image_off_center_in_panel",
+      "severity": "low",
+      "trigger_signals": [
+        "figure image center is materially offset from the containing proof panel center",
+        "figure label rail or reserved label area pushes the image to one side",
+        "caption width is constrained by label space instead of spanning the proof panel"
+      ],
+      "root_cause": "A label rail was treated as a layout column instead of a compact annotation, so the image no longer read as the centered subject of the rounded panel.",
+      "repair_strategy": "Center the image using the full proof panel content box; place FIGURE/Figure N as a compact top/corner annotation; center the caption across the proof panel width.",
+      "auto_fix": true,
+      "regression_check": "Figure picture center stays within the configured panel-center tolerance and captions are not narrowed by label columns."
+    },
+    {
+      "id": "figure_label_anchor_drift",
+      "severity": "low",
+      "trigger_signals": [
+        "Figure N identity labels are anchored to the rounded panel corner instead of the fitted image edge",
+        "bottom-wide figure panels show a large blank gap above the image because the Figure N row owns unrelated panel space",
+        "visual_left or visual_right figure panels use a generic proof-object title row instead of the fitted-image label anchor",
+        "Figure N identity labels are not horizontally centered above the fitted image"
+      ],
+      "root_cause": "The renderer placed the figure identity label before computing the actual image fit, so the identity label could pull the viewer's optical center away from the figure.",
+      "repair_strategy": "Fit the image first, place Figure N horizontally centered above the fitted image, keep the green FIGURE badge at the rounded panel's top-left corner, and keep captions as fixed-height centered annotations.",
+      "auto_fix": true,
+      "regression_check": "Figure N labels are horizontal, outside the image, centered above the fitted picture, and separated from the green FIGURE badge; caption boxes do not auto-grow outside the panel."
+    },
+    {
+      "id": "figure_label_text_alignment_off_center",
+      "severity": "low",
+      "trigger_signals": [
+        "Figure N label box center matches the fitted image center but the visible text appears left-shifted",
+        "paragraph alignment is not center inside an image-centered Figure N textbox",
+        "ordinary figure proof panels render Figure N as a wide left-aligned row even though the row spans the image width",
+        "reviewer says the Figure N label is centered to the wrong visual target even though the bbox geometry passes"
+      ],
+      "root_cause": "The renderer centered the textbox over the fitted image but left the paragraph alignment at its default left alignment.",
+      "repair_strategy": "Center-align the Figure N paragraph inside the textbox after centering the textbox over the fitted image.",
+      "auto_fix": true,
+      "regression_check": "Metadata audit reports no figure_label_text_alignment_off_center findings in dedicated figure panels, including standard visual_left/right figure proof panels."
+    },
+    {
+      "id": "panel_identity_label_anchor_drift",
+      "severity": "low",
+      "trigger_signals": [
+        "black proof identity labels such as Motivation, Method, Doc Table 1, or Table 2 sit near the panel type badge instead of above the panel content center",
+        "text-evidence strip labels are centered to the header row rather than the explanation text box",
+        "table proof labels are not centered over the table body"
+      ],
+      "root_cause": "The renderer treated proof identity labels as header-row text near the green type badge instead of anchoring them to the proof content they identify.",
+      "repair_strategy": "Keep the green type badge at the panel corner, but center the black identity label over the underlying table, metric, image, or explanation text box.",
+      "auto_fix": true,
+      "regression_check": "Metadata audit reports no panel_identity_label_anchor_drift findings in rounded proof panels."
+    },
+    {
+      "id": "panel_identity_label_text_alignment_off_center",
+      "severity": "low",
+      "trigger_signals": [
+        "proof identity label textbox is centered over the table or explanation text, but the visible label remains left-shifted",
+        "paragraph alignment is not center inside a content-centered proof identity label textbox",
+        "Doc Table or Table labels appear visually attached to the left edge of the panel title row"
+      ],
+      "root_cause": "The label textbox geometry matched the content center, but the paragraph retained the default left alignment.",
+      "repair_strategy": "Center-align proof identity label paragraphs after aligning their textbox to the main proof content.",
+      "auto_fix": true,
+      "regression_check": "Metadata audit reports no panel_identity_label_text_alignment_off_center findings in rounded proof panels."
+    },
+    {
+      "id": "figure_badge_identity_label_conflation",
+      "severity": "low",
+      "trigger_signals": [
+        "green FIGURE badge is placed above the fitted image instead of inside the rounded panel's top-left corner",
+        "green FIGURE badge and black Figure N identity label share one crowded horizontal row",
+        "Figure N label is merged with the green FIGURE badge instead of staying as a separate image-corner label"
+      ],
+      "root_cause": "The renderer treated the component type badge and the source figure identity label as one label cluster, even though they explain different visual entities.",
+      "repair_strategy": "Separate the two label semantics: pin FIGURE to the proof panel's inner top-left corner, and place Figure N horizontally above the fitted image centerline.",
+      "auto_fix": true,
+      "regression_check": "Metadata audit reports no figure_badge_identity_label_conflation findings: FIGURE has a small panel-corner inset, and Figure N is a separate horizontal image-corner label."
+    },
+    {
+      "id": "stacked_figure_identity_label_overcorrection",
+      "severity": "low",
+      "trigger_signals": [
+        "Figure N is rendered as true stacked F/I/G/U/R/E/N text",
+        "human reviewer says the stacked label looks worse than the horizontal image-corner label",
+        "a literal vertical-text repair reduces visual elegance despite fixing label crowding"
+      ],
+      "root_cause": "The repair interpreted vertical placement too literally and optimized semantics at the expense of visual taste.",
+      "repair_strategy": "Use horizontal Figure N text just above and centered with the fitted image; keep it outside the image and separated from the green FIGURE panel badge.",
+      "auto_fix": true,
+      "regression_check": "Metadata audit reports no stacked_figure_identity_label_overcorrection findings in dedicated figure panels."
     },
     {
       "id": "figure_picture_aspect_distortion",

@@ -421,8 +421,10 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         data = load_human_feedback_benchmark()
         summary = summarize_human_feedback_benchmark(data)
         self.assertEqual(summary["accepted_reference"], "rough_draft_v5")
+        self.assertEqual(summary["golden_baseline1_style_id"], "golden_baseline1_from_scratch_warm_academic")
+        self.assertEqual(summary["golden_baseline1_status"], "promoted_after_human_acceptance")
         self.assertEqual(summary["candidate_style_reference"], "rough_draft_v10_component_reflow")
-        self.assertEqual(summary["candidate_style_status"], "successful_on_primary_case_pending_cross_paper_validation")
+        self.assertEqual(summary["candidate_style_status"], "promoted_to_golden_baseline1_after_cross_paper_validation")
         self.assertGreaterEqual(summary["candidate_validation_case_count"], 2)
         self.assertIn("rough_draft_v6", summary["avoid_versions"])
         self.assertGreaterEqual(summary["badcase_count"], 8)
@@ -445,25 +447,45 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn("component_boundary_inset_violation", badcase_ids(data))
         self.assertIn("cross_paper_text_compression_overflow", badcase_ids(data))
         self.assertIn("wide_figure_forced_into_side_panel", badcase_ids(data))
+        self.assertIn("figure_panel_aspect_mismatch", badcase_ids(data))
+        self.assertIn("figure_image_off_center_in_panel", badcase_ids(data))
+        self.assertIn("figure_label_anchor_drift", badcase_ids(data))
+        self.assertIn("figure_badge_identity_label_conflation", badcase_ids(data))
+        self.assertIn("stacked_figure_identity_label_overcorrection", badcase_ids(data))
+        self.assertIn("figure_label_text_alignment_off_center", badcase_ids(data))
+        self.assertIn("panel_identity_label_anchor_drift", badcase_ids(data))
+        self.assertIn("panel_identity_label_text_alignment_off_center", badcase_ids(data))
         self.assertIn("figure_picture_aspect_distortion", badcase_ids(data))
         self.assertIn("inline_table_payload_not_indexed", badcase_ids(data))
         self.assertIn("card_internal_spacing_not_scaled_to_frame", badcase_ids(data))
         self.assertIn("agenda_read_path_header_too_close", badcase_ids(data))
         self.assertIn("table_support_band_off_balance", badcase_ids(data))
+        self.assertIn("proof_caption_overflow_after_cross_paper_transfer", badcase_ids(data))
 
     def test_from_scratch_routes_wide_figures_and_inline_tables(self):
         from PIL import Image
 
-        from paper2slides.benchmark.from_scratch import _figure_path_index, _layout_family, _table_index
+        from paper2slides.benchmark.from_scratch import _figure_path_index, _layout_family, _limit_text_for_box, _table_index
 
         root = Path(__file__).parent / "outputs" / "tmp" / f"wide_figure_{uuid.uuid4().hex}"
         root.mkdir(parents=True, exist_ok=True)
         figure_path = root / "wide.png"
+        medium_wide_path = root / "medium_wide.png"
+        mildly_wide_path = root / "mildly_wide.png"
+        tall_path = root / "tall.png"
         Image.new("RGB", (800, 100), color=(255, 255, 255)).save(figure_path)
+        Image.new("RGB", (620, 300), color=(255, 255, 255)).save(medium_wide_path)
+        Image.new("RGB", (510, 300), color=(255, 255, 255)).save(mildly_wide_path)
+        Image.new("RGB", (420, 680), color=(255, 255, 255)).save(tall_path)
         inventory = {
             "paper": {"title": "Wide Figure Paper"},
             "assets": {
-                "figures": [{"id": "Figure 4", "caption": "Wide schedule", "path": str(figure_path)}],
+                "figures": [
+                    {"id": "Figure 4", "caption": "Wide schedule", "path": str(figure_path)},
+                    {"id": "Figure 5", "caption": "Medium-wide timeline", "path": str(medium_wide_path)},
+                    {"id": "Figure 6", "caption": "Mildly-wide chart", "path": str(mildly_wide_path)},
+                    {"id": "Figure 7", "caption": "Tall reasoning trace", "path": str(tall_path)},
+                ],
                 "tables": [],
             },
             "curated_slides": [
@@ -479,11 +501,25 @@ class Phase1PptxSmokeTest(unittest.TestCase):
             ],
         }
         slide_data = {"proof_object": {"type": "figure", "id": "Figure 4", "focus": "wide schedule"}}
+        medium_wide_slide = {"proof_object": {"type": "figure", "id": "Figure 5", "focus": "medium-wide timeline"}}
+        mildly_wide_slide = {"proof_object": {"type": "figure", "id": "Figure 6", "focus": "mildly-wide chart"}}
+        tall_slide = {"proof_object": {"type": "figure", "id": "Figure 7", "focus": "tall reasoning trace"}}
 
         self.assertEqual(_layout_family(slide_data, 1, _figure_path_index(inventory)), "figure_bottom_wide")
+        self.assertEqual(_layout_family(medium_wide_slide, 1, _figure_path_index(inventory)), "figure_bottom_wide")
+        self.assertEqual(_layout_family(mildly_wide_slide, 1, _figure_path_index(inventory)), "visual_right")
+        self.assertEqual(_layout_family(tall_slide, 1, _figure_path_index(inventory)), "figure_tall_right")
+        self.assertEqual(_layout_family(tall_slide, 2, _figure_path_index(inventory)), "figure_tall_left")
         inline_table = _table_index(inventory)["Inline Table"]
         self.assertEqual(inline_table["row_count"], 2)
         self.assertEqual(inline_table["column_count"], 2)
+        long_caption = (
+            "| Illustration of a very long figure caption that describes implementation details, "
+            "baseline comparisons, and additional caveats that should not overflow a short proof caption box."
+        )
+        fitted_caption = _limit_text_for_box(long_caption, 4.8, 0.42, 10.0, fill_ratio=0.78)
+        self.assertLess(len(fitted_caption), len(long_caption))
+        self.assertTrue(fitted_caption.endswith("."))
 
     def test_benchmark_runner_builds_expected_command(self):
         command = _build_command(
@@ -851,13 +887,29 @@ class Phase1PptxSmokeTest(unittest.TestCase):
             _component_boundary_findings,
             _component_frame_fit_findings,
             _container_balance_findings,
+            _figure_label_semantics_findings,
             _flow_layout_findings,
             _metric_stack_findings,
+            _panel_identity_label_findings,
             _paired_text_stack_findings,
+            _picture_findings,
             _table_support_band_findings,
         )
 
-        def record(index, role, text, x, y, w, h, font=10.0):
+        def record(
+            index,
+            role,
+            text,
+            x,
+            y,
+            w,
+            h,
+            font=10.0,
+            is_picture=False,
+            picture=None,
+            paragraph_alignment="",
+            has_table=False,
+        ):
             return {
                 "index": index,
                 "role": role,
@@ -866,6 +918,10 @@ class Phase1PptxSmokeTest(unittest.TestCase):
                 "text_words": len(text.split()),
                 "font": {"sizes_pt": [font] if text else [], "min_pt": font if text else None, "avg_pt": font if text else None},
                 "bbox": {"x": x, "y": y, "w": w, "h": h, "right": x + w, "bottom": y + h, "area": w * h},
+                "is_picture": is_picture,
+                "picture": picture or {},
+                "has_table": has_table,
+                "paragraph_alignment": paragraph_alignment,
                 "is_full_background": False,
             }
 
@@ -927,6 +983,38 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         ]
         self.assertEqual(_component_boundary_findings(13, boundary_records, NONVISUAL_AUDIT_RULES)[0]["type"], "component_boundary_inset_violation")
 
+        panel_identity_drift_records = [
+            record(101, "container", "", 0.75, 5.10, 11.7, 1.08),
+            record(102, "component_label", "T E X T _ E V I D E N C E", 0.97, 5.28, 1.8, 0.24, 8),
+            record(103, "body_text", "Motivation", 2.85, 5.25, 2.4, 0.30, 13.0),
+            record(104, "support_body", "The proof explanation spans the full panel below.", 0.97, 5.58, 11.25, 0.78, 12.5),
+        ]
+        self.assertEqual(
+            _panel_identity_label_findings(5, panel_identity_drift_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "panel_identity_label_anchor_drift",
+        )
+
+        panel_identity_text_alignment_records = [
+            record(105, "container", "", 0.65, 1.15, 6.35, 5.25),
+            record(106, "component_label", "T A B L E", 1.01, 1.47, 5.63, 0.24, 8),
+            record(107, "body_text", "Doc Table 1", 1.01, 1.84, 5.63, 0.38, 18.0),
+            record(108, "table", "", 0.9, 2.17, 5.85, 3.58, has_table=True),
+        ]
+        self.assertEqual(
+            _panel_identity_label_findings(25, panel_identity_text_alignment_records, NONVISUAL_AUDIT_RULES)[0][
+                "type"
+            ],
+            "panel_identity_label_text_alignment_off_center",
+        )
+
+        panel_identity_centered_records = [
+            record(109, "container", "", 0.65, 1.15, 6.35, 5.25),
+            record(110, "component_label", "T A B L E", 1.01, 1.47, 5.63, 0.24, 8),
+            record(111, "body_text", "Doc Table 1", 0.9, 1.84, 5.85, 0.38, 18.0, paragraph_alignment="CENTER (2)"),
+            record(112, "table", "", 0.9, 2.17, 5.85, 3.58, has_table=True),
+        ]
+        self.assertFalse(_panel_identity_label_findings(25, panel_identity_centered_records, NONVISUAL_AUDIT_RULES))
+
         frame_records = [
             record(13, "container", "", 0.75, 4.55, 3.6, 1.48),
             record(14, "card_label", "Method", 0.98, 4.67, 3.1, 0.22, 11),
@@ -961,6 +1049,159 @@ class Phase1PptxSmokeTest(unittest.TestCase):
             record(26, "table", "", 1.0, 4.68, 11.35, 1.14),
         ]
         self.assertFalse(_table_support_band_findings(26, table_support_fixed_records, NONVISUAL_AUDIT_RULES))
+
+        tall_figure_bad_records = [
+            record(27, "container", "", 7.0, 1.18, 5.45, 5.15),
+            record(
+                28,
+                "picture",
+                "",
+                8.52,
+                2.2,
+                1.72,
+                2.77,
+                is_picture=True,
+                picture={"source_aspect": 0.62, "box_aspect": 0.62, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertEqual(
+            _picture_findings(4, tall_figure_bad_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "figure_panel_aspect_mismatch",
+        )
+        off_center_figure_records = [
+            record(29, "container", "", 0.75, 3.43, 11.85, 3.07),
+            record(
+                30,
+                "picture",
+                "",
+                7.6,
+                4.0,
+                4.5,
+                1.8,
+                is_picture=True,
+                picture={"source_aspect": 2.5, "box_aspect": 2.5, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertEqual(
+            _picture_findings(15, off_center_figure_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "figure_image_off_center_in_panel",
+        )
+        conflated_figure_label_records = [
+            record(33, "container", "", 0.75, 3.45, 11.85, 3.12),
+            record(34, "component_label", "F I G U R E", 3.96, 3.71, 0.82, 0.22, 8),
+            record(35, "body_text", "Figure 5", 4.82, 3.66, 1.6, 0.34, 13.5),
+            record(
+                36,
+                "picture",
+                "",
+                3.96,
+                4.03,
+                5.41,
+                2.12,
+                is_picture=True,
+                picture={"source_aspect": 2.55, "box_aspect": 2.55, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertEqual(
+            _figure_label_semantics_findings(13, conflated_figure_label_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "figure_badge_identity_label_conflation",
+        )
+        stacked_figure_label_records = [
+            record(37, "container", "", 0.75, 3.45, 11.85, 3.12),
+            record(38, "component_label", "F I G U R E", 1.11, 3.75, 0.82, 0.22, 8),
+            record(39, "body_text", "F I G U R E 5", 3.70, 4.05, 0.24, 1.58, 7.8),
+            record(
+                40,
+                "picture",
+                "",
+                3.96,
+                4.03,
+                5.41,
+                2.12,
+                is_picture=True,
+                picture={"source_aspect": 2.55, "box_aspect": 2.55, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertEqual(
+            _figure_label_semantics_findings(13, stacked_figure_label_records, NONVISUAL_AUDIT_RULES)[0]["type"],
+            "stacked_figure_identity_label_overcorrection",
+        )
+        off_center_text_figure_label_records = [
+            record(41, "container", "", 0.75, 3.45, 11.85, 3.12),
+            record(42, "component_label", "F I G U R E", 1.11, 3.75, 0.82, 0.22, 8),
+            record(43, "body_text", "Figure 5", 5.94, 3.73, 1.45, 0.30, 13.0, paragraph_alignment="LEFT (1)"),
+            record(
+                44,
+                "picture",
+                "",
+                3.96,
+                4.03,
+                5.41,
+                2.12,
+                is_picture=True,
+                picture={"source_aspect": 2.55, "box_aspect": 2.55, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertEqual(
+            _figure_label_semantics_findings(13, off_center_text_figure_label_records, NONVISUAL_AUDIT_RULES)[0][
+                "type"
+            ],
+            "figure_label_text_alignment_off_center",
+        )
+        standard_figure_panel_label_records = [
+            record(45, "container", "", 0.65, 1.18, 5.45, 5.15),
+            record(46, "component_label", "F I G U R E", 1.01, 1.52, 0.82, 0.22, 8),
+            record(47, "body_text", "Figure 4", 1.01, 2.17, 4.73, 0.30, 13.0),
+            record(
+                48,
+                "picture",
+                "",
+                0.97,
+                2.49,
+                4.81,
+                2.93,
+                is_picture=True,
+                picture={"source_aspect": 1.64, "box_aspect": 1.64, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertEqual(
+            _figure_label_semantics_findings(12, standard_figure_panel_label_records, NONVISUAL_AUDIT_RULES)[0][
+                "type"
+            ],
+            "figure_label_text_alignment_off_center",
+        )
+        separated_figure_label_records = [
+            record(41, "container", "", 0.75, 3.45, 11.85, 3.12),
+            record(42, "component_label", "F I G U R E", 1.11, 3.75, 0.82, 0.22, 8),
+            record(43, "body_text", "Figure 5", 5.94, 3.73, 1.45, 0.30, 13.0, paragraph_alignment="CENTER (2)"),
+            record(
+                44,
+                "picture",
+                "",
+                3.96,
+                4.03,
+                5.41,
+                2.12,
+                is_picture=True,
+                picture={"source_aspect": 2.55, "box_aspect": 2.55, "aspect_distortion": 0.0},
+            ),
+        ]
+        self.assertFalse(_figure_label_semantics_findings(13, separated_figure_label_records, NONVISUAL_AUDIT_RULES))
+        wide_figure_fixed_records = [
+            record(45, "container", "", 0.75, 3.43, 11.85, 3.07),
+            record(
+                46,
+                "picture",
+                "",
+                3.0,
+                4.0,
+                6.4,
+                2.1,
+                is_picture=True,
+                picture={"source_aspect": 3.1, "box_aspect": 3.05, "aspect_distortion": 0.02},
+            ),
+        ]
+        self.assertFalse(_picture_findings(15, wide_figure_fixed_records, NONVISUAL_AUDIT_RULES))
 
 
 if __name__ == "__main__":

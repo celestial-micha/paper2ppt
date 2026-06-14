@@ -441,9 +441,171 @@ agenda_read_path_header_too_close
 table_support_band_off_balance
 ```
 
+随后 DeepSeek_V4 已经用同一套 checkpoint-only 路径生成并推进到 v18：
+
+```text
+outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/DeepSeek_V4_v18_figure_label_anchor_refine.pptx
+```
+
+DeepSeek_V4 暴露的新规则是 proof caption 容量适配：长 figure caption 需要按 caption box 的宽、高、字号截断，完整说明留在 source evidence 中。对应 badcase：
+
+```text
+proof_caption_overflow_after_cross_paper_transfer
+```
+
+DeepSeek_V4 第二轮还暴露了 figure aspect 与 proof panel aspect 的匹配问题：Figure 1 / Figure 7 这类高图应使用竖向 side proof panel；明确宽图应使用底部横向 proof panel。第三轮说明：`FIGURE / Figure N` 不应作为保留整列的硬侧栏，而应作为紧凑注释；图片和 caption 应在完整 panel 内居中。对应 badcase：
+
+```text
+figure_panel_aspect_mismatch
+figure_image_off_center_in_panel
+```
+
+第四轮曾进一步说明：`Figure N` 身份标签要锚定 fitted image，而不是做成保留整列的 label rail。第五轮人工反馈修正了这里的语义：绿色 `FIGURE` 不是图片标题，而是圆角 figure panel 的类型角标，所以它必须放在 panel 内部左上角；黑色 `Figure N` 才靠近 fitted image。第六轮尝试逐字堆叠 `F / I / G / U / R / E / N`，但第七轮人工复核认为竖排观感更差。第八轮最终微调为：`Figure N` 横排放在图片外部上方，按 fitted image 水平中心线对齐，贴近图片但不进图片内部，从而和绿色 `FIGURE` 拉开距离。第九轮补充：文本框中心对齐还不够，段落本身也必须居中，否则可见文字仍会左偏。第十轮补充：普通 `visual_left` / `visual_right` figure proof panel 也不能保留整行左对齐 `Figure N` 标题，必须和宽图/高图 panel 一样先 fit image，再按图片中心线放置标签。第十一轮补充：非 figure proof panel 也遵守同一语义拆分，绿色类型角标留在 panel 左上角，黑色身份标题如 `Motivation`、`Method`、`Doc Table 1`、`Table 2` 要按下方解释文字、表格、指标或图片的主体中心线居中，且段落本身居中。底部横向图和左右侧高图都遵守这个拆分。左侧高图 panel 占住页面左下区域时，source footer 仍应放到右下角并右对齐。对应 badcase：
+
+```text
+figure_label_anchor_drift
+figure_badge_identity_label_conflation
+figure_label_text_alignment_off_center
+panel_identity_label_anchor_drift
+panel_identity_label_text_alignment_off_center
+stacked_figure_identity_label_overcorrection
+```
+
 下一窗口不要把这类问题升级为重构任务。当前阶段的正确动作是：
 
 1. 保留 v10/v14 的整体风格和构图。
 2. 只接受边界清楚的局部微调。
 3. 每个微调都写入 benchmark badcase、nonvisual audit rule 和测试。
 4. 生成新 PPT 后跑 nonvisual audit 和 `test_phase1_pptx.py`。
+
+## 2026-06-15 收官交接：启动三路新论文验证
+
+当前 DeepSeek_V4 from-scratch warm academic proof-panel 风格已经迭代到用户满意版本：
+
+```text
+outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/DeepSeek_V4_v25_panel_identity_label_centered.pptx
+outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/nonvisual_audit_DeepSeek_V4_v25_panel_identity_label_centered.json
+```
+
+并已保存为第二个黄金参考：
+
+```text
+style_id: golden_baseline1_from_scratch_warm_academic
+outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.pptx
+outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/nonvisual_audit_DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.json
+```
+
+后续不要继续微调 DeepSeek_V4 v25，除非用户明确指出新问题。下一阶段目标是验证 benchmark 的泛化能力和风格隔离能力。
+
+### 新窗口首要任务
+
+用一篇新论文做三路验证：
+
+1. ordinary original golden baseline：
+   - style: `academic`
+   - repair profile: `audit_only`
+   - 用于确认成熟 baseline 未被新 benchmark 破坏。
+
+2. golden baseline1：
+   - style: `golden_baseline1_from_scratch_warm_academic`
+   - repair profile: `golden_baseline1_repair`
+   - 用于验证 v25 风格能否泛化并通过 scoped repair 自动迭代。
+
+3. benchmark-improved original golden baseline：
+   - style: `academic`
+   - repair profile: `global_correctness_repair`
+   - 只允许 global correctness auto-repair；风格相关 polish 只能 report/suggest。
+
+每一路都要输出：
+
+```text
+slides.pptx
+speaker_script.md
+nonvisual_audit.json
+repair_log.json
+style_drift_report.json
+```
+
+### 风格隔离原则
+
+新 benchmark 不能默认把 golden_baseline1 的 rounded proof-panel 语法套到 original `academic` baseline 上。
+
+默认策略：
+
+```text
+global correctness rule -> 可以 auto-repair
+style-specific polish rule -> style contract 匹配才 auto-repair，否则 detect/report only
+```
+
+尤其注意这些规则应 scoped：
+
+```text
+figure_label_anchor_drift
+figure_label_text_alignment_off_center
+panel_identity_label_anchor_drift
+panel_identity_label_text_alignment_off_center
+card_internal_spacing_not_scaled_to_frame
+table_support_band_off_balance
+```
+
+### 必读文件
+
+新窗口先读：
+
+```text
+docs/from_scratch_benchmark_final_synthesis.zh-CN.md
+docs/benchmark_plan.zh-CN.md
+docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+docs/human_feedback_benchmark_synthesis.zh-CN.md
+benchmarks/from_scratch_human_feedback_benchmark.json
+paper2slides/benchmark/from_scratch.py
+paper2slides/benchmark/nonvisual_audit.py
+test_phase1_pptx.py
+```
+
+### 给新窗口的建议开场 Prompt
+
+```text
+codex老师，我们开启 Paper2Slides benchmark 下一阶段：三路新论文验证。
+
+项目路径：
+D:\coding\agent_paper_to_slider\Paper2Slides-main
+
+请不要切换分支，不要 git push；如果需要提交，最后只给我 git add / commit / push 命令。
+
+当前两个黄金参考：
+1. original golden baseline: academic
+2. golden_baseline1_from_scratch_warm_academic:
+   outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.pptx
+
+请先读：
+docs/from_scratch_benchmark_final_synthesis.zh-CN.md
+docs/benchmark_plan.zh-CN.md
+docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
+docs/human_feedback_benchmark_synthesis.zh-CN.md
+docs/next_window_handoff.zh-CN.md
+benchmarks/from_scratch_human_feedback_benchmark.json
+paper2slides/benchmark/from_scratch.py
+paper2slides/benchmark/nonvisual_audit.py
+
+下一步目标：
+选择一篇新论文，解析一次，复用 checkpoint，同时生成三路 PPT：
+1. 普通 academic golden baseline，repair profile = audit_only
+2. golden_baseline1_from_scratch_warm_academic，repair profile = golden_baseline1_repair
+3. academic + global benchmark repair，repair profile = global_correctness_repair
+
+每一路都需要：
+- slides.pptx
+- speaker_script.md
+- nonvisual_audit.json
+- repair_log.json
+- style_drift_report.json
+
+重要原则：
+- 不要把 golden_baseline1 的 rounded proof-panel polish 规则默认套到 original academic baseline。
+- global correctness rule 可以 auto-repair。
+- style-specific polish rule 只有 style contract 匹配时才能 auto-repair，否则只能 report/suggest。
+- 每次新发现的问题都要沉淀到 benchmark / docs / badcase / tests。
+
+请先检查当前 git 状态和现有 runner 能力，然后给我一个三路验证实施计划；如果已有代码能直接复用，就开始落地。
+```

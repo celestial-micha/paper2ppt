@@ -18,6 +18,7 @@ def load_human_feedback_benchmark(path: Path = DEFAULT_HUMAN_FEEDBACK_BENCHMARK)
 def summarize_human_feedback_benchmark(data: Dict[str, Any]) -> Dict[str, Any]:
     """Return a compact summary suitable for benchmark reports."""
     accepted = data.get("accepted_reference", {}) or {}
+    golden_baseline1 = data.get("golden_baseline1_reference", {}) or {}
     candidate = data.get("candidate_style_reference", {}) or {}
     rubric = data.get("aesthetic_rubric", {}) or {}
     strategy = data.get("automatic_review_strategy", {}) or {}
@@ -27,6 +28,9 @@ def summarize_human_feedback_benchmark(data: Dict[str, Any]) -> Dict[str, Any]:
         "benchmark_track": data.get("benchmark_track", ""),
         "paper_case": data.get("paper_case", ""),
         "accepted_reference": accepted.get("version", ""),
+        "golden_baseline1_style_id": golden_baseline1.get("style_id", ""),
+        "golden_baseline1_version": golden_baseline1.get("version", ""),
+        "golden_baseline1_status": golden_baseline1.get("status", ""),
         "candidate_style_reference": candidate.get("version", ""),
         "candidate_style_status": candidate.get("status", ""),
         "candidate_validation_case_count": len(candidate.get("validation_cases", []) or []),

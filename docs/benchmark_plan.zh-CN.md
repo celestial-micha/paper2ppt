@@ -533,6 +533,131 @@ inline_table_payload_not_indexed
 card_internal_spacing_not_scaled_to_frame
 agenda_read_path_header_too_close
 table_support_band_off_balance
+proof_caption_overflow_after_cross_paper_transfer
+figure_panel_aspect_mismatch
+figure_label_anchor_drift
 ```
 
+随后 DeepSeek_V4 作为第三个 validation case 暴露了长 proof caption 的容量问题。它不需要重新调用大模型，只需要从已有 checkpoint 生成 deck；修复原则是按 caption box 的宽、高、字号估算可承载文本，把长图注压缩到可见 caption 中，同时把完整说明保留在 source evidence / inventory 中。
+
+DeepSeek_V4 第二轮检查暴露了 figure aspect 与容器形状的匹配问题：高图不能继续使用接近正方形的普通 side proof panel，中宽图也不能等到“极宽”才路由到底部横向 panel。第三轮继续说明，`FIGURE / Figure N` 也不能被做成保留整列的硬侧栏；标签应是紧凑注释，图片和 caption 才是 proof panel 的居中主体。底部横向 panel 的默认阈值应提高到约 `1.9x`，避免“不太宽”的图被错误下沉。
+
+DeepSeek_V4 第四轮继续把 figure 组件细化到“锚点”层面：标签不能只锚定圆角面板左上角，而应锚定 fitted image 的左上方。底部横向 panel 中 `FIGURE / Figure N` 仍横排，但其 x 位置应跟随图片；左右侧高图 panel 中 `Figure N` 可以竖排贴在图片左侧，绿色 `FIGURE` 仍保留为紧凑上方注释。caption 固定高度并按容量截断，不允许自动增高撑出 panel。这个问题对应 `figure_label_anchor_drift`，属于 low severity polish，但需要进 benchmark，因为它会直接影响图片是否“看起来在容器中心”。
+
 这些规则的共同原则是：只修局部，不重排整页；只在元数据能稳定检测时自动化；人类审美反馈必须先被翻译成边界清楚的小规则。
+
+## 2026-06-15 收官补充：golden baseline1 与三路 Benchmark Harness
+
+DeepSeek_V4 v25 已被用户确认满意，当前 from-scratch warm academic proof-panel 风格保存为第二个黄金参考：
+
+```text
+style_id: golden_baseline1_from_scratch_warm_academic
+artifact: outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.pptx
+audit: outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/nonvisual_audit_DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.json
+source_checkpoint: outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/DeepSeek_V4_v25_panel_identity_label_centered.pptx
+```
+
+它不是替换原 `academic` golden baseline，而是和原 baseline 并列：
+
+```text
+original golden baseline: academic
+golden baseline1: from-scratch warm academic proof-panel style
+```
+
+### 新 benchmark 是否会影响原 golden baseline？
+
+会有潜在风险，尤其是圆角 proof panel、标签锚点、table/support band、浅卡片内部间距等 polish rule。如果它们不区分 style scope，可能把 `golden_baseline1` 的审美语法强加到 `academic` 上。
+
+因此计划更正为：
+
+1. 所有 badcase 必须区分 `global`、`academic`、`golden_baseline1`、`experimental` scope。
+2. 全局 correctness rule 可以默认 auto-repair，例如 missing title、text overflow、shape overlap、table rows missing、figure distortion。
+3. 风格相关 polish rule 默认 detect-only，只有 active style contract 匹配时才允许 auto-repair。
+4. 新 rule 晋级默认修复前，必须同时通过 original golden baseline、golden_baseline1 和 fresh-paper trial。
+5. benchmark report 必须记录 style drift risk，不能只记录 finding count。
+
+### 下一阶段一篇新论文三路验证
+
+先选择一篇新论文，解析一次，复用 checkpoint 生成三路 PPT：
+
+1. **普通 original golden baseline**
+   - style: `academic`
+   - repair profile: `audit_only`
+   - 目标：证明成熟 baseline 没被新规则破坏。
+
+2. **当前款式 golden_baseline1**
+   - style: `golden_baseline1_from_scratch_warm_academic`
+   - repair profile: `golden_baseline1_repair`
+   - 目标：证明新款式能泛化到新论文，并能通过 scoped benchmark 自动迭代。
+
+3. **benchmark 改进版 original golden baseline**
+   - style: `academic`
+   - repair profile: `global_correctness_repair`
+   - 风格 polish 只 report/suggest，不默认 auto-repair。
+   - 目标：证明 benchmark 能改正内容和结构错误，但不会把 `academic` 改成 `golden_baseline1`。
+
+三路都应输出：
+
+```text
+slides.pptx
+speaker_script.md
+nonvisual_audit.json
+repair_log.json
+style_drift_report.json
+```
+
+### ai20 三路批量验证
+
+单篇通过后，对 20 篇论文运行同样三路：
+
+```text
+1. ordinary academic generation
+2. golden_baseline1 generation with scoped benchmark repair
+3. academic generation with global benchmark repair and style-scoped suggestions
+```
+
+报告重点：
+
+- generation success rate；
+- high / medium / low finding count；
+- repaired finding count；
+- unresolved finding count；
+- style drift risk；
+- novelty / baseline similarity score；
+- runtime / cost；
+- speaker script 是否生成。
+
+### Blind from-scratch loop
+
+最后选择一篇新论文，明确要求 agent 不复用 `academic` 和 `golden_baseline1` 的视觉骨架，只复用论文解析结果和 benchmark badcases，从 rough draft 开始自动生成、审计、修复，直到没有 high/medium findings。
+
+这一步用于证明 benchmark 不只是维护已有模板，而能驱动第三种新风格诞生。
+
+### Harness 包装目标
+
+后续 harness 应支持下面的抽象命令：
+
+```text
+parse once
+ -> generate styles
+ -> audit
+ -> style-scoped repair
+ -> speaker script
+ -> compare
+ -> report
+```
+
+建议 repair profiles：
+
+```text
+audit_only
+global_correctness_repair
+golden_baseline1_repair
+experimental_from_scratch_loop
+```
+
+详细收官总结见：
+
+```text
+docs/from_scratch_benchmark_final_synthesis.zh-CN.md
+```

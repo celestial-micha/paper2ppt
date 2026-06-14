@@ -56,6 +56,21 @@ NONVISUAL_AUDIT_RULES = {
     "balance_padding_tolerance_in": 0.38,
     "balance_padding_tolerance_ratio": 0.11,
     "picture_aspect_ratio_tolerance": 0.18,
+    "tall_figure_aspect_max": 0.9,
+    "tall_figure_panel_aspect_max": 0.95,
+    "wide_figure_aspect_min": 1.9,
+    "wide_figure_panel_aspect_min": 2.0,
+    "figure_image_center_tolerance_in": 0.35,
+    "figure_image_center_tolerance_ratio": 0.08,
+    "figure_label_semantic_wide_panel_aspect_min": 1.6,
+    "figure_label_semantic_tall_panel_aspect_max": 0.98,
+    "figure_panel_badge_left_inset_max_in": 0.78,
+    "figure_panel_badge_top_inset_min_in": 0.22,
+    "figure_panel_badge_top_inset_max_in": 0.55,
+    "figure_identity_label_center_tolerance_in": 0.35,
+    "figure_identity_label_vertical_gap_min_in": -0.08,
+    "figure_identity_label_vertical_gap_max_in": 0.18,
+    "panel_identity_label_center_tolerance_in": 0.35,
 }
 
 
@@ -88,6 +103,8 @@ def inspect_pptx_nonvisual(pptx_path: Path, rules: Optional[Dict[str, Any]] = No
         slide_findings.extend(_table_support_band_findings(slide_index, records, active_rules))
         slide_findings.extend(_metric_stack_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_boundary_findings(slide_index, records, active_rules))
+        slide_findings.extend(_figure_label_semantics_findings(slide_index, records, active_rules))
+        slide_findings.extend(_panel_identity_label_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_frame_fit_findings(slide_index, records, active_rules))
         slide_findings.extend(_card_internal_spacing_findings(slide_index, records, active_rules))
         slide_findings.extend(_container_balance_findings(slide_index, records, active_rules))
@@ -161,6 +178,7 @@ def _shape_record(shape: Any, index: int, slide_w: float, slide_h: float) -> Dic
             "min_pt": min(font_sizes) if font_sizes else None,
             "avg_pt": round(sum(font_sizes) / len(font_sizes), 2) if font_sizes else None,
         },
+        "paragraph_alignment": _paragraph_alignment(shape),
         "is_picture": is_picture,
         "picture": picture_info,
         "is_line_like": is_line_like,
@@ -219,6 +237,15 @@ def _font_sizes(shape: Any) -> List[float]:
             if run.font.size is not None:
                 sizes.append(round(run.font.size.pt, 2))
     return sizes
+
+
+def _paragraph_alignment(shape: Any) -> str:
+    if not getattr(shape, "has_text_frame", False):
+        return ""
+    paragraphs = getattr(shape.text_frame, "paragraphs", [])
+    if not paragraphs:
+        return ""
+    return str(paragraphs[0].alignment or "")
 
 
 def _infer_role(record: Dict[str, Any], slide_h: float) -> str:
@@ -749,6 +776,187 @@ def _component_boundary_findings(slide_index: int, records: List[Dict[str, Any]]
     return findings
 
 
+def _figure_label_semantics_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    findings = []
+    containers = _container_records(records)
+    for container in containers:
+        parent_box = container.get("bbox", {})
+        parent_aspect = parent_box.get("w", 0.0) / max(0.001, parent_box.get("h", 0.0))
+        children = [record for record in records if record is not container and _center_inside(record.get("bbox", {}), parent_box)]
+        if not any(child.get("is_picture") for child in children):
+            continue
+        badges = [
+            child
+            for child in children
+            if child.get("role") == "component_label" and _label_token(child.get("text", "")) == "FIGURE"
+        ]
+        figure_ids = [
+            child
+            for child in children
+            if _is_figure_identity_label(child.get("text", ""))
+        ]
+        figure_semantics_panel = bool(badges or figure_ids)
+        figure_aspect_panel = (
+            parent_aspect >= float(rules["figure_label_semantic_wide_panel_aspect_min"])
+            or parent_aspect <= float(rules["figure_label_semantic_tall_panel_aspect_max"])
+        )
+        if not (figure_semantics_panel or figure_aspect_panel):
+            continue
+        for badge in badges:
+            badge_box = badge.get("bbox", {})
+            left_inset = badge_box.get("x", 0.0) - parent_box.get("x", 0.0)
+            top_inset = badge_box.get("y", 0.0) - parent_box.get("y", 0.0)
+            if (
+                left_inset <= float(rules["figure_panel_badge_left_inset_max_in"])
+                and float(rules["figure_panel_badge_top_inset_min_in"])
+                <= top_inset
+                <= float(rules["figure_panel_badge_top_inset_max_in"])
+            ):
+                continue
+            findings.append(
+                {
+                    "type": "figure_badge_identity_label_conflation",
+                    "severity": "low",
+                    **_finding_meta("figure_badge_identity_label_conflation", "low"),
+                    "slide_page": slide_index,
+                    "message": "FIGURE badge is not anchored as the rounded panel's top-left type label.",
+                    "evidence": {
+                        "badge": _shape_evidence(badge),
+                        "container": _shape_evidence(container),
+                        "insets_in": {"left": round(left_inset, 3), "top": round(top_inset, 3)},
+                    },
+                    "repair_strategy": "Pin the green FIGURE badge to the rounded panel's inner top-left corner; reserve image-adjacent placement for the Figure N identity label.",
+                }
+            )
+        for figure_id in figure_ids:
+            label_box = figure_id.get("bbox", {})
+            picture = _primary_picture_child(children)
+            if not picture:
+                continue
+            picture_box = picture.get("bbox", {})
+            if _is_stacked_figure_identity_text(figure_id.get("text", "")):
+                findings.append(
+                    {
+                        "type": "stacked_figure_identity_label_overcorrection",
+                        "severity": "low",
+                        **_finding_meta("stacked_figure_identity_label_overcorrection", "low"),
+                        "slide_page": slide_index,
+                        "message": f"{figure_id.get('text')} is stacked vertically; reviewer preferred a horizontal Figure N label above the image.",
+                        "evidence": {
+                            "figure_label": _shape_evidence(figure_id),
+                            "picture": _shape_evidence(picture),
+                        },
+                        "repair_strategy": "Use a horizontal Figure N label just above the fitted image's upper-left edge; keep the green FIGURE badge on the panel corner.",
+                    }
+                )
+                continue
+            center_delta = abs(_center_x(label_box) - _center_x(picture_box))
+            vertical_gap = picture_box.get("y", 0.0) - label_box.get("bottom", 0.0)
+            geometry_ok = (
+                center_delta <= float(rules["figure_identity_label_center_tolerance_in"])
+                and float(rules["figure_identity_label_vertical_gap_min_in"])
+                <= vertical_gap
+                <= float(rules["figure_identity_label_vertical_gap_max_in"])
+            )
+            if geometry_ok and _is_center_aligned_text(figure_id):
+                continue
+            if geometry_ok:
+                findings.append(
+                    {
+                        "type": "figure_label_text_alignment_off_center",
+                        "severity": "low",
+                        **_finding_meta("figure_label_text_alignment_off_center", "low"),
+                        "slide_page": slide_index,
+                        "message": f"{figure_id.get('text')} textbox is centered above the image, but its text is not center-aligned inside the box.",
+                        "evidence": {
+                            "figure_label": _shape_evidence(figure_id),
+                            "picture": _shape_evidence(picture),
+                            "center_delta_in": round(center_delta, 3),
+                            "vertical_gap_in": round(vertical_gap, 3),
+                        },
+                        "repair_strategy": "Center-align the Figure N paragraph inside the image-centered label textbox.",
+                    }
+                )
+                continue
+            findings.append(
+                {
+                    "type": "figure_label_anchor_drift",
+                    "severity": "low",
+                    **_finding_meta("figure_label_anchor_drift", "low"),
+                    "slide_page": slide_index,
+                    "message": f"{figure_id.get('text')} is not centered above the fitted image.",
+                    "evidence": {
+                        "figure_label": _shape_evidence(figure_id),
+                        "picture": _shape_evidence(picture),
+                        "center_delta_in": round(center_delta, 3),
+                        "vertical_gap_in": round(vertical_gap, 3),
+                    },
+                    "repair_strategy": "Place Figure N horizontally above the fitted image and align it to the image centerline, outside the image itself.",
+                }
+            )
+    return findings
+
+
+def _panel_identity_label_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    findings = []
+    checked_badge_tokens = {"TEXTEVIDENCE", "TABLE", "METRIC"}
+    for container in _container_records(records):
+        parent_box = container.get("bbox", {})
+        children = _contained_records(container, records, include_containers=False)
+        badges = [
+            child
+            for child in children
+            if child.get("role") == "component_label" and _label_token(child.get("text", "")) in checked_badge_tokens
+        ]
+        if not badges:
+            continue
+        identity = _panel_identity_label_child(children, parent_box)
+        if not identity:
+            continue
+        target = _panel_identity_target_child(children, identity)
+        if not target:
+            continue
+        label_box = identity.get("bbox", {})
+        target_box = target.get("bbox", {})
+        center_delta = abs(_center_x(label_box) - _center_x(target_box))
+        center_ok = center_delta <= float(rules["panel_identity_label_center_tolerance_in"])
+        if center_ok and _is_center_aligned_text(identity):
+            continue
+        if center_ok:
+            findings.append(
+                {
+                    "type": "panel_identity_label_text_alignment_off_center",
+                    "severity": "low",
+                    **_finding_meta("panel_identity_label_text_alignment_off_center", "low"),
+                    "slide_page": slide_index,
+                    "message": f"{identity.get('text')} label box is centered over its panel content, but its text is not center-aligned inside the box.",
+                    "evidence": {
+                        "identity_label": _shape_evidence(identity),
+                        "target_content": _shape_evidence(target),
+                        "center_delta_in": round(center_delta, 3),
+                    },
+                    "repair_strategy": "Center-align proof identity text inside the textbox after aligning the textbox to the underlying table, figure, metric, or explanation text.",
+                }
+            )
+            continue
+        findings.append(
+            {
+                "type": "panel_identity_label_anchor_drift",
+                "severity": "low",
+                **_finding_meta("panel_identity_label_anchor_drift", "low"),
+                "slide_page": slide_index,
+                "message": f"{identity.get('text')} label is not centered above the panel's main content.",
+                "evidence": {
+                    "identity_label": _shape_evidence(identity),
+                    "target_content": _shape_evidence(target),
+                    "center_delta_in": round(center_delta, 3),
+                },
+                "repair_strategy": "Place the proof identity label on the centerline of the underlying table, figure, metric, or explanation text; keep the green type badge as a panel-corner label.",
+            }
+        )
+    return findings
+
+
 def _component_frame_fit_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
     findings = []
     for container in _container_records(records):
@@ -998,10 +1206,60 @@ def _table_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dic
 def _picture_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
     findings = []
     tolerance = float(rules["picture_aspect_ratio_tolerance"])
+    containers = _container_records(records)
     for record in records:
         if not record.get("is_picture"):
             continue
         picture = record.get("picture", {}) or {}
+        source_aspect = picture.get("source_aspect")
+        parent = _smallest_containing_container(record.get("bbox", {}), containers)
+        if source_aspect and parent:
+            parent_box = parent.get("bbox", {})
+            parent_aspect = parent_box.get("w", 0.0) / max(0.001, parent_box.get("h", 0.0))
+            center_dx = abs(_center_x(record.get("bbox", {})) - _center_x(parent_box))
+            center_tolerance = max(
+                float(rules["figure_image_center_tolerance_in"]),
+                parent_box.get("w", 0.0) * float(rules["figure_image_center_tolerance_ratio"]),
+            )
+            if center_dx > center_tolerance and record.get("bbox", {}).get("area", 0.0) >= 0.8:
+                findings.append(
+                    _finding(
+                        slide_index,
+                        "figure_image_off_center_in_panel",
+                        "low",
+                        f"Figure image center is {center_dx:.2f}in away from the proof panel center, suggesting label space is steering the image off-center.",
+                        record,
+                        "Treat figure labels as compact annotations, not reserved layout columns; center the image and caption in the full proof panel.",
+                    )
+                )
+            if (
+                source_aspect <= float(rules["tall_figure_aspect_max"])
+                and parent_aspect > float(rules["tall_figure_panel_aspect_max"])
+            ):
+                findings.append(
+                    _finding(
+                        slide_index,
+                        "figure_panel_aspect_mismatch",
+                        "medium",
+                        f"Tall figure source aspect {source_aspect:.2f} is placed in a near-square/wide panel aspect {parent_aspect:.2f}.",
+                        record,
+                        "Route tall figures to a vertical proof panel and keep figure labels as compact annotations so they do not steal image center.",
+                    )
+                )
+            elif (
+                source_aspect >= float(rules["wide_figure_aspect_min"])
+                and parent_aspect < float(rules["wide_figure_panel_aspect_min"])
+            ):
+                findings.append(
+                    _finding(
+                        slide_index,
+                        "figure_panel_aspect_mismatch",
+                        "medium",
+                        f"Wide figure source aspect {source_aspect:.2f} is placed in a narrow/near-square panel aspect {parent_aspect:.2f}.",
+                        record,
+                        "Route clearly-wide figures to a horizontal proof panel and keep labels as compact annotations rather than a reserved side column.",
+                    )
+                )
         distortion = picture.get("aspect_distortion")
         if distortion is None or distortion <= tolerance:
             continue
@@ -1012,7 +1270,7 @@ def _picture_findings(slide_index: int, records: List[Dict[str, Any]], rules: Di
                 "medium",
                 f"Picture box aspect ratio {picture.get('box_aspect')} differs from source image aspect ratio {picture.get('source_aspect')}.",
                 record,
-                "Fit the figure inside the component box while preserving the source image aspect ratio; route wide figures to horizontal proof panels when needed.",
+                "Fit the figure inside the component box while preserving the source image aspect ratio; route non-square figures to panels that match their source shape.",
             )
         )
     return findings
@@ -1118,6 +1376,7 @@ def _shape_evidence(record: Dict[str, Any]) -> Dict[str, Any]:
         "role": record.get("role"),
         "bbox": record.get("bbox"),
         "font": record.get("font"),
+        "paragraph_alignment": record.get("paragraph_alignment", ""),
         "text_preview": text[:90],
         "text_words": record.get("text_words", 0),
         "text_capacity": record.get("text_capacity", {}),
@@ -1170,6 +1429,7 @@ def _problem_type_for_finding(kind: str) -> str:
         "flow_nodes_overpacked",
         "flow_grid_alignment_drift",
         "component_boundary_inset_violation",
+        "figure_panel_aspect_mismatch",
         "figure_picture_aspect_distortion",
     }:
         return "geometry"
@@ -1181,6 +1441,13 @@ def _problem_type_for_finding(kind: str) -> str:
         "card_internal_spacing_not_scaled_to_frame",
         "agenda_read_path_header_too_close",
         "table_support_band_off_balance",
+        "figure_image_off_center_in_panel",
+        "figure_badge_identity_label_conflation",
+        "figure_label_anchor_drift",
+        "figure_label_text_alignment_off_center",
+        "panel_identity_label_anchor_drift",
+        "panel_identity_label_text_alignment_off_center",
+        "stacked_figure_identity_label_overcorrection",
     }:
         return "optical_balance"
     return "metadata"
@@ -1189,7 +1456,14 @@ def _problem_type_for_finding(kind: str) -> str:
 def _repair_priority(kind: str, severity: str) -> str:
     if severity == "high":
         return "P1"
-    if kind in {"shape_overlap_risk", "weak_table_grammar", "dense_table_readability_risk", "component_boundary_inset_violation", "figure_picture_aspect_distortion"}:
+    if kind in {
+        "shape_overlap_risk",
+        "weak_table_grammar",
+        "dense_table_readability_risk",
+        "component_boundary_inset_violation",
+        "figure_panel_aspect_mismatch",
+        "figure_picture_aspect_distortion",
+    }:
         return "P2"
     if kind in {"low_font_size", "estimated_text_overflow", "near_text_capacity"}:
         return "P2" if severity == "medium" else "P3"
@@ -1349,6 +1623,10 @@ def _center_inside(inner: Dict[str, float], outer: Dict[str, float]) -> bool:
     return outer.get("x", 0.0) <= cx <= outer.get("right", 0.0) and outer.get("y", 0.0) <= cy <= outer.get("bottom", 0.0)
 
 
+def _center_x(box: Dict[str, float]) -> float:
+    return box.get("x", 0.0) + box.get("w", 0.0) / 2
+
+
 def _intersection(a: Dict[str, float], b: Dict[str, float]) -> float:
     x1 = max(float(a.get("x", 0.0)), float(b.get("x", 0.0)))
     y1 = max(float(a.get("y", 0.0)), float(b.get("y", 0.0)))
@@ -1380,6 +1658,69 @@ def _clean_text(text: Any) -> str:
 
 def _label_token(text: str) -> str:
     return re.sub(r"[^A-Z0-9]+", "", str(text or "").upper())
+
+
+def _is_figure_identity_label(text: str) -> bool:
+    return bool(re.match(r"^Figure\s+\d+\b", str(text or ""), flags=re.IGNORECASE)) or bool(re.match(r"^FIGURE\d+$", _label_token(text)))
+
+
+def _is_stacked_figure_identity_text(text: str) -> bool:
+    return bool(re.match(r"^F\s+I\s+G\s+U\s+R\s+E\s+\d+\b", _clean_text(text), flags=re.IGNORECASE))
+
+
+def _is_center_aligned_text(record: Dict[str, Any]) -> bool:
+    return "CENTER" in str(record.get("paragraph_alignment", "")).upper()
+
+
+def _panel_identity_label_child(children: List[Dict[str, Any]], parent_box: Dict[str, float]) -> Optional[Dict[str, Any]]:
+    header_floor = parent_box.get("y", 0.0) + 1.18
+    candidates = []
+    for child in children:
+        text = _clean_text(child.get("text", ""))
+        if not text or child.get("role") == "component_label":
+            continue
+        if child.get("role") in {"page_marker", "source_footer"}:
+            continue
+        if child.get("bbox", {}).get("y", 0.0) > header_floor:
+            continue
+        if len(text.split()) > 6 or len(text) > 48:
+            continue
+        candidates.append(child)
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: (item.get("font", {}).get("avg_pt") or 0.0, -item.get("bbox", {}).get("y", 0.0)))
+
+
+def _panel_identity_target_child(children: List[Dict[str, Any]], identity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    identity_bottom = identity.get("bbox", {}).get("bottom", 0.0)
+    structured = [
+        child
+        for child in children
+        if child is not identity
+        and (child.get("has_table") or child.get("is_picture"))
+        and child.get("bbox", {}).get("y", 0.0) >= identity_bottom - 0.08
+    ]
+    if structured:
+        return max(structured, key=lambda item: item.get("bbox", {}).get("area", 0.0))
+    text_targets = [
+        child
+        for child in children
+        if child is not identity
+        and child.get("has_text")
+        and child.get("role") != "component_label"
+        and child.get("bbox", {}).get("y", 0.0) >= identity_bottom - 0.04
+        and len(_clean_text(child.get("text", "")).split()) > 3
+    ]
+    if not text_targets:
+        return None
+    return max(text_targets, key=lambda item: item.get("bbox", {}).get("area", 0.0))
+
+
+def _primary_picture_child(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    pictures = [record for record in records if record.get("is_picture")]
+    if not pictures:
+        return None
+    return max(pictures, key=lambda record: record.get("bbox", {}).get("area", 0.0))
 
 
 def main(argv: Optional[List[str]] = None) -> int:
