@@ -2,11 +2,12 @@
 Generate Stage - editable PPTX and speaker script generation.
 """
 import logging
+import shutil
 from pathlib import Path
 from typing import Dict
 
 from ...utils import load_json
-from ..paths import get_summary_checkpoint, get_plan_checkpoint, get_output_dir
+from ..paths import get_summary_checkpoint, get_plan_checkpoint, get_output_dir, get_config_name
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,11 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
     from paper2slides.summary import TableInfo, FigureInfo, OriginalElements
     from paper2slides.generator.content_planner import ContentPlan, Section, TableRef, FigureRef
     from paper2slides.generator import run_text_pptx_workflow
+    from paper2slides.generator.style_presets import ACADEMIC_STYLE, is_visual_style
     from ...utils import save_json
-    
+
+    _reuse_academic_checkpoints_for_visual_style(config_dir, config, is_visual_style, ACADEMIC_STYLE)
+
     plan_data = load_json(get_plan_checkpoint(config_dir))
     summary_data = load_json(get_summary_checkpoint(base_dir, config))
     if not plan_data or not summary_data:
@@ -78,6 +82,7 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
         save_json=save_json,
         title=plan.sections[0].title if plan.sections else "Paper2Slides Presentation",
         source_plan_path=str(get_plan_checkpoint(config_dir)),
+        style=config.get("style", "academic"),
     )
     spec = workflow_result["spec"]
     pptx_path = workflow_result["pptx_path"]
@@ -111,3 +116,29 @@ async def run_generate_stage(base_dir: Path, config_dir: Path, config: Dict) -> 
         "detailed_pdf_path": workflow_result.get("detailed_pdf_path", ""),
         "num_slides": len(spec.slides),
     }
+
+
+def _reuse_academic_checkpoints_for_visual_style(config_dir: Path, config: Dict, is_visual_style_func, academic_style: str) -> None:
+    """Reuse academic plan/spec checkpoints for visual-only style variants."""
+    style = str(config.get("style", "academic")).strip().lower()
+    if not is_visual_style_func(style):
+        return
+
+    academic_config = dict(config)
+    academic_config["style"] = academic_style
+    academic_config["custom_style"] = None
+    academic_dir = config_dir.parent / get_config_name(academic_config)
+    if not academic_dir.exists() or academic_dir.resolve() == config_dir.resolve():
+        return
+
+    config_dir.mkdir(parents=True, exist_ok=True)
+    for name in [
+        "checkpoint_plan.json",
+        "checkpoint_slide_spec.json",
+        "checkpoint_slide_spec_llm_raw.txt",
+    ]:
+        source = academic_dir / name
+        target = config_dir / name
+        if source.exists() and not target.exists():
+            shutil.copy2(source, target)
+            logger.info(f"  Reused academic checkpoint for {style}: {name}")

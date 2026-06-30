@@ -661,3 +661,40 @@ experimental_from_scratch_loop
 ```text
 docs/from_scratch_benchmark_final_synthesis.zh-CN.md
 ```
+
+## 2026-07-01 最新入口：三路升级为六路
+
+上面的三路计划是 `golden_baseline1` 封版后的历史阶段。现在 `blind_rectangular_research_board` 已经保存为：
+
+```text
+golden_baseline2_blind_rectangular_research_board
+```
+
+因此下一阶段不再是“两个 golden + 一个 blind loop”，而是：
+
+```text
+三个 frozen references + 三个 autonomous style proposals
+```
+
+六路 smoke：
+
+1. `academic` frozen reference；
+2. `golden_baseline1_from_scratch_warm_academic` frozen reference；
+3. `golden_baseline2_blind_rectangular_research_board` frozen reference；
+4. autonomous style proposal A；
+5. autonomous style proposal B；
+6. autonomous style proposal C。
+
+关键原则：
+
+- frozen references 可以用于评估和回归；
+- autonomous proposals 不能读取 golden0/1/2 的完整 PPTX、style contract 或 layout grammar；
+- autonomous proposals 只能使用论文解析内容、抽象 design primitives、设计约束和 badcase registry；
+- 每条 autonomous route 支持 2-3 轮 bounded repair；
+- human feedback effort、human outcome、external artifact editability 都进入 benchmark 记录。
+
+最新主计划见：
+
+```text
+docs/autonomous_style_proposal_benchmark_plan.zh-CN.md
+```

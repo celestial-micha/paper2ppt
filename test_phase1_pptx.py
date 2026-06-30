@@ -10,17 +10,18 @@ from paper2slides.generator.detailed_tex import generate_detailed_tex_deck
 from paper2slides.generator.config import GenerationConfig, GenerationInput, OutputType, SlidesLength, StyleType
 from paper2slides.generator.content_planner import ContentPlanner
 from paper2slides.generator.content_planner import ContentPlan, FigureRef, Section, TableRef
-from paper2slides.generator.pptx_qa import evaluate_presentation_spec, inspect_pptx_layout
+from paper2slides.generator.pptx_qa import _has_truncated_ellipsis, evaluate_presentation_spec, inspect_pptx_layout
 from paper2slides.generator.pptx_renderer import PptxRenderer
-from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _get_figure_analysis_model, _get_pptx_llm_model, _normalize_slide_layout, _qa_repair_node
+from paper2slides.generator.text_pptx_workflow import _build_speaker_script, _compact_metric_blocks, _ensure_structured_points, _extract_metrics_from_slide, _get_figure_analysis_model, _get_pptx_llm_model, _normalize_slide_layout, _qa_repair_node, _repair_slide_title
 from paper2slides.generator.spec_builder import build_presentation_spec
-from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
+from paper2slides.generator.slide_schema import MetricBlock, PresentationSpec, SlideSpec, TableBlock, TextBlock
 from paper2slides.benchmark.qa_summary import QaRunResult, classify_warning, summarize_layout_qa
 from paper2slides.benchmark.papers import expand_paper_set, validate_paper_files
 from paper2slides.benchmark.runner import _build_command, _preflight_environment, summarize_run_results
 from paper2slides.benchmark.from_scratch import build_content_inventory, build_rough_draft_spec, render_rough_draft_pptx, write_from_scratch_artifacts
+from paper2slides.benchmark.fourway import _audit_speaker_script, _build_blind_style_contract, build_style_drift_report_payload, render_blind_blueprint_pptx
 from paper2slides.benchmark.human_feedback import badcase_ids, load_human_feedback_benchmark, summarize_human_feedback_benchmark
-from paper2slides.benchmark.nonvisual_audit import inspect_pptx_nonvisual
+from paper2slides.benchmark.nonvisual_audit import _academic_right_evidence_void_findings, _academic_toc_canonical_sections_findings, _semantic_content_findings, inspect_pptx_nonvisual
 from paper2slides.core.stages.rag_stage import _run_fast_queries_by_category
 from paper2slides.summary import FigureInfo, GeneralContent, OriginalElements, TableInfo
 
@@ -97,6 +98,52 @@ class Phase1PptxSmokeTest(unittest.TestCase):
 
         qa = inspect_pptx_layout(output_path)
         self.assertTrue(qa.passed, qa.warnings)
+
+    def test_academic_toc_preserves_mhc_six_module_route(self):
+        spec = PresentationSpec(
+            title="Academic Route",
+            slides=[
+                SlideSpec(slide_id="slide_01", title="Cover", section_type="opening", section_label="Overview"),
+                SlideSpec(slide_id="slide_02", title="Problem", section_label="Motivation"),
+                SlideSpec(slide_id="slide_03", title="Approach", section_label="Method"),
+                SlideSpec(slide_id="slide_04", title="Findings", section_label="Results"),
+                SlideSpec(slide_id="slide_05", title="Wrap-up", section_type="ending", section_label="Conclusion"),
+            ],
+        )
+
+        sections = PptxRenderer(style="academic")._section_sequence(spec)
+
+        self.assertEqual(
+            sections,
+            ["Motivation", "Method", "Analysis", "Ablations", "Results", "Conclusion"],
+        )
+
+    def test_academic_toc_missing_canonical_sections_is_detected(self):
+        def record(shape_id, text, x, y, w, h):
+            return {
+                "shape_id": shape_id,
+                "role": "body_text",
+                "has_text": True,
+                "text": text,
+                "has_table": False,
+                "is_picture": False,
+                "bbox": {"x": x, "y": y, "w": w, "h": h, "right": x + w, "bottom": y + h, "area": w * h},
+                "font": {"avg_pt": 12.0},
+            }
+
+        records = [
+            record(1, "Contents", 0.78, 0.62, 4.5, 0.68),
+            record(2, "A sectioned route through the paper: why it matters, what is new, how it works, and what it proves.", 0.82, 1.35, 9.4, 0.42),
+            record(3, "Motivation", 1.72, 2.27, 5.4, 0.34),
+            record(4, "Method", 1.72, 3.13, 5.4, 0.34),
+            record(5, "Results", 1.72, 3.99, 5.4, 0.34),
+            record(6, "Conclusion", 1.72, 4.85, 5.4, 0.34),
+        ]
+
+        findings = _academic_toc_canonical_sections_findings(2, records)
+
+        self.assertEqual(findings[0]["type"], "academic_toc_missing_canonical_sections")
+        self.assertEqual(findings[0]["evidence"]["missing_sections"], ["Analysis", "Ablations"])
 
     def test_slide_planning_uses_text_only_figure_manifest(self):
         planner = ContentPlanner(api_key="test-key", base_url="http://localhost", model="test-model")
@@ -191,6 +238,241 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn("Suggested narration", script)
         self.assertIn("Success rate: 5.36%", script)
 
+    def test_blind_blueprint_renderer_avoids_protected_baseline_tokens(self):
+        inventory = {
+            "paper": {"title": "AGI Is Coming"},
+            "paper_highlights": [
+                {"label": "Core claim", "text": "Wordle-style environments expose whether agents can reason under uncertainty."}
+            ],
+            "assets": {"figures": [], "tables": []},
+            "metrics": [{"label": "Tasks", "value": "12"}],
+            "curated_slides": [],
+        }
+        rough = {
+            "slides": [
+                {
+                    "title": "Wordle stresses reasoning traces",
+                    "slide_role": "thesis",
+                    "claim": "The benchmark emphasizes deliberate hypothesis updates.",
+                    "support": "Agents must revise beliefs from sparse feedback instead of only matching surface patterns.",
+                    "proof_object": {
+                        "type": "text_evidence",
+                        "id": "Motivation",
+                        "focus": "Wordle offers compact but adversarial feedback loops for reasoning evaluation.",
+                    },
+                    "source_evidence": [{"source": "summary", "id": "motivation"}],
+                }
+            ]
+        }
+        temp_root = Path(__file__).parent / "outputs" / "tmp"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        output_path = temp_root / f"blind_blueprint_{uuid.uuid4().hex}.pptx"
+
+        render_blind_blueprint_pptx(inventory, rough, output_path, repair_mode=True)
+        self.assertTrue(output_path.exists())
+        prs = Presentation(output_path)
+        all_text = "\n".join(getattr(shape, "text", "") for slide in prs.slides for shape in slide.shapes).upper()
+        self.assertNotIn("PROOF OBJECT", all_text)
+        self.assertNotIn("DECK MAP", all_text)
+        self.assertNotIn("ACADEMIC PAPER READING", all_text)
+
+        report = build_style_drift_report_payload(
+            pptx_path=output_path,
+            audit={"findings": []},
+            style_id="blind_experimental_blueprint",
+            repair_profile="experimental_from_scratch_loop",
+            style_scope="experimental",
+        )
+        self.assertEqual(report["drift_risk"], "low")
+        self.assertEqual(report["baseline_similarity_signals"], {})
+
+    def test_blind_style_contract_is_run_scoped(self):
+        inventory = {"paper": {"title": "Deep Residual Learning for Image Recognition"}}
+        contract_a = _build_blind_style_contract(inventory, Path("benchmark_runs/deep_residual_fourway_20260616_0003/routes/04_blind_experimental_loop"))
+        contract_b = _build_blind_style_contract(inventory, Path("benchmark_runs/deep_residual_fourway_20260616_0004/routes/04_blind_experimental_loop"))
+
+        self.assertNotEqual(contract_a["style_id"], contract_b["style_id"])
+        self.assertIn("previous_blind_experimental_candidates", contract_a["forgets_styles"])
+
+    def test_speaker_script_audit_flags_placeholder_copy(self):
+        temp_root = Path(__file__).parent / "outputs" / "tmp"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        output_path = temp_root / f"script_audit_{uuid.uuid4().hex}.pptx"
+        spec = PresentationSpec(
+            title="Script Audit",
+            slides=[
+                SlideSpec(
+                    slide_id="slide_01",
+                    title="Very deep training challenge",
+                    takeaway="Training very deep networks is difficult without shortcut paths.",
+                    text_blocks=[
+                        TextBlock(
+                            text="Shortcut paths preserve optimization stability.",
+                            claim="Shortcut paths preserve optimization stability",
+                            detail="Shortcut paths preserve optimization stability.",
+                            evidence="Motivation section",
+                        )
+                    ],
+                )
+            ],
+        )
+        PptxRenderer(style="academic").render(spec, output_path)
+        audit = _audit_speaker_script(
+            "# Script Audit\n\n## Slide 1: Very deep training challenge\n\nSuggested narration: The paper addresses the problem of\n",
+            output_path,
+            "academic",
+        )
+
+        self.assertTrue(any(f["type"] == "script_generic_placeholder_copy" for f in audit["findings"]))
+
+    def test_style_drift_report_keeps_golden_baseline1_rules_scoped(self):
+        temp_root = Path(__file__).parent / "outputs" / "tmp"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        output_path = temp_root / f"scope_{uuid.uuid4().hex}.pptx"
+        render_blind_blueprint_pptx(
+            {"paper": {"title": "Scope Test"}, "paper_highlights": [], "assets": {"figures": [], "tables": []}, "metrics": [], "curated_slides": []},
+            {
+                "slides": [
+                    {
+                        "title": "Scoped rule",
+                        "slide_role": "evidence",
+                        "claim": "Style-specific polish should not mutate academic decks by default.",
+                        "support": "The report can detect rounded-panel findings while keeping auto repair disabled.",
+                        "proof_object": {"type": "text_evidence", "id": "scope", "focus": "detect only"},
+                    }
+                ]
+            },
+            output_path,
+            repair_mode=True,
+        )
+        report = build_style_drift_report_payload(
+            pptx_path=output_path,
+            audit={"findings": [{"type": "panel_identity_label_anchor_drift", "severity": "low"}]},
+            style_id="academic",
+            repair_profile="global_correctness_repair",
+            style_scope="academic",
+        )
+        self.assertEqual(report["golden_baseline1_scoped_findings"]["panel_identity_label_anchor_drift"], 1)
+        self.assertIn("panel_identity_label_anchor_drift", report["forbidden_auto_repairs_detected"])
+        self.assertEqual(report["forbidden_auto_repairs_applied"], [])
+
+    def test_academic_bottom_table_void_is_detected(self):
+        records = [
+            {
+                "role": "component_label",
+                "has_text": True,
+                "text": "Key message",
+                "has_table": False,
+                "is_picture": False,
+                "bbox": {"x": 1.1, "y": 1.4, "w": 4.5, "h": 0.2, "right": 5.6, "bottom": 1.6, "area": 0.9},
+                "font": {},
+            },
+            {
+                "role": "table",
+                "has_text": False,
+                "text": "",
+                "has_table": True,
+                "is_picture": False,
+                "bbox": {"x": 0.85, "y": 5.35, "w": 11.6, "h": 1.25, "right": 12.45, "bottom": 6.6, "area": 14.5},
+                "font": {},
+            },
+            {
+                "role": "page_marker",
+                "has_text": True,
+                "text": "9",
+                "has_table": False,
+                "is_picture": False,
+                "bbox": {"x": 11.8, "y": 7.0, "w": 0.2, "h": 0.1, "right": 12.0, "bottom": 7.1, "area": 0.02},
+                "font": {},
+            },
+        ]
+
+        findings = _academic_right_evidence_void_findings(9, records)
+        self.assertEqual(findings[0]["type"], "academic_right_evidence_void")
+
+    def test_academic_bottom_table_with_right_picture_is_not_void(self):
+        records = [
+            {
+                "role": "component_label",
+                "has_text": True,
+                "text": "Key message",
+                "has_table": False,
+                "is_picture": False,
+                "bbox": {"x": 1.1, "y": 1.4, "w": 4.5, "h": 0.2, "right": 5.6, "bottom": 1.6, "area": 0.9},
+                "font": {},
+            },
+            {
+                "role": "picture",
+                "has_text": False,
+                "text": "",
+                "has_table": False,
+                "is_picture": True,
+                "bbox": {"x": 6.2, "y": 1.72, "w": 5.8, "h": 3.0, "right": 12.0, "bottom": 4.72, "area": 17.4},
+                "font": {},
+            },
+            {
+                "role": "table",
+                "has_text": False,
+                "text": "",
+                "has_table": True,
+                "is_picture": False,
+                "bbox": {"x": 0.85, "y": 5.35, "w": 11.6, "h": 1.25, "right": 12.45, "bottom": 6.6, "area": 14.5},
+                "font": {},
+            },
+        ]
+
+        self.assertEqual(_academic_right_evidence_void_findings(12, records), [])
+
+    def test_academic_table_metric_page_fills_right_evidence_region(self):
+        spec = PresentationSpec(
+            title="Academic Table Metrics",
+            slides=[
+                SlideSpec(
+                    slide_id="slide_01",
+                    title="Overall Performance",
+                    layout="metric_focus",
+                    takeaway="CUA solves only 5.36% of Wordle games; average 3.25 guesses when solved.",
+                    text_blocks=[
+                        TextBlock(
+                            text="Only about 1 in 19 games solved by the agent.",
+                            claim="Extremely low success rate",
+                            detail="Only about 1 in 19 games solved by the agent.",
+                            evidence="Wordle task table",
+                        ),
+                        TextBlock(
+                            text="When solved, averages 3.25 guesses vs. human around 4.",
+                            claim="Guesses below human average",
+                            detail="When solved, averages 3.25 guesses vs. human around 4.",
+                            evidence="Wordle task table",
+                        ),
+                    ],
+                    table_blocks=[
+                        TableBlock(
+                            title="Overall metrics",
+                            rows=[
+                                ["Metric", "CUA Agent"],
+                                ["Avg. guesses per solved puzzle", "3.25"],
+                                ["Success rate", "5.36%"],
+                            ],
+                            caption="Overall metrics on Wordle task.",
+                        )
+                    ],
+                    metric_blocks=[
+                        MetricBlock(label="Success rate", value="5.36%", note="Wordle task"),
+                        MetricBlock(label="Avg. solved guesses", value="3.25", note="Solved games"),
+                    ],
+                )
+            ],
+        )
+        temp_root = Path(__file__).parent / "outputs" / "tmp"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        output_path = temp_root / f"academic_table_metric_{uuid.uuid4().hex}.pptx"
+
+        PptxRenderer(style="academic").render(spec, output_path)
+        audit = inspect_pptx_nonvisual(output_path)
+
+        self.assertNotIn("academic_right_evidence_void", audit["summary"]["by_type"])
+
     def test_drops_metrics_without_visible_values(self):
         metrics = [
             MetricBlock(label="Not really a metric", value="", note="qualitative point"),
@@ -200,6 +482,140 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         compact = _compact_metric_blocks(metrics)
         self.assertEqual(len(compact), 1)
         self.assertEqual(compact[0].value, "5.36%")
+
+    def test_drops_phrase_metric_values_that_are_not_numbers(self):
+        metrics = [
+            MetricBlock(label="56-layer training error", value="higher than 20-layer", note="on CIFAR-10"),
+            MetricBlock(label="ResNet-34 top-1 err", value="25.03% top-1", note="10-crop"),
+        ]
+
+        compact = _compact_metric_blocks(metrics)
+        self.assertEqual(len(compact), 1)
+        self.assertEqual(compact[0].value, "25.03%")
+
+    def test_drops_generic_bare_integer_metric_cards(self):
+        metrics = [
+            MetricBlock(label="Accuracy", value="50", note="model depth"),
+            MetricBlock(label="Top-1 error", value="25.03%", note="ImageNet"),
+        ]
+
+        compact = _compact_metric_blocks(metrics)
+        self.assertEqual(len(compact), 1)
+        self.assertEqual(compact[0].label, "Top-1 error")
+
+    def test_renderer_headline_truncation_avoids_weak_endings(self):
+        renderer = PptxRenderer(style="academic")
+
+        self.assertEqual(renderer._headline_text("Ensemble top-5 error on ImageNet", 24), "Ensemble top-5 error")
+
+    def test_metric_extraction_skips_dataset_number_tokens(self):
+        slide = SlideSpec(
+            slide_id="slide_01",
+            title="Training challenge",
+            takeaway="The paper studies very deep networks on ImageNet and CIFAR-10, but this slide states no numeric result.",
+            text_blocks=[
+                TextBlock(
+                    text="Training depth is hard even when experiments include CIFAR-10.",
+                    claim="Very deep training challenge",
+                    detail="Training depth is hard even when experiments include CIFAR-10.",
+                    evidence="Motivation section",
+                )
+            ],
+        )
+
+        self.assertEqual(_extract_metrics_from_slide(slide), [])
+
+    def test_repairs_fragmented_point_claims_into_complete_ideas(self):
+        slide = SlideSpec(
+            slide_id="slide_01",
+            title="The paper addresses the problem of",
+            takeaway="The paper addresses the problem of training very deep convolutional neural networks for visual recognition.",
+            text_blocks=[
+                TextBlock(
+                    text="The paper addresses the problem of training very deep convolutional neural networks for visual recognition.",
+                    claim="The paper addresses the problem of",
+                    detail="The paper addresses the problem of training very deep convolutional neural networks for visual recognition.",
+                    evidence="Motivation section",
+                )
+            ],
+            section_label="Motivation",
+        )
+
+        repaired = _ensure_structured_points(slide.text_blocks, slide)
+        self.assertEqual(len(repaired), 1)
+        self.assertNotEqual(repaired[0].claim, "The paper addresses the problem of")
+        self.assertIn("challenge", repaired[0].claim.lower())
+
+    def test_semantic_audit_detects_fragment_headings_and_spurious_metric_cards(self):
+        records = [
+            {
+                "index": 1,
+                "role": "title_claim",
+                "has_text": True,
+                "text": "The paper addresses the problem of",
+                "text_words": 6,
+                "bbox": {"x": 1.0, "y": 0.6, "w": 4.8, "h": 0.3, "right": 5.8, "bottom": 0.9, "area": 1.44},
+                "font": {"avg_pt": 22.0},
+            },
+            {
+                "index": 2,
+                "role": "card_text",
+                "has_text": True,
+                "text": "50",
+                "text_words": 1,
+                "bbox": {"x": 8.9, "y": 1.5, "w": 0.6, "h": 0.3, "right": 9.5, "bottom": 1.8, "area": 0.18},
+                "font": {"avg_pt": 18.0},
+            },
+            {
+                "index": 3,
+                "role": "small_text",
+                "has_text": True,
+                "text": "Accuracy",
+                "text_words": 1,
+                "bbox": {"x": 8.85, "y": 1.9, "w": 1.2, "h": 0.2, "right": 10.05, "bottom": 2.1, "area": 0.24},
+                "font": {"avg_pt": 9.0},
+            },
+        ]
+
+        findings = _semantic_content_findings(4, records)
+        kinds = {finding["type"] for finding in findings}
+        self.assertIn("weak_fragment_point_heading", kinds)
+        self.assertIn("spurious_generic_metric_card", kinds)
+
+    def test_placeholder_slide_number_titles_are_repaired_and_audited(self):
+        slide = SlideSpec(
+            slide_id="slide_02",
+            title="Slide 2",
+            takeaway="Deeper plain networks suffer from higher training error than shallower networks.",
+            text_blocks=[
+                TextBlock(
+                    text="Plain networks with more layers exhibit higher training error than their shallower counterparts.",
+                    claim="Deeper networks degrade accuracy",
+                    detail="Plain networks with more layers exhibit higher training error than their shallower counterparts.",
+                    evidence="Training error comparison",
+                )
+            ],
+            section_label="Motivation",
+        )
+
+        self.assertEqual(_repair_slide_title(slide), "Deeper networks degrade accuracy")
+
+        findings = _semantic_content_findings(
+            4,
+            [
+                {
+                    "index": 1,
+                    "role": "title",
+                    "has_text": True,
+                    "text": "Slide 2",
+                    "text_words": 2,
+                    "bbox": {"x": 1.0, "y": 0.5, "w": 2.0, "h": 0.4, "right": 3.0, "bottom": 0.9, "area": 0.8},
+                    "font": {"avg_pt": 24.0},
+                }
+            ],
+        )
+
+        self.assertTrue(any(finding["type"] == "weak_fragment_point_heading" for finding in findings))
 
     def test_structures_numbered_points_for_evaluator(self):
         slide = SlideSpec(
@@ -235,6 +651,11 @@ class Phase1PptxSmokeTest(unittest.TestCase):
         self.assertIn(1, report["failed_slides"])
         self.assertTrue(any("missing claim" in warning for warning in report["warnings"]))
         self.assertTrue(any("meaningless label" in warning for warning in report["warnings"]))
+
+    def test_unicode_ellipsis_inside_real_title_is_not_truncation(self):
+        self.assertFalse(_has_truncated_ellipsis("AGI Is Coming… Right After AI Learns to Play Wordle"))
+        self.assertTrue(_has_truncated_ellipsis("This title was truncated... Before the noun"))
+        self.assertTrue(_has_truncated_ellipsis("This title was truncated…"))
 
     def test_visual_layout_without_image_is_rejected_and_normalized(self):
         slide = SlideSpec(

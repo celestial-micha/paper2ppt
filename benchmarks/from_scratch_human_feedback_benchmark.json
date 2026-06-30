@@ -1,5 +1,151 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "rule_schema": {
+    "schema_version": "benchmark_rule_schema.v3",
+    "fields": [
+      "id",
+      "dimension",
+      "severity",
+      "scope",
+      "style_scope",
+      "repair_mode",
+      "confidence",
+      "human_outcome",
+      "style_contract_version",
+      "machine_delta",
+      "visual_evidence",
+      "human_feedback_effort"
+    ],
+    "legacy_default_policy": "Existing badcase_rules without v2 fields inherit defaults from the audit rule registry until they are migrated.",
+    "dimension_values": [
+      "content",
+      "evidence",
+      "layout",
+      "typography",
+      "component_fit",
+      "style",
+      "repair_risk",
+      "human_acceptance",
+      "external_artifact",
+      "editability"
+    ],
+    "scope_values": [
+      "global",
+      "style_aware",
+      "experimental",
+      "human_feedback",
+      "frozen_reference",
+      "autonomous_proposal"
+    ],
+    "repair_mode_values": [
+      "auto",
+      "suggest",
+      "auto_then_human_review",
+      "human_gated",
+      "detect_only"
+    ],
+    "human_outcome_values": [
+      "pending_review",
+      "accepted",
+      "rejected",
+      "tradeoff_review",
+      "likely_overcorrection",
+      "not_applicable",
+      "needs_visual_review"
+    ]
+  },
+  "style_contracts": {
+    "academic": {
+      "style_id": "academic",
+      "promotion_status": "protected_mature_baseline",
+      "container_shape": "mixed_academic_baseline",
+      "container_padding_model": {
+        "horizontal_in": 0.28,
+        "vertical_in": 0.2,
+        "space_efficiency": "medium"
+      },
+      "preferred_layouts": {
+        "table": "bottom_table_with_right_evidence_region",
+        "figure": "academic_visual_region",
+        "metric": "numbered_claim_or_metric_card"
+      },
+      "protected_rhythm": [
+        "title, contents, section divider, content, and closing rhythm",
+        "key message card plus numbered claim/support blocks",
+        "do not inherit rounded proof-panel polish unless the style contract explicitly changes"
+      ]
+    },
+    "golden_baseline1_from_scratch_warm_academic": {
+      "style_id": "golden_baseline1_from_scratch_warm_academic",
+      "promotion_status": "promoted_golden_reference",
+      "container_shape": "rounded_proof_panel",
+      "container_padding_model": {
+        "horizontal_in": 0.3,
+        "vertical_in": 0.24,
+        "space_efficiency": "medium"
+      },
+      "preferred_layouts": {
+        "moderately_wide_figure": "aspect_aware_proof_panel",
+        "extremely_wide_figure": "bottom_wide_panel_if_readable",
+        "tall_figure": "vertical_proof_panel",
+        "table": "native_table_inside_rounded_panel"
+      },
+      "protected_rhythm": [
+        "warm paper background with restrained teal, gold, and clay accents",
+        "one claim plus one proof object per content slide",
+        "green proof type badge stays at the panel corner while black identity label anchors to fitted content"
+      ]
+    },
+    "blind_rectangular_research_board": {
+      "style_id": "blind_rectangular_research_board",
+      "promotion_status": "promoted_to_golden_baseline2_human_tuned_reference",
+      "container_shape": "straight_rectangle",
+      "container_padding_model": {
+        "horizontal_in": 0.3,
+        "vertical_in": 0.22,
+        "space_efficiency": "high"
+      },
+      "preferred_layouts": {
+        "moderately_wide_figure": "right_panel_large",
+        "extremely_wide_figure": "bottom_band_if_readable",
+        "tall_figure": "asymmetric_left_wide_or_right_narrow",
+        "table": "container_fit_with_min_padding"
+      },
+      "protected_rhythm": [
+        "straight rectangular left claim panel pairs cleanly with straight rectangular right evidence panel",
+        "right-side large figure is preferred when it preserves readability"
+      ],
+      "promoted_style_id": "golden_baseline2_blind_rectangular_research_board",
+      "autonomous_proposal_input_policy": "forbidden_as_full_template_or_layout_recipe"
+    },
+    "golden_baseline2_blind_rectangular_research_board": {
+      "style_id": "golden_baseline2_blind_rectangular_research_board",
+      "family": "blind_rectangular_research_board",
+      "promotion_status": "human_tuned_frozen_reference",
+      "container_shape": "straight_rectangle",
+      "container_padding_model": {
+        "horizontal_in": 0.24,
+        "vertical_in": 0.18,
+        "space_efficiency": "high"
+      },
+      "preferred_layouts": {
+        "text_evidence": "right_panel_stacked_cards_with_middle_body_anchor",
+        "moderately_wide_figure": "right_panel_large_or_bottom_panel_if_readability_improves",
+        "extremely_wide_figure": "bottom_wide_panel_with_large_fitted_image",
+        "tall_figure": "large_asymmetric_panel_preserving_source_aspect",
+        "dense_table": "focused_table_view_inside_large_evidence_panel",
+        "sparse_table": "native_table_fit_with_caption"
+      },
+      "protected_rhythm": [
+        "white research-board canvas with faint vertical grid lines and a restrained top rail",
+        "straight rectangular claim and evidence containers with crisp academic spacing",
+        "large left claim panel plus large right evidence panel for premise/mechanism text evidence",
+        "full-width top claim band plus wide lower proof panel for figure/table evidence pages",
+        "evidence area should feel used, not decorative or empty"
+      ],
+      "autonomous_proposal_input_policy": "forbidden_as_full_template_or_layout_recipe"
+    }
+  },
   "benchmark_track": "from_scratch_paper_reading_ppt",
   "paper_case": "Kimi_K2_Technical_Report",
   "accepted_reference": {
@@ -8,6 +154,52 @@
     "reason": "Human reviewer preferred v5 over v6; v5 is the current aesthetic checkpoint before further automation work.",
     "do_not_replace_with": [
       "rough_draft_v6"
+    ]
+  },
+  "original_academic_golden_baseline_reference": {
+    "style_id": "academic",
+    "status": "protected_mature_baseline",
+    "artifact_root": "outputs/golden_baselines/original_academic_mature",
+    "primary_structure_reference": {
+      "paper_case": "mHC_Manifold_Constrained_Hyper_Connections",
+      "artifact": "outputs/golden_baselines/original_academic_mature/mHC_20260511_010937_academic_original_reference.pptx",
+      "fixed_artifact": "outputs/golden_baselines/original_academic_mature/mHC_20260511_010937_academic_original_reference_fixed.pptx",
+      "audit": "outputs/golden_baselines/original_academic_mature/nonvisual_audit_mHC_20260511_010937_academic_original_reference.json",
+      "protected_traits": [
+        "Contents page uses the six-module route: Motivation, Method, Analysis, Ablations, Results, Conclusion",
+        "title, contents, section divider, content slide, and closing rhythm",
+        "Key message card plus numbered claim/support blocks",
+        "bottom-table pages keep a populated right evidence region when no figure is present"
+      ]
+    },
+    "legacy_visual_reference": {
+      "paper_case": "DeepSeek_V4",
+      "artifact": "outputs/golden_baselines/original_academic_mature/DeepSeek_V4_20260510_195014_academic_original_reference.pptx",
+      "audit": "outputs/golden_baselines/original_academic_mature/nonvisual_audit_DeepSeek_V4_20260510_195014_academic_original_reference.json",
+      "note": "Preserved as legacy original-academic visual evidence. Its four-module Contents page should not override the mHC six-module structure rule."
+    },
+    "latest_validation_case": {
+      "paper_case": "AGI_Is_Coming_Wordle",
+      "artifact": "outputs/golden_baselines/original_academic_mature/AGI_Wordle_20260615_academic_validation_six_toc_right_evidence.pptx",
+      "audit": "outputs/golden_baselines/original_academic_mature/nonvisual_audit_AGI_Wordle_20260615_academic_validation.json",
+      "validated_repairs": [
+        "academic_toc_missing_canonical_sections",
+        "academic_right_evidence_void"
+      ]
+    },
+    "additional_validation_cases": [
+      {
+        "paper_case": "Deep_Residual_Learning_for_Image_Recognition",
+        "artifact": "outputs/golden_baselines/original_academic_mature/DeepResidual_20260616_academic_validation_fresh_parse.pptx",
+        "audit": "outputs/golden_baselines/original_academic_mature/nonvisual_audit_DeepResidual_20260616_academic_validation_fresh_parse.json",
+        "global_repair_artifact": "outputs/golden_baselines/original_academic_mature/DeepResidual_20260616_academic_global_repair_validation.pptx",
+        "global_repair_audit": "outputs/golden_baselines/original_academic_mature/nonvisual_audit_DeepResidual_20260616_academic_global_repair_validation.json",
+        "fresh_parse_run": "benchmark_runs/deep_residual_fourway_20260616_0003",
+        "validated_repairs": [
+          "academic_toc_missing_canonical_sections",
+          "academic_right_evidence_void"
+        ]
+      }
     ]
   },
   "golden_baseline1_reference": {
@@ -26,6 +218,254 @@
       "rounded proof panels whose green type badge stays at the panel corner",
       "black proof identity labels anchored to the underlying figure, table, metric, or explanation text",
       "figure/table/caption geometry driven by the fitted content box rather than by the rounded panel alone"
+    ]
+  },
+  "golden_baseline2_reference": {
+    "style_id": "golden_baseline2_blind_rectangular_research_board",
+    "family": "blind_rectangular_research_board",
+    "version": "DeepResidual_20260630_blind_rectangular_iter04_table_notes",
+    "status": "promoted_after_human_acceptance_as_frozen_reference",
+    "artifact": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/DeepResidual_20260630_blind_rectangular_golden2_reference.pptx",
+    "audit": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/nonvisual_audit_DeepResidual_20260630_blind_rectangular_golden2_reference.json",
+    "style_manifest": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/style_manifest.json",
+    "promotion_record": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/PROMOTION_RECORD.zh-CN.md",
+    "source_benchmark_run": "benchmark_runs/deep_residual_style_aware_rescore_20260630_0001",
+    "source_artifact": "benchmark_runs/deep_residual_style_aware_rescore_20260630_0001/pptx_for_review/04_blind_rectangular_iter04_table_notes.pptx",
+    "reason": "The blind rectangular research-board style was iterated with style-aware benchmark checks and human feedback until the reviewer accepted its visual rhythm. It is preserved as a human-tuned frozen reference, not as proof of a fully autonomous style proposal loop.",
+    "protected_style_traits": [
+      "straight rectangular research-board containers",
+      "faint vertical grid background and restrained top rail",
+      "large evidence panels that should be visually used rather than left empty",
+      "middle-anchored text evidence cards",
+      "wide-panel figures with centered captions",
+      "focused table views with top label and centered explanatory note"
+    ],
+    "human_feedback_effort_summary": {
+      "autonomy_level": "L2_human_feedback_guided_repair_to_L3_rule_supported_repair",
+      "human_feedback_turns_recorded": 4,
+      "manual_ppt_edits_by_human": 0,
+      "rule_conversion_examples": [
+        "text_card_vertical_alignment_top_heavy",
+        "image_underutilized_in_wide_panel",
+        "figure_caption_not_centered_in_wide_panel",
+        "table_view_label_missing",
+        "table_caption_missing_or_not_centered"
+      ]
+    },
+    "autonomous_style_proposal_policy": {
+      "may_use_as_frozen_reference_route": true,
+      "may_use_as_badcase_evidence": true,
+      "may_read_full_style_contract_during_autonomous_proposal": false,
+      "may_copy_layout_grammar_during_autonomous_proposal": false
+    }
+  },
+  "frozen_reference_suite": {
+    "schema_version": "frozen_reference_suite.v1",
+    "references": [
+      {
+        "style_id": "academic",
+        "alias": "golden_baseline0",
+        "status": "protected_mature_baseline",
+        "may_be_used_as_frozen_route": true,
+        "may_be_used_as_autonomous_proposal_template": false
+      },
+      {
+        "style_id": "golden_baseline1_from_scratch_warm_academic",
+        "alias": "golden_baseline1",
+        "status": "human_tuned_frozen_reference",
+        "may_be_used_as_frozen_route": true,
+        "may_be_used_as_autonomous_proposal_template": false
+      },
+      {
+        "style_id": "golden_baseline2_blind_rectangular_research_board",
+        "alias": "golden_baseline2",
+        "status": "human_tuned_frozen_reference",
+        "may_be_used_as_frozen_route": true,
+        "may_be_used_as_autonomous_proposal_template": false
+      }
+    ],
+    "principle": "Frozen references are evaluation baselines and regression targets. Autonomous proposal routes must not read their complete PPTX files, full style contracts, or layout grammars."
+  },
+  "autonomous_style_proposal_policy": {
+    "schema_version": "autonomous_style_proposal_policy.v1",
+    "goal": "Generate new style_contract + layout grammar from paper content and abstract design primitives, then enter bounded repair loop.",
+    "allowed_inputs": [
+      "paper_content_inventory",
+      "deck_requirements",
+      "abstract_design_primitives_library",
+      "badcase_registry",
+      "rule_schema_with_scope_and_repair_mode",
+      "global correctness constraints"
+    ],
+    "forbidden_inputs": [
+      "golden_baseline0 academic PPTX or full layout grammar",
+      "golden_baseline1 PPTX or full rounded proof-panel style contract",
+      "golden_baseline2 PPTX or full straight-rectangle research-board style contract",
+      "any extracted page template copied from frozen references"
+    ],
+    "required_outputs_per_proposal": [
+      "style_contract.json",
+      "layout_grammar.json",
+      "renderer_parameters.json",
+      "design_primitives_used.json",
+      "novelty_report.json",
+      "forbidden_reference_attestation.json"
+    ],
+    "repair_loop": {
+      "max_iterations": 3,
+      "patience": 2,
+      "top_k_repairs_per_iteration": "1-3",
+      "stop_conditions": [
+        "no high or medium findings remain",
+        "two consecutive iterations do not improve multidimensional score",
+        "repair would violate active style_contract",
+        "repair triggers metric_improved_visual_regressed or human rejection"
+      ]
+    }
+  },
+  "design_primitives_library_policy": {
+    "schema_version": "design_primitives_policy.v1",
+    "allowed_primitive_types": [
+      "canvas_grid",
+      "type_scale",
+      "color_role",
+      "container_shape",
+      "proof_object_family",
+      "composition_verb",
+      "fit_constraint"
+    ],
+    "examples": {
+      "canvas_grid": [
+        "12_column_grid",
+        "asymmetric_grid",
+        "evidence_band_grid"
+      ],
+      "composition_verb": [
+        "split",
+        "stack",
+        "rail",
+        "band",
+        "mosaic",
+        "focus",
+        "compare"
+      ],
+      "fit_constraint": [
+        "avoid_text_overflow",
+        "preserve_image_aspect",
+        "center_caption",
+        "keep_table_readable"
+      ]
+    },
+    "forbidden_content": [
+      "complete slide templates",
+      "golden reference page skeletons",
+      "style-specific exact measurements copied from frozen references"
+    ]
+  },
+  "sixway_smoke_benchmark_plan": {
+    "schema_version": "sixway_smoke_plan.v1",
+    "paper_policy": "Use one user-provided paper that has not been parsed before; parse once, reuse checkpoints for all routes.",
+    "routes": [
+      {
+        "route_id": "01_academic_frozen_reference",
+        "style_id": "academic",
+        "route_type": "frozen_reference",
+        "repair_profile": "audit_only_or_global_correctness_only"
+      },
+      {
+        "route_id": "02_golden1_frozen_reference",
+        "style_id": "golden_baseline1_from_scratch_warm_academic",
+        "route_type": "frozen_reference",
+        "repair_profile": "style_scoped_reference_repair"
+      },
+      {
+        "route_id": "03_golden2_frozen_reference",
+        "style_id": "golden_baseline2_blind_rectangular_research_board",
+        "route_type": "frozen_reference",
+        "repair_profile": "style_scoped_reference_repair"
+      },
+      {
+        "route_id": "04_auto_style_proposal_a",
+        "style_id": "auto_style_proposal_a",
+        "route_type": "autonomous_proposal",
+        "repair_profile": "bounded_autonomous_repair"
+      },
+      {
+        "route_id": "05_auto_style_proposal_b",
+        "style_id": "auto_style_proposal_b",
+        "route_type": "autonomous_proposal",
+        "repair_profile": "bounded_autonomous_repair"
+      },
+      {
+        "route_id": "06_auto_style_proposal_c",
+        "style_id": "auto_style_proposal_c",
+        "route_type": "autonomous_proposal",
+        "repair_profile": "bounded_autonomous_repair"
+      }
+    ],
+    "smoke_pass_criteria": [
+      "all routes produce slides.pptx and speaker_script.md",
+      "autonomous routes produce style_contract and forbidden_reference_attestation",
+      "at least one autonomous route clears high and medium findings within three repair iterations",
+      "score_curve and artifact_index are complete",
+      "human review outcomes can be written back as scoped rules"
+    ],
+    "scale_after_smoke": "Run five papers covering figure-heavy, table-heavy, metric-heavy, system-diagram-heavy, and text-heavy cases before considering ten papers or ai20."
+  },
+  "human_feedback_effort_schema": {
+    "schema_version": "human_feedback_effort.v1",
+    "fields": [
+      "human_feedback_turns",
+      "human_marked_slide_count",
+      "human_marked_slides",
+      "problem_types",
+      "manual_ppt_edits_by_human",
+      "codex_direct_renderer_edits",
+      "new_rules_added",
+      "auto_detectable_after_rule_conversion",
+      "auto_repairable_after_rule_conversion",
+      "human_outcome_counts",
+      "autonomy_level"
+    ],
+    "autonomy_levels": {
+      "L0_manual_template": "Human directly designs or edits the deck/template.",
+      "L1_agent_renders_given_template": "Agent renders paper content into a provided complete template.",
+      "L2_human_feedback_guided_repair": "Agent renders/repairs, but human names the main badcases.",
+      "L3_benchmark_guided_multi_round_repair": "Agent repairs with existing rules across multiple iterations; human spot-checks.",
+      "L4_autonomous_style_proposal_and_repair": "Agent proposes a new style without reading complete golden templates and completes bounded repair."
+    }
+  },
+  "external_artifact_eval_schema": {
+    "schema_version": "external_artifact_eval.v1",
+    "artifact_kind_values": [
+      "native_pptx",
+      "pdf_text",
+      "pdf_raster",
+      "beamer_pdf",
+      "image_deck"
+    ],
+    "metrics": [
+      "artifact_success",
+      "page_count",
+      "text_extractable_page_ratio",
+      "raster_page_ratio",
+      "native_editability_score",
+      "source_asset_reuse_score",
+      "content_traceability_score",
+      "human_edit_cost_score",
+      "visual_polish_score"
+    ],
+    "sample_observations": [
+      {
+        "artifact": "??/20260417_203056/slides.pdf",
+        "artifact_kind": "pdf_raster",
+        "observation": "Pages appear as 512x512 raster images, which weakens editability and text extraction even if the visual result looks polished."
+      },
+      {
+        "artifact": "??/presentation.pdf",
+        "artifact_kind": "beamer_pdf",
+        "observation": "Text is extractable and structure is clear, but editing requires LaTeX rather than native PowerPoint object manipulation."
+      }
     ]
   },
   "candidate_style_reference": {
@@ -59,9 +499,166 @@
         "artifact": "outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/DeepSeek_V4_v25_panel_identity_label_centered.pptx",
         "audit": "outputs/DeepSeek_V4/paper/fast/from_scratch_inventory/nonvisual_audit_DeepSeek_V4_v25_panel_identity_label_centered.json",
         "finding_summary": "56 low findings; no high or medium findings after centering non-figure proof identity labels over their underlying content."
+      },
+      {
+        "paper_case": "Deep_Residual_Learning_for_Image_Recognition",
+        "status": "fresh_parse_scoped_validation_saved_pending_human_visual_review",
+        "artifact": "outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/DeepResidual_20260616_golden_baseline1_scoped_validation.pptx",
+        "audit": "outputs/golden_baselines/golden_baseline1_from_scratch_warm_academic/nonvisual_audit_DeepResidual_20260616_golden_baseline1_scoped_validation.json",
+        "finding_summary": "Deep Residual fresh parse produced 60 findings: 2 high, 0 medium, 58 low. Kept as scoped validation evidence, not as a replacement for DeepSeek_V4 v25."
       }
     ]
   },
+  "self_generated_style_candidates": [
+    {
+      "style_id": "blind_experimental_blueprint",
+      "version": "AGI_Wordle_v1",
+      "status": "saved_candidate_not_promoted",
+      "artifact": "outputs/candidate_styles/blind_experimental_blueprint/AGI_Wordle_blind_experimental_blueprint_v1.pptx",
+      "audit": "outputs/candidate_styles/blind_experimental_blueprint/nonvisual_audit_AGI_Wordle_blind_experimental_blueprint_v1.json",
+      "spec": "outputs/candidate_styles/blind_experimental_blueprint/rough_draft_spec_AGI_Wordle_blind_experimental_blueprint_v1.json",
+      "reason": "The blind loop created an independent style without reusing original academic or golden_baseline1 visual grammar. It is useful as a preserved self-generated candidate even though it still has unresolved audit findings.",
+      "validation_cases": [
+        {
+          "paper_case": "AGI_Is_Coming_Wordle",
+          "artifact": "outputs/candidate_styles/blind_experimental_blueprint/AGI_Wordle_blind_experimental_blueprint_v1.pptx",
+          "audit": "outputs/candidate_styles/blind_experimental_blueprint/nonvisual_audit_AGI_Wordle_blind_experimental_blueprint_v1.json",
+          "spec": "outputs/candidate_styles/blind_experimental_blueprint/rough_draft_spec_AGI_Wordle_blind_experimental_blueprint_v1.json"
+        },
+        {
+          "paper_case": "Deep_Residual_Learning_for_Image_Recognition",
+          "artifact": "outputs/candidate_styles/blind_experimental_blueprint/DeepResidual_blind_experimental_blueprint_v2.pptx",
+          "audit": "outputs/candidate_styles/blind_experimental_blueprint/nonvisual_audit_DeepResidual_blind_experimental_blueprint_v2.json",
+          "spec": "outputs/candidate_styles/blind_experimental_blueprint/rough_draft_spec_DeepResidual_blind_experimental_blueprint_v2.json"
+        }
+      ],
+      "promotion_criteria": [
+        "passes at least two additional fresh-paper smoke tests",
+        "reduces high and medium findings through benchmark-driven self-repair",
+        "human reviewer accepts the style rhythm as distinct and useful",
+        "new recurring failures are converted into scoped badcases before promotion"
+      ]
+    }
+  ],
+  "benchmark_artifact_schema": {
+    "run_level_files": [
+      "manifest.json",
+      "comparison_report.md",
+      "score_curve.csv",
+      "artifact_index.csv",
+      "fourway_result.json",
+      "style_proposal_policy.json",
+      "design_primitives_library.json",
+      "human_feedback_effort.csv",
+      "external_artifact_eval.json",
+      "sixway_result.json"
+    ],
+    "route_level_files": [
+      "slides.pptx",
+      "speaker_script.md",
+      "speaker_script_audit.json",
+      "nonvisual_audit.json",
+      "repair_log.json",
+      "style_drift_report.json",
+      "visual_human_review_packet.md",
+      "visual_human_review_packet.zh-CN.md"
+    ],
+    "iteration_level_files": [
+      "iterations/iter_XX/slides.pptx",
+      "iterations/iter_XX/speaker_script.md",
+      "iterations/iter_XX/speaker_script_audit.json",
+      "iterations/iter_XX/nonvisual_audit.json"
+    ],
+    "blind_route_extra_files": [
+      "style_contract.json",
+      "visual_compare/page_level_audit_delta.json",
+      "visual_compare/page_level_audit_delta.csv"
+    ],
+    "artifact_index_columns": [
+      "route_id",
+      "style_id",
+      "repair_profile",
+      "iteration",
+      "pptx_path",
+      "speaker_script_path",
+      "speaker_script_audit_path",
+      "nonvisual_audit_path",
+      "style_contract_path",
+      "finding_count",
+      "high",
+      "medium",
+      "low",
+      "stop_reason",
+      "route_type",
+      "proposal_id",
+      "autonomy_level",
+      "novelty_report_path",
+      "forbidden_reference_attestation_path",
+      "human_feedback_effort_path"
+    ],
+    "score_curve_columns": [
+      "route_id",
+      "style_id",
+      "repair_profile",
+      "iteration",
+      "finding_count",
+      "high",
+      "medium",
+      "low",
+      "content_findings",
+      "layout_findings",
+      "typography_findings",
+      "component_fit_findings",
+      "style_findings",
+      "repair_risk_findings",
+      "dimension_scores_json",
+      "stop_reason",
+      "pptx_path",
+      "speaker_script_path",
+      "speaker_script_audit_path",
+      "route_type",
+      "proposal_id",
+      "new_findings_introduced",
+      "style_contract_violations",
+      "human_outcome_counts_json",
+      "autonomy_level"
+    ],
+    "autonomous_route_extra_files": [
+      "style_contract.json",
+      "layout_grammar.json",
+      "renderer_parameters.json",
+      "design_primitives_used.json",
+      "novelty_report.json",
+      "forbidden_reference_attestation.json"
+    ]
+  },
+  "script_generation_policy": {
+    "rule": "Speaker scripts are route-specific artifacts rather than one shared paper-level script.",
+    "why": [
+      "original academic, golden_baseline1, and blind experimental decks present the same paper through different visual grammars and evidence rhythms",
+      "the script should cue the presenter to the actual proof object, title rhythm, and evidence board used on that route"
+    ],
+    "minimum_audit_checks": [
+      "slide count in script matches PPTX slide count",
+      "script headings cover the actual slide titles",
+      "generic placeholder narration fragments are rejected",
+      "blind experimental scripts retain explicit evidence cues"
+    ]
+  },
+  "semantic_quality_badcases": [
+    {
+      "id": "weak_fragment_point_heading",
+      "scope": "global_content_quality",
+      "trigger": "numbered point or slide title is an unfinished clause or boilerplate prefix such as 'The paper addresses the problem of' or 'In short'",
+      "repair": "rebuild the claim from the supporting sentence into a complete idea phrase"
+    },
+    {
+      "id": "spurious_generic_metric_card",
+      "scope": "global_content_quality",
+      "trigger": "metric card contains a bare small number with a generic label such as 'Accuracy', often caused by dataset/model names like CIFAR-10 or ResNet-50",
+      "repair": "drop the card or replace it with a sourced value that has units, percent, or explicit benchmark context"
+    }
+  ],
   "core_principles": [
     {
       "id": "reuse_parsed_checkpoints",
@@ -112,6 +709,21 @@
       "id": "parallel_style_regression_before_promotion",
       "rule": "New benchmark or repair rules must be tested on the original golden baseline, golden_baseline1, and at least one fresh-paper trial before they become default auto-repair behavior.",
       "why": "The benchmark is intended to protect style quality across templates, not force every template into the latest successful visual grammar."
+    },
+    {
+      "id": "design_primitives_not_complete_templates",
+      "rule": "Autonomous style proposal may use abstract design primitives but must not read complete golden reference templates or layout recipes.",
+      "why": "This gives the agent design vocabulary without letting it simply copy human-tuned golden baselines."
+    },
+    {
+      "id": "human_effort_is_measured",
+      "rule": "Human feedback turns, marked slides, rule conversion, and human outcomes are first-class benchmark data.",
+      "why": "Human-in-the-loop should be quantified as the system moves from L2 guided repair toward L4 autonomous proposal."
+    },
+    {
+      "id": "frozen_references_are_not_proposal_inputs",
+      "rule": "Academic, golden_baseline1, and golden_baseline2 are evaluation references and regression targets, not proposal templates.",
+      "why": "The next benchmark must distinguish reusable human-tuned baselines from truly autonomous new style generation."
     }
   ],
   "iteration_log": [
@@ -436,10 +1048,19 @@
       "missing_title_slide",
       "missing_agenda_slide",
       "estimated_text_overflow",
+      "text_exceeds_container_bounds",
       "shape_overlap_risk",
+      "table_exceeds_container_bounds",
+      "table_container_height_mismatch",
+      "table_sparse_columns_rendered",
+      "table_cell_text_wrapping_risk",
       "table_rows_missing",
       "inline_table_payload_not_indexed",
       "figure_picture_aspect_distortion"
+    ],
+    "mature_academic_baseline_rules": [
+      "academic_toc_missing_canonical_sections",
+      "academic_right_evidence_void"
     ],
     "golden_baseline1_rules": [
       "component_frame_overallocated_after_text_fit",
@@ -454,8 +1075,39 @@
       "panel_identity_label_anchor_drift",
       "panel_identity_label_text_alignment_off_center"
     ],
+    "blind_rectangular_research_board_rules": [
+      "image_underutilized_in_wide_panel",
+      "figure_caption_not_centered_in_wide_panel",
+      "table_view_label_missing",
+      "table_caption_missing_or_not_centered",
+      "table_underutilized_in_evidence_panel",
+      "text_card_vertical_alignment_top_heavy",
+      "metric_improved_visual_regressed",
+      "style_scope_mismatch",
+      "likely_overcorrection"
+    ],
+    "human_feedback_rules": [
+      "metric_improved_visual_regressed",
+      "likely_overcorrection",
+      "style_scope_mismatch",
+      "repair_introduced_new_findings",
+      "image_legibility_regression",
+      "layout_rhythm_regression"
+    ],
     "mature_academic_baseline_policy": "Run new rules as warnings first. Do not auto-apply golden_baseline1 rounded-panel repairs to the original academic golden baseline unless the deck contains the same rounded proof-panel grammar and the original baseline regression suite passes.",
-    "promotion_gate": "A rule can become default auto-repair only after it improves or preserves the original academic baseline, golden_baseline1, and one fresh-paper trial."
+    "promotion_gate": "A rule can become default auto-repair only after it improves or preserves academic, golden_baseline1, golden_baseline2, and at least one autonomous fresh-paper trial.",
+    "golden_baseline2_rules": [
+      "image_underutilized_in_wide_panel",
+      "figure_caption_not_centered_in_wide_panel",
+      "table_view_label_missing",
+      "table_caption_missing_or_not_centered",
+      "table_underutilized_in_evidence_panel",
+      "text_card_vertical_alignment_top_heavy",
+      "metric_improved_visual_regressed",
+      "style_scope_mismatch",
+      "likely_overcorrection"
+    ],
+    "autonomous_proposal_policy": "Autonomous proposal routes may use abstract primitives and badcase triggers, but must not auto-copy full frozen reference layout grammars."
   },
   "badcase_rules": [
     {
@@ -830,6 +1482,241 @@
       "regression_check": "Cross-paper validation decks have no high/medium text overflow findings while preserving the candidate style grammar."
     },
     {
+      "id": "text_exceeds_container_bounds",
+      "dimension": "layout",
+      "severity": "high",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "trigger_signals": [
+        "text box center is inside a card/container but estimated rendered text height exceeds the container bottom padding",
+        "text capacity ratio is above the overflow threshold inside a shallow evidence card",
+        "human screenshot shows text escaping the visual card even though the card rectangle remains in bounds"
+      ],
+      "root_cause": "The renderer used a fixed shallow text box inside the card and did not recompute card/body height after inserting real text.",
+      "repair_strategy": "Resize the evidence card text area, split the copy across cards, or shorten the card body before accepting the slide.",
+      "auto_fix": true,
+      "regression_check": "Nonvisual audit reports no text_exceeds_container_bounds finding on evidence-card text."
+    },
+    {
+      "id": "table_exceeds_container_bounds",
+      "dimension": "layout",
+      "severity": "high",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.92,
+      "human_outcome": "not_applicable",
+      "trigger_signals": [
+        "native table bbox exceeds the nearest table/evidence container after padding",
+        "table bottom or top crosses the straight rectangular carrier",
+        "table overflow is visible from PPTX geometry without needing a screenshot"
+      ],
+      "root_cause": "The table renderer fitted rows to the slide but did not verify that the table stayed inside its semantic container.",
+      "repair_strategy": "Resize, split, or reflow the native table inside the container before applying style-specific polish.",
+      "auto_fix": true,
+      "regression_check": "Nonvisual audit reports no table_exceeds_container_bounds findings and table row height remains above the readability floor.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "table_sparse_columns_rendered",
+      "dimension": "component_fit",
+      "severity": "medium",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.78,
+      "human_outcome": "pending_review",
+      "trigger_signals": [
+        "native table has many columns",
+        "a high fraction of cells are empty",
+        "the visible grid is wide but information is concentrated in a few cramped cells"
+      ],
+      "root_cause": "The table renderer preserved the extracted grid literally, but source table spans or grouped headings were not represented, leaving many empty visible columns.",
+      "repair_strategy": "Collapse empty columns, preserve source table spanning as an image, or split the table into focused stage blocks.",
+      "auto_fix": false,
+      "regression_check": "Table pages either preserve readable native table grammar or are routed to a fitted source-table image / focused subtable layout."
+    },
+    {
+      "id": "table_cell_text_wrapping_risk",
+      "dimension": "component_fit",
+      "severity": "medium",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.78,
+      "human_outcome": "pending_review",
+      "trigger_signals": [
+        "table column width is below the wrapping threshold",
+        "one or more non-empty cells contain long words or long text units",
+        "human screenshot shows stacked letters or excessive line wrapping inside cells"
+      ],
+      "root_cause": "The table was squeezed into too many narrow native columns, so text wraps vertically and becomes unreadable.",
+      "repair_strategy": "Increase effective column width, reduce visible columns, or render the source table/diagram as a fitted image when native cells become unreadable.",
+      "auto_fix": false,
+      "regression_check": "Nonvisual audit reports no table_cell_text_wrapping_risk, or the packet records a human-approved table-image fallback."
+    },
+    {
+      "id": "image_underutilized_in_wide_panel",
+      "dimension": "component_fit",
+      "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline2_blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.76,
+      "human_outcome": "accepted",
+      "trigger_signals": [
+        "wide evidence panel has sufficient area",
+        "inserted picture uses only a small fraction of panel area",
+        "large inner margins remain around the figure",
+        "caption or label space dominates the readable image area"
+      ],
+      "root_cause": "A style-aware figure repair routed the image into a bottom/wide panel but did not preserve enough readable figure area.",
+      "repair_strategy": "Compare bottom-band and right-panel-large variants under the active style contract, then send the slide to human visual review.",
+      "auto_fix": false,
+      "regression_check": "The visual_human_review_packet marks the slide as accepted, rejected, tradeoff_review, or likely_overcorrection before the repair is promoted.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "figure_caption_not_centered_in_wide_panel",
+      "dimension": "component_fit",
+      "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline2_blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.84,
+      "human_outcome": "accepted",
+      "trigger_signals": [
+        "wide bottom evidence panel contains a figure",
+        "caption text sits below the fitted picture",
+        "caption paragraph is left-aligned or its center drifts from the evidence panel center",
+        "human reviewer says the caption should sit centered under the figure"
+      ],
+      "root_cause": "The figure renderer reused a left-aligned caption treatment inside a centered wide evidence panel.",
+      "repair_strategy": "Center the figure caption across the proof panel under the fitted image.",
+      "auto_fix": true,
+      "regression_check": "Wide-panel figure captions use centered paragraph alignment and stay centered under the proof panel.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "table_underutilized_in_evidence_panel",
+      "dimension": "component_fit",
+      "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline2_blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.74,
+      "human_outcome": "accepted",
+      "trigger_signals": [
+        "table is inside a large evidence panel",
+        "native or focused table uses a low fraction of panel area",
+        "large top/bottom/side whitespace remains inside the straight rectangle",
+        "human reviewer says the table should be larger or moved to the long bottom rectangle"
+      ],
+      "root_cause": "The dense-table fallback preserved readability but kept a small side-panel footprint, leaving the straight rectangle visually underused.",
+      "repair_strategy": "Route dense/long tables into the bottom wide evidence panel or increase the focused table footprint within the evidence panel.",
+      "auto_fix": true,
+      "regression_check": "Focused table layouts no longer trigger table_underutilized_in_evidence_panel and avoid sparse-column wrapping findings.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "table_view_label_missing",
+      "dimension": "style",
+      "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline2_blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "accepted",
+      "trigger_signals": [
+        "slide proof type is table",
+        "table is visible inside a straight rectangular evidence panel",
+        "there is no compact Focused table view label directly above the table",
+        "human reviewer prefers the table-specific view label used by dense-table fallback pages"
+      ],
+      "root_cause": "Dense-table fallback had a title treatment, but ordinary native table rendering skipped the same table-view label.",
+      "repair_strategy": "Render a compact Focused table view label above every table evidence object in this style.",
+      "auto_fix": true,
+      "regression_check": "Every table evidence page has a non-component Focused table view label above the table.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "table_caption_missing_or_not_centered",
+      "dimension": "style",
+      "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline2_blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "accepted",
+      "trigger_signals": [
+        "slide proof type is table",
+        "table has no explanatory note below it",
+        "or the note exists but is not center-aligned under the table/panel",
+        "paper source contains a table caption, title, or proof focus that should be visible"
+      ],
+      "root_cause": "The table renderer preserved table cells but dropped the table caption/explanation from the visible evidence block.",
+      "repair_strategy": "Use the table caption/title when available, otherwise use proof.focus as a centered table note under the table.",
+      "auto_fix": true,
+      "regression_check": "Every table evidence page has a centered short caption or proof-focus note below the table.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "text_card_vertical_alignment_top_heavy",
+      "dimension": "typography",
+      "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline2_blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.78,
+      "human_outcome": "accepted",
+      "trigger_signals": [
+        "straight rectangular text evidence card has more vertical room than the rendered copy needs",
+        "text frame is top anchored instead of vertically centered",
+        "human screenshot shows body copy visually glued to the top edge"
+      ],
+      "root_cause": "The previous overflow repair increased evidence-card height but did not change the text frame's vertical anchor.",
+      "repair_strategy": "Middle-anchor text within shallow straight-rectangle evidence cards, or reduce card height when content is short.",
+      "auto_fix": true,
+      "regression_check": "Text evidence cards with vertical slack use middle vertical anchoring and no longer trigger top-heavy alignment findings.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
+      "id": "metric_improved_visual_regressed",
+      "dimension": "repair_risk",
+      "severity": "medium",
+      "scope": "human_feedback",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.6,
+      "human_outcome": "tradeoff_review",
+      "trigger_signals": [
+        "iteration-level machine finding count decreases",
+        "removed findings include a style-aware layout rule",
+        "added findings include image_underutilized_in_wide_panel or another visual readability risk",
+        "human reviewer says the before layout looked better"
+      ],
+      "root_cause": "The repair optimized metadata counts without respecting the active style contract or human-visible figure readability.",
+      "repair_strategy": "Do not count the repair as accepted until the visual_human_review_packet is approved; if rejected, convert the case into a scoped rule.",
+      "auto_fix": false,
+      "regression_check": "Repair logs include page_level_audit_delta and a human_outcome before promotion.",
+      "schema_version": "benchmark_rule_schema.v3"
+    },
+    {
       "id": "wide_figure_forced_into_side_panel",
       "severity": "medium",
       "trigger_signals": [
@@ -844,7 +1731,15 @@
     },
     {
       "id": "figure_panel_aspect_mismatch",
+      "dimension": "component_fit",
       "severity": "medium",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
       "trigger_signals": [
         "figure proof object has a tall or medium-wide source image aspect ratio",
         "the containing rounded proof panel has a near-square or opposite-aspect frame",
@@ -853,8 +1748,8 @@
       ],
       "root_cause": "The layout router matched only proof type and ultra-wide figures, but did not treat source image shape as part of the component contract.",
       "repair_strategy": "Route tall figures to vertical side proof panels, route only clearly-wide figures to bottom horizontal panels, and keep labels as compact annotations that do not steer image centering.",
-      "auto_fix": true,
-      "regression_check": "Tall figures use figure_tall_left/right, medium-wide figures use figure_bottom_wide, and nonvisual audit reports no figure_panel_aspect_mismatch findings."
+      "auto_fix": false,
+      "regression_check": "Tall figures use figure_tall_left/right when the active style contract matches rounded proof-panel grammar; rectangular right-panel layouts require human review before bottom-band repair is accepted."
     },
     {
       "id": "figure_image_off_center_in_panel",
@@ -963,6 +1858,34 @@
       "regression_check": "Nonvisual audit reports no figure_picture_aspect_distortion findings for generated figure proof panels."
     },
     {
+      "id": "academic_right_evidence_void",
+      "severity": "medium",
+      "style_scope": "mature_academic_baseline",
+      "trigger_signals": [
+        "original academic slide uses Key message plus a bottom full-width table",
+        "upper-right evidence region contains no meaningful metric, note, figure, or proof object",
+        "slide spec has table and metrics but renderer leaves the right evidence region blank"
+      ],
+      "root_cause": "The original academic visual-or-mixed renderer rendered the bottom table before its metric fallback, so table+metric/no-image pages skipped the right metric/evidence column.",
+      "repair_strategy": "For original academic table+metric/no-image pages, render metric cards in the right evidence region; when no metrics exist, render compact evidence notes instead.",
+      "auto_fix": true,
+      "regression_check": "Nonvisual audit reports no academic_right_evidence_void findings on AGI Wordle slides 9 and 13, and golden_baseline1 scoped audits are unchanged."
+    },
+    {
+      "id": "academic_toc_missing_canonical_sections",
+      "severity": "medium",
+      "style_scope": "mature_academic_baseline",
+      "trigger_signals": [
+        "original academic Contents slide uses the mature golden-baseline TOC grammar",
+        "the TOC lists only four modules instead of the six-module paper-reading route",
+        "Analysis or Ablations is missing from the Contents page"
+      ],
+      "root_cause": "The renderer derived the original academic TOC directly from compacted slide section labels, so LLM-curated specs that merged analysis/ablation material into Results collapsed the mature six-module route.",
+      "repair_strategy": "For the protected original academic style, render the Contents page with Motivation, Method, Analysis, Ablations, Results, and Conclusion when the deck is a paper-reading academic route.",
+      "auto_fix": true,
+      "regression_check": "AGI Wordle academic route slide 2 lists all six canonical sections; golden_baseline1 Roadmap remains scoped to its own module grammar."
+    },
+    {
       "id": "inline_table_payload_not_indexed",
       "severity": "high",
       "trigger_signals": [
@@ -974,6 +1897,45 @@
       "repair_strategy": "Index curated inline table rows together with extracted table assets before rendering and auditing table proof objects.",
       "auto_fix": true,
       "regression_check": "Title-referenced inline tables render as native PPT tables with row/column grammar instead of empty-looking text panels."
+    },
+    {
+      "id": "paper_title_unicode_ellipsis_false_positive",
+      "severity": "medium",
+      "trigger_signals": [
+        "paper title contains a Unicode ellipsis inside the title rather than at the end",
+        "semantic QA reports truncated ellipsis even though the title is a real source title",
+        "example: AGI Is Coming… Right After AI Learns to Play Wordle"
+      ],
+      "root_cause": "The truncated-ellipsis detector treated any Unicode ellipsis followed by a capitalized word as generated truncation.",
+      "repair_strategy": "Continue flagging three-dot ellipses and trailing Unicode ellipses, but allow in-title Unicode ellipses from source paper titles.",
+      "auto_fix": true,
+      "regression_check": "QA does not flag AGI Is Coming… Right After AI Learns to Play Wordle, while still flagging trailing ellipses."
+    },
+    {
+      "id": "academic_global_repair_not_connected_to_nonvisual_trigger",
+      "severity": "medium",
+      "trigger_signals": [
+        "academic global repair route rerenders a modified spec but raw nonvisual finding counts do not improve",
+        "repair log records copy fitting yet second audit has the same high and medium count",
+        "layout QA passes while metadata audit still reports typography and overlap risks"
+      ],
+      "root_cause": "The repair action compacted generic spec fields but did not target the exact rendered text boxes or layout family signals named by nonvisual audit.",
+      "repair_strategy": "Map nonvisual findings back to slide spec fields and renderer components before claiming global repair success; otherwise report the route as unresolved.",
+      "auto_fix": false,
+      "regression_check": "Benchmark curve must show lower blocking findings after global repair, or the report must mark the repair as unresolved."
+    },
+    {
+      "id": "blind_blueprint_text_capacity_not_closed",
+      "severity": "high",
+      "trigger_signals": [
+        "blind experimental route improves low/medium counts but high estimated_text_overflow remains",
+        "new style uses independent visual grammar but lacks a complete text fitting strategy",
+        "support_body or card_text remains above capacity after one bounded repair pass"
+      ],
+      "root_cause": "The blind renderer changed visual grammar and figure frame routing, but its text allocation still uses fixed boxes that are too small for AGI Wordle support text.",
+      "repair_strategy": "Add a third repair pass that either splits dense support into paired cards, raises box height, or moves secondary detail to speaker notes while preserving the blueprint style contract.",
+      "auto_fix": false,
+      "regression_check": "Blind route should reduce high text-capacity findings across iterations before being presented as a finished third style."
     }
   ],
   "aesthetic_rubric": {
@@ -1146,6 +2108,7 @@
         "inline table rows from slide_spec are indexed when no extracted table id matches",
         "wide figure images preserve source aspect ratio when fitted into PPTX picture boxes",
         "metrics preserve value, label, and context",
+        "original academic bottom-table pages fill the upper-right evidence region when no figure is present",
         "table-bottom claim/support/table-panel spacing passes local text-band balance checks",
         "paired text stacks, shallow-card internal spacing, component frame fit, and component boundary inset pass local optical checks"
       ],
@@ -1194,6 +2157,7 @@
       "component label boundary inset for figure/table proof panels",
       "figure source aspect ratio and whether the chosen layout family matches it",
       "inserted figure picture box aspect ratio versus source image aspect ratio",
+      "original academic bottom-table pages with a missing right evidence column",
       "container internal stack optical balance and metric value-label gap",
       "native table row/column availability",
       "curated inline table row/column availability when table ids do not match extracted assets",

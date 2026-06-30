@@ -984,3 +984,66 @@ experimental style rules
 单篇稳定后，再扩展到 `ai20`。最后再做一个 blind from-scratch loop：不复用 `academic` 或 `golden_baseline1` 的视觉骨架，只复用 checkpoint 内容和 benchmark badcases，让 agent 自动迭代出第三种风格。
 
 这就是最终可以包装成 benchmark harness 的核心故事。
+
+## 12. 2026-07-01 追加：Human effort 也要进入 benchmark
+
+Deep Residual 的 `blind_rectangular_research_board` 已经从 blind experimental route 迭代到人工认可的：
+
+```text
+golden_baseline2_blind_rectangular_research_board
+```
+
+这轮和前面的 `golden_baseline1` 一样，不应该被包装成“完全自动”。它的价值在于：系统每次被人类指出问题后，都把问题沉淀成可检测、可修复或可回归的 rule。
+
+因此下一阶段应把 human-in-the-loop 本身量化，而不是回避它。
+
+建议记录：
+
+```text
+human_feedback_turns
+human_marked_slides
+problem_type: content | layout | typography | component_fit | style | repair_risk
+rule_added_count
+auto_detectable_after_rule_conversion
+auto_repairable_after_rule_conversion
+manual_ppt_edits_by_human
+codex_direct_renderer_edits
+human_outcome: accepted | rejected | tradeoff_review | likely_overcorrection
+autonomy_level
+```
+
+### 12.1 golden2 学到的新规则
+
+本轮用户反馈主要转成：
+
+| badcase | 人类观察 | benchmark 表达 |
+| --- | --- | --- |
+| `text_card_vertical_alignment_top_heavy` | evidence card 里的正文视觉偏上 | text card body anchor / vertical optical balance |
+| `image_underutilized_in_wide_panel` | 大直角 evidence panel 中图片太小 | image bbox area ratio inside usable panel |
+| `figure_caption_not_centered_in_wide_panel` | 图注左对齐不舒服 | caption paragraph alignment and bbox center |
+| `table_underutilized_in_evidence_panel` | 表格没有充分利用 panel | table bbox area ratio and readable row height |
+| `table_view_label_missing` | focused table view 上方缺少标签 | label presence above native/focused table |
+| `table_caption_missing_or_not_centered` | 表格下方缺少居中说明 | caption text and paragraph alignment under table |
+| `metric_improved_visual_regressed` | finding 下降但人眼觉得变差 | repair-risk rule with human outcome |
+
+这些规则说明 human feedback 的作用不是“替系统做 PPT”，而是帮助系统把新错误命名、结构化、加入下一轮 eval。
+
+### 12.2 Autonomy level
+
+为了面试时说清楚“人类参与越来越少”，建议使用五级：
+
+| level | 说明 |
+| --- | --- |
+| `L0_manual_template` | 人类直接设计模板或手工改 PPT |
+| `L1_agent_renders_given_template` | 系统把内容填入既定模板 |
+| `L2_human_feedback_guided_repair` | 系统生成/修复，人类指出主要问题 |
+| `L3_benchmark_guided_multi_round_repair` | 系统用已有规则多轮自修，人类抽查 |
+| `L4_autonomous_style_proposal_and_repair` | 系统不读取完整 golden 模板，自主提出风格并多轮修复 |
+
+`golden_baseline1` 和 `golden_baseline2` 应诚实记为 human-tuned references；下一阶段的 autonomous proposal routes 才是冲击 `L4` 的实验。
+
+### 12.3 面试讲法
+
+可以这样说：
+
+> 我们没有把人工反馈当成不可量化的主观修图。每次用户指出一个页面问题，我们都会记录涉及页码、问题类型、根因、修复策略、自动检测信号、自动修复权限和最终 human outcome。后续 benchmark 会统计 human feedback turns 是否下降、规则转化率是否上升，以及系统从 L2 到 L3/L4 的自主程度是否提升。

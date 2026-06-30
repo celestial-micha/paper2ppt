@@ -19,7 +19,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, TypedDict
+from typing import Any, Callable, Dict, Iterable, List, Optional, TypedDict
 
 from .content_planner import ContentPlan
 from .detailed_tex import generate_detailed_tex_deck
@@ -57,6 +57,7 @@ class _PptxWorkflowState(TypedDict, total=False):
     used_langgraph: bool
     used_langchain: bool
     llm_model: str
+    style: str
 
 
 def run_text_pptx_workflow(
@@ -66,6 +67,7 @@ def run_text_pptx_workflow(
     save_json: SaveJsonFunc,
     title: str = "Paper2Slides Presentation",
     source_plan_path: str = "",
+    style: str = "academic",
 ) -> Dict[str, Any]:
     """Curate, validate, save, and render an editable PPTX from a content plan."""
     _load_package_env()
@@ -78,6 +80,7 @@ def run_text_pptx_workflow(
         "validation_warnings": [],
         "used_langgraph": False,
         "used_langchain": False,
+        "style": style,
     }
 
     graph_runner = _build_langgraph_runner(save_json)
@@ -275,6 +278,21 @@ def _curate_spec_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
     prompt = _build_curation_prompt(packet)
     warnings = list(state.get("validation_warnings", []))
     if os.getenv("PPTX_FORCE_DETERMINISTIC", "").strip().lower() in {"1", "true", "yes"}:
+        checkpoint = state.get("spec_checkpoint_path")
+        if checkpoint and checkpoint.exists():
+            try:
+                spec = PresentationSpec.from_dict(json.loads(checkpoint.read_text(encoding="utf-8")))
+                warnings.append("PPTX_FORCE_DETERMINISTIC=1; reused existing slide spec checkpoint.")
+                return {
+                    **state,
+                    "raw_llm_response": "",
+                    "spec": spec,
+                    "used_langchain": False,
+                    "llm_model": _get_pptx_llm_model(),
+                    "validation_warnings": warnings,
+                }
+            except Exception as exc:
+                warnings.append(f"Existing slide spec checkpoint could not be reused: {exc}")
         warnings.append("PPTX_FORCE_DETERMINISTIC=1; used deterministic fallback slide spec.")
         return {
             **state,
@@ -333,6 +351,8 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         slide.section_label = slide.section_label or _infer_slide_section(slide)
         if not slide.metric_blocks:
             slide.metric_blocks = _extract_metrics_from_slide(slide)[:4]
+        if slide.section_type != "opening" and _is_weak_point_claim(slide.title):
+            slide.title = _repair_slide_title(slide)
 
         if slide.section_type == "opening" and not slide.image_blocks:
             cover_image = _pick_cover_figure(state["plan"])
@@ -368,6 +388,7 @@ def _validate_node(state: _PptxWorkflowState) -> _PptxWorkflowState:
         "used_langchain": state.get("used_langchain", False),
         "llm_model": state.get("llm_model", ""),
         "figure_analysis_count": len(state.get("figure_analyses", {})),
+        "style": state.get("style", "academic"),
     }
     return {**state, "spec": spec, "validation_warnings": warnings}
 
@@ -386,7 +407,7 @@ def _render_node(state: _PptxWorkflowState, save_json: SaveJsonFunc) -> _PptxWor
         raw_path.write_text(raw_response, encoding="utf-8")
 
     pptx_path = output_subdir / "slides.pptx"
-    renderer = PptxRenderer()
+    renderer = PptxRenderer(style=state.get("style", "academic"))
     renderer.render(spec, pptx_path)
 
     qa_result = inspect_pptx_layout(pptx_path)
@@ -949,8 +970,8 @@ def _ensure_structured_points(blocks: List[TextBlock], slide: SlideSpec) -> List
         source_text = _clean_text(block.text or block.detail or block.claim)
         if not source_text and not block.claim and not block.detail:
             continue
-        claim = _limit_words(block.claim or _infer_point_claim(source_text), 8)
         detail = _complete_point(block.detail or _infer_point_detail(source_text, slide), 24)
+        claim = _repair_point_claim(block.claim or _infer_point_claim(source_text), detail, source_text, slide)
         if claim and detail and claim.lower().rstrip(".") == detail.lower().rstrip("."):
             detail = _complete_point(source_text if source_text.lower().rstrip(".") != claim.lower().rstrip(".") else slide.takeaway, 24)
         evidence = _limit_words(block.evidence or _infer_point_evidence(slide), 14)
@@ -979,8 +1000,8 @@ def _repair_point_blocks(slide: SlideSpec, blocks: List[TextBlock], compact_layo
     repaired: List[TextBlock] = []
     detail_limit = 16 if compact_layout else 22
     for point in points[:3]:
-        claim = _limit_words(point.claim or _infer_point_claim(point.text), 7)
         detail = _complete_point(point.detail or _infer_point_detail(point.text, slide), detail_limit)
+        claim = _repair_point_claim(point.claim or _infer_point_claim(point.text), detail, point.text, slide, max_words=7)
         evidence = _limit_words(point.evidence or _infer_point_evidence(slide), 10)
         repaired.append(
             TextBlock(
@@ -1013,6 +1034,135 @@ def _format_point_text(claim: str, detail: str) -> str:
     if claim and detail:
         return f"{claim}: {detail}"
     return detail or claim
+
+
+def _repair_slide_title(slide: SlideSpec) -> str:
+    candidates = []
+    candidates.extend(block.claim or block.text for block in slide.text_blocks[:3])
+    candidates.extend([slide.takeaway, slide.title, slide.section_label])
+    for candidate in candidates:
+        repaired = _repair_point_claim("", candidate, candidate, slide, max_words=8)
+        if repaired and not _is_weak_point_claim(repaired):
+            return _limit_words(repaired, 8)
+    if slide.section_label:
+        return _limit_words(f"{slide.section_label} insight", 8)
+    return _limit_words(slide.title or "Key finding", 8)
+
+
+def _repair_point_claim(
+    claim: str,
+    detail: str,
+    source_text: str,
+    slide: SlideSpec,
+    max_words: int = 8,
+) -> str:
+    candidates = [
+        _clean_text(claim),
+        _keyword_point_claim(detail),
+        _keyword_point_claim(source_text),
+        _claim_from_complete_text(detail),
+        _claim_from_complete_text(source_text),
+        _keyword_point_claim(slide.takeaway),
+        _claim_from_complete_text(slide.takeaway),
+        _claim_from_complete_text(slide.title),
+    ]
+    for candidate in candidates:
+        candidate = _limit_words(_clean_text(candidate).strip(" .;:-"), max_words)
+        if candidate and not _is_weak_point_claim(candidate):
+            return candidate
+    if slide.section_label:
+        return _limit_words(f"{slide.section_label} insight", max_words)
+    return "Key insight"
+
+
+def _keyword_point_claim(text: str) -> str:
+    lower = _clean_text(text).lower()
+    if not lower:
+        return ""
+    if "vanishing/exploding" in lower or ("vanishing" in lower and "exploding" in lower):
+        return "Gradient instability barrier"
+    if "very deep" in lower and any(term in lower for term in ("train", "training", "networks")):
+        return "Very deep training challenge"
+    if "optimization" in lower and "generalization" in lower:
+        return "Optimization and generalization gap"
+    if "projection-based shortcuts" in lower or "projection shortcuts" in lower:
+        return "Projection shortcuts add cost"
+    if "highway network" in lower or ("gated" in lower and "shortcut" in lower):
+        return "Gated shortcuts are unreliable"
+    if "training error" in lower and any(term in lower for term in ("layers", "depth", "deeper")):
+        return "Depth degradation appears in training"
+    if "hundreds of layers" in lower or "large depths" in lower:
+        return "Depth scaling remains blocked"
+    if "identity" in lower and any(term in lower for term in ("shortcut", "residual", "information flow")):
+        return "Identity shortcuts preserve flow"
+    if "accuracy" in lower and any(term in lower for term in ("improv", "better")) and any(term in lower for term in ("train", "training", "depth")):
+        return "Accuracy gains require trainable depth"
+    return ""
+
+
+def _claim_from_complete_text(text: str) -> str:
+    text = _strip_boilerplate_point_prefix(_strip_trailing_ellipsis(_clean_text(text))).strip(" .;:-")
+    if not text:
+        return ""
+    if ":" in text:
+        lead = text.split(":", 1)[0].strip(" -")
+        if lead and not _is_weak_point_claim(lead):
+            return lead
+    first_clause = re.split(r",|;|\sdue to\s|\sbecause\s|\bthat\s", text, maxsplit=1, flags=re.IGNORECASE)[0].strip(" -")
+    if first_clause and not _is_weak_point_claim(first_clause):
+        return first_clause
+    return _infer_point_claim(text)
+
+
+def _strip_boilerplate_point_prefix(text: str) -> str:
+    patterns = [
+        r"^(?:the\s+)?paper\s+(?:addresses|targets|studies|tackles)\s+(?:the\s+)?(?:problem|challenge)\s+of\s+",
+        r"^(?:this\s+)?paper\s+(?:addresses|targets|studies|tackles)\s+(?:the\s+)?(?:problem|challenge)\s+of\s+",
+        r"^its\s+goal\s+is\s+to\s+make\s+it\s+",
+        r"^in\s+short,?\s+",
+        r"^taken\s+together,?\s+",
+        r"^this\s+meant\s+",
+        r"^even\s+with\s+",
+        r"^they\s+can\s+help\s+but\s+are\s+not\s+",
+    ]
+    cleaned = _clean_text(text)
+    for pattern in patterns:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE).strip()
+    return cleaned
+
+
+def _is_weak_point_claim(text: str) -> bool:
+    text = _clean_text(text).strip(" .;:-")
+    if not text:
+        return True
+    lower = text.lower()
+    words = lower.split()
+    if re.fullmatch(r"(?:slide|page)\s*\d+", lower):
+        return True
+    weak_exact = {
+        "in short",
+        "taken together",
+        "the paper addresses the problem of",
+        "its goal is to make it",
+        "this meant practitioners could not reliably",
+        "even with improved initialization and batch",
+        "they can help but are not",
+    }
+    if lower in weak_exact:
+        return True
+    if lower.startswith(("the paper addresses", "this paper addresses", "its goal is", "in short", "taken together")) and len(words) <= 9:
+        return True
+    if lower.startswith(("this meant", "even with", "they can help")) and len(words) <= 9:
+        return True
+    weak_endings = {
+        "a", "an", "the", "of", "to", "in", "on", "for", "with", "by", "and", "or", "that", "which",
+        "it", "its", "not", "but", "while",
+    }
+    if words and words[-1].strip(" ,;:-()[]").lower() in weak_endings:
+        return True
+    if text.count("(") != text.count(")"):
+        return True
+    return False
 
 
 def _infer_point_claim(text: str) -> str:
@@ -1111,29 +1261,69 @@ def _compact_metric_blocks(blocks: List[MetricBlock]) -> List[MetricBlock]:
     compact: List[MetricBlock] = []
     for metric in blocks[:4]:
         label = _limit_words(_clean_text(metric.label), 4)
-        value = _limit_words(_clean_text(metric.value), 5)
+        raw_value = _clean_text(metric.value)
         note = _limit_words(_clean_text(metric.note), 8)
-        if not value:
+        value = _normalize_metric_block_value(raw_value, " ".join([label, note]))
+        if not value and not raw_value:
             value = _first_metric_value(" ".join([label, note]))
-        if not value or _looks_like_year(value) or _looks_like_noise_number(value):
+        if not value or _looks_like_year(value) or _looks_like_noise_number(value) or _looks_like_spurious_metric(label, value, note):
             continue
         compact.append(MetricBlock(label=label or "Key metric", value=value, note=note))
     return compact
 
 
+def _normalize_metric_block_value(value: str, context: str = "") -> str:
+    text = _strip_trailing_ellipsis(_clean_text(value)).strip()
+    if not text:
+        return ""
+    matches = list(_iter_metric_value_matches(text))
+    if not matches:
+        return ""
+    for match in matches:
+        clean_value = match.group(0).replace(" ", "")
+        if _looks_like_year(clean_value) or _looks_like_noise_number(clean_value):
+            continue
+        if not _valid_metric_candidate(text, match, clean_value) and not _metric_context_allows_value(clean_value, context):
+            continue
+        if match.start() == 0 or "%" in clean_value or clean_value.lower().startswith(("r=", "p=")):
+            return clean_value
+    return ""
+
+
+def _metric_context_allows_value(value: str, context: str) -> bool:
+    lower_value = _clean_text(value).lower()
+    if "%" in lower_value or lower_value.startswith(("r=", "p=")) or re.search(r"[a-zA-Z]", lower_value):
+        return True
+    context_lower = _clean_text(context).lower()
+    metric_terms = (
+        "accuracy", "error", "rate", "score", "map", "layer", "layers", "parameter", "params", "class", "classes",
+        "task", "tasks", "image", "images", "epoch", "epochs", "batch", "token", "tokens", "benchmark", "improvement",
+    )
+    if not any(term in context_lower for term in metric_terms):
+        return False
+    try:
+        number = float(lower_value)
+    except ValueError:
+        return False
+    return number > 20 or any(term in context_lower for term in ("layer", "class", "task", "epoch", "image", "token", "batch"))
+
+
 def _extract_metrics_from_slide(slide: SlideSpec) -> List[MetricBlock]:
     text = " ".join([slide.takeaway, slide.title] + [block.text for block in slide.text_blocks])
-    candidates = re.findall(r"(?<![A-Za-z0-9])(?:\d+(?:\.\d+)?%|r\s*=\s*-?\d+(?:\.\d+)?|p\s*=\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?)", text)
     metrics: List[MetricBlock] = []
     seen = set()
-    for value in candidates:
-        clean_value = value.replace(" ", "")
+    for match in _iter_metric_value_matches(text):
+        clean_value = match.group(0).replace(" ", "")
+        if not _valid_metric_candidate(text, match, clean_value):
+            continue
         if _looks_like_year(clean_value) or _looks_like_noise_number(clean_value):
             continue
         if clean_value in seen:
             continue
         seen.add(clean_value)
         label = _metric_label_for_value(clean_value, text)
+        if _looks_like_spurious_metric(label, clean_value, text):
+            continue
         metrics.append(MetricBlock(label=label, value=clean_value))
         if len(metrics) >= 4:
             break
@@ -1141,9 +1331,79 @@ def _extract_metrics_from_slide(slide: SlideSpec) -> List[MetricBlock]:
 
 
 def _first_metric_value(text: str) -> str:
-    match = re.search(r"(?<![A-Za-z0-9])(?:\d+(?:\.\d+)?%|r\s*=\s*-?\d+(?:\.\d+)?|p\s*=\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?)", text or "")
-    value = match.group(0).replace(" ", "") if match else ""
-    return "" if _looks_like_year(value) else value
+    for match in _iter_metric_value_matches(text or ""):
+        value = match.group(0).replace(" ", "")
+        if not _looks_like_year(value) and _valid_metric_candidate(text or "", match, value):
+            return value
+    return ""
+
+
+def _iter_metric_value_matches(text: str) -> Iterable[re.Match[str]]:
+    pattern = (
+        r"(?<![A-Za-z0-9-])"
+        r"(?:"
+        r"\d+(?:\.\d+)?%"
+        r"|r\s*=\s*-?\d+(?:\.\d+)?"
+        r"|p\s*=\s*\d+(?:\.\d+)?"
+        r"|\d+(?:\.\d+)?\s*(?:x|M|B|K|ms|s|GB|MB|tokens?|layers?|params?|parameters?|classes|tasks|images|epochs|FLOPs?|GFLOPs?)"
+        r"|\d+(?:\.\d+)?"
+        r")"
+    )
+    return re.finditer(pattern, text or "", flags=re.IGNORECASE)
+
+
+def _valid_metric_candidate(text: str, match: re.Match[str], value: str) -> bool:
+    if _looks_like_dataset_or_model_number(text, match):
+        return False
+    lower_value = value.lower()
+    if "%" in lower_value or lower_value.startswith(("r=", "p=")):
+        return True
+    if re.search(r"[a-zA-Z]", value):
+        return True
+    window = text[max(0, match.start() - 42): min(len(text), match.end() + 42)].lower()
+    metric_terms = (
+        "accuracy", "error", "rate", "score", "layer", "layers", "parameter", "params", "class", "classes",
+        "task", "tasks", "image", "images", "epoch", "epochs", "token", "tokens", "benchmark", "improvement",
+    )
+    if not any(term in window for term in metric_terms):
+        return False
+    try:
+        number = float(value)
+    except ValueError:
+        return False
+    if number <= 20 and not any(term in window for term in ("layer", "class", "task", "epoch", "image", "token")):
+        return False
+    return True
+
+
+def _looks_like_dataset_or_model_number(text: str, match: re.Match[str]) -> bool:
+    left = text[max(0, match.start() - 24): match.start()].lower()
+    right = text[match.end(): min(len(text), match.end() + 18)].lower()
+    if left.endswith("-") or right.startswith("-"):
+        token = (left + text[match.start():match.end()] + right).strip()
+        if re.search(r"(cifar|imagenet|mnist|resnet|vgg|bert|gpt|vit|t5|dataset|benchmark)-?\d+", token):
+            return True
+    if re.search(r"(cifar|imagenet|mnist|resnet|vgg|bert|gpt|vit|t5)-$", left):
+        return True
+    return False
+
+
+def _looks_like_spurious_metric(label: str, value: str, context: str = "") -> bool:
+    label_lower = _clean_text(label).lower()
+    value_clean = _clean_text(value)
+    if not re.fullmatch(r"\d+(?:\.\d+)?", value_clean):
+        return False
+    try:
+        number = float(value_clean)
+    except ValueError:
+        return False
+    generic_labels = {"accuracy", "rating", "score", "key number", "key metric", "metric"}
+    context_lower = _clean_text(context).lower()
+    if label_lower in generic_labels:
+        return True
+    if re.search(r"(cifar|imagenet|mnist|resnet|vgg|bert|gpt|vit|t5)-\s*" + re.escape(value_clean), context_lower):
+        return True
+    return False
 
 
 def _looks_like_year(value: str) -> bool:

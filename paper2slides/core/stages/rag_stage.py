@@ -334,8 +334,12 @@ async def run_rag_stage(base_dir: Path, config: Dict) -> Dict:
         
         if path.is_file():
             logger.info(f"Parsing file: {path.name}")
+            (output_dir / path.stem / "auto" / "images").mkdir(parents=True, exist_ok=True)
         else:
             logger.info(f"Parsing directory: {path.name}")
+            for input_file in path.rglob("*"):
+                if input_file.is_file():
+                    (output_dir / input_file.stem / "auto" / "images").mkdir(parents=True, exist_ok=True)
         
         parse_result = batch_parser.process_batch(
             file_paths=[input_path],

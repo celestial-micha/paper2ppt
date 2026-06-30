@@ -1,0 +1,6083 @@
+{
+  "schema_version": "pptx_nonvisual_audit.v1",
+  "created_at": "2026-06-30T17:13:11",
+  "pptx_path": "benchmark_runs\\deep_residual_style_aware_rescore_20260630_0001\\pptx_for_review\\04_blind_rectangular_iter04_table_notes.pptx",
+  "review_mode": "non_visual_metadata_only",
+  "rendering_used": false,
+  "vision_model_used": false,
+  "rule_schema_version": "benchmark_rule_schema.v2",
+  "slide_count": 29,
+  "slide_size": {
+    "width_in": 13.333,
+    "height_in": 7.5
+  },
+  "rules": {
+    "title_claim_min_pt": 20.0,
+    "support_min_pt": 11.0,
+    "card_text_min_pt": 9.0,
+    "body_min_pt": 10.5,
+    "title_claim_ideal_min_pt": 24.0,
+    "support_ideal_min_pt": 12.5,
+    "card_text_ideal_min_pt": 9.8,
+    "body_ideal_min_pt": 12.0,
+    "near_capacity_ratio": 0.82,
+    "overflow_ratio": 1.03,
+    "sparse_ratio": 0.16,
+    "sparse_area_sq_in": 1.15,
+    "overlap_ratio": 0.14,
+    "container_overlap_ratio": 0.18,
+    "low_occupancy_ratio": 0.18,
+    "card_copy_imbalance_ratio": 2.6,
+    "cover_left_min_pt": 14.0,
+    "deck_typography_signal_count": 8,
+    "flow_label_min_gap_in": 0.1,
+    "flow_grid_max_col_gap_in": 1.75,
+    "flow_grid_min_row_gap_in": 0.62,
+    "flow_grid_col_to_row_ratio_max": 2.7,
+    "flow_label_center_tolerance_in": 0.09,
+    "agenda_read_path_header_min_gap_in": 0.22,
+    "table_support_claim_gap_max_in": 0.24,
+    "table_support_panel_gap_min_in": 0.28,
+    "paired_text_top_delta_max_in": 0.26,
+    "component_label_min_inset_in": 0.3,
+    "component_frame_extra_height_max_in": 0.42,
+    "card_internal_gap_max_in": 0.055,
+    "card_internal_min_bottom_padding_in": 0.09,
+    "card_internal_shallow_max_h_in": 1.15,
+    "card_internal_narrow_max_w_in": 3.8,
+    "metric_label_gap_max_in": 0.065,
+    "metric_card_min_area_sq_in": 0.4,
+    "balance_container_min_area_sq_in": 3.6,
+    "balance_padding_tolerance_in": 0.38,
+    "balance_padding_tolerance_ratio": 0.11,
+    "picture_aspect_ratio_tolerance": 0.18,
+    "tall_figure_aspect_max": 0.9,
+    "tall_figure_panel_aspect_max": 0.95,
+    "wide_figure_aspect_min": 1.9,
+    "wide_figure_panel_aspect_min": 2.0,
+    "figure_image_center_tolerance_in": 0.35,
+    "figure_image_center_tolerance_ratio": 0.08,
+    "figure_label_semantic_wide_panel_aspect_min": 1.6,
+    "figure_label_semantic_tall_panel_aspect_max": 0.98,
+    "figure_panel_badge_left_inset_max_in": 0.78,
+    "figure_panel_badge_top_inset_min_in": 0.22,
+    "figure_panel_badge_top_inset_max_in": 0.55,
+    "figure_identity_label_center_tolerance_in": 0.35,
+    "figure_identity_label_vertical_gap_min_in": -0.08,
+    "figure_identity_label_vertical_gap_max_in": 0.18,
+    "panel_identity_label_center_tolerance_in": 0.35,
+    "table_container_padding_in": 0.08,
+    "table_container_overflow_tolerance_in": 0.03,
+    "table_container_height_fill_max": 0.96,
+    "table_readable_row_height_min_in": 0.18,
+    "table_readable_col_width_min_in": 0.45,
+    "table_sparse_column_count_min": 8,
+    "table_sparse_empty_cell_ratio": 0.34,
+    "table_sparse_min_non_empty_cells": 8,
+    "table_wrapping_col_width_max_in": 0.56,
+    "table_wrapping_effective_units_per_in": 18.0,
+    "table_underutilized_area_ratio": 0.42,
+    "table_underutilized_margin_in": 0.55,
+    "table_caption_center_tolerance_in": 0.25,
+    "text_container_padding_in": 0.08,
+    "text_container_overflow_tolerance_in": 0.04,
+    "text_card_vertical_slack_ratio": 1.45,
+    "text_card_vertical_extra_min_in": 0.18,
+    "wide_panel_aspect_min": 2.3,
+    "wide_panel_min_area_sq_in": 4.5,
+    "image_underutilized_area_ratio": 0.28,
+    "image_underutilized_margin_in": 0.42,
+    "figure_caption_center_tolerance_in": 0.25
+  },
+  "rule_registry": {
+    "academic_right_evidence_void": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.76,
+      "human_outcome": "pending_review"
+    },
+    "academic_toc_missing_canonical_sections": {
+      "dimension": "content",
+      "scope": "style_aware",
+      "style_scope": [
+        "academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.78,
+      "human_outcome": "pending_review"
+    },
+    "agenda_read_path_header_too_close": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "below_ideal_font_band": {
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "card_copy_imbalance": {
+      "dimension": "typography",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.68,
+      "human_outcome": "pending_review"
+    },
+    "card_internal_spacing_not_scaled_to_frame": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "component_boundary_inset_violation": {
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.82,
+      "human_outcome": "pending_review"
+    },
+    "component_frame_overallocated_after_text_fit": {
+      "dimension": "component_fit",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.66,
+      "human_outcome": "pending_review"
+    },
+    "container_stack_off_balance": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.64,
+      "human_outcome": "pending_review"
+    },
+    "cover_left_typography_underpowered": {
+      "dimension": "typography",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.68,
+      "human_outcome": "pending_review"
+    },
+    "dense_table_readability_risk": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.76,
+      "human_outcome": "pending_review"
+    },
+    "estimated_text_overflow": {
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review"
+    },
+    "figure_badge_identity_label_conflation": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "figure_caption_not_centered_in_wide_panel": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.76,
+      "human_outcome": "pending_review"
+    },
+    "figure_image_off_center_in_panel": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.7,
+      "human_outcome": "pending_review"
+    },
+    "figure_label_anchor_drift": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "figure_label_text_alignment_off_center": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.74,
+      "human_outcome": "pending_review"
+    },
+    "figure_panel_aspect_mismatch": {
+      "dimension": "component_fit",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "figure_picture_aspect_distortion": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review"
+    },
+    "image_legibility_regression": {
+      "dimension": "repair_risk",
+      "scope": "human_feedback",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.62,
+      "human_outcome": "pending_review"
+    },
+    "image_underutilized_in_wide_panel": {
+      "dimension": "component_fit",
+      "scope": "style_aware",
+      "style_scope": [
+        "blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.7,
+      "human_outcome": "pending_review"
+    },
+    "layout_rhythm_regression": {
+      "dimension": "repair_risk",
+      "scope": "human_feedback",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.6,
+      "human_outcome": "pending_review"
+    },
+    "likely_overcorrection": {
+      "dimension": "repair_risk",
+      "scope": "human_feedback",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.62,
+      "human_outcome": "likely_overcorrection"
+    },
+    "low_font_size": {
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review"
+    },
+    "low_text_density": {
+      "dimension": "typography",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.58,
+      "human_outcome": "pending_review"
+    },
+    "metric_improved_visual_regressed": {
+      "dimension": "repair_risk",
+      "scope": "human_feedback",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.64,
+      "human_outcome": "tradeoff_review"
+    },
+    "metric_label_gap_too_large": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.64,
+      "human_outcome": "pending_review"
+    },
+    "near_text_capacity": {
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review"
+    },
+    "paired_label_body_gap_too_large": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.64,
+      "human_outcome": "pending_review"
+    },
+    "panel_identity_label_anchor_drift": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.74,
+      "human_outcome": "pending_review"
+    },
+    "panel_identity_label_text_alignment_off_center": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.74,
+      "human_outcome": "pending_review"
+    },
+    "repair_introduced_new_findings": {
+      "dimension": "repair_risk",
+      "scope": "human_feedback",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.78,
+      "human_outcome": "pending_review"
+    },
+    "shape_overlap_risk": {
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.9,
+      "human_outcome": "pending_review"
+    },
+    "sparse_slide_risk": {
+      "dimension": "typography",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.62,
+      "human_outcome": "pending_review"
+    },
+    "spurious_generic_metric_card": {
+      "dimension": "content",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.76,
+      "human_outcome": "pending_review"
+    },
+    "stacked_figure_identity_label_overcorrection": {
+      "dimension": "repair_risk",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "detect_only",
+      "confidence": 0.66,
+      "human_outcome": "pending_review"
+    },
+    "style_scope_mismatch": {
+      "dimension": "repair_risk",
+      "scope": "style_aware",
+      "style_scope": [],
+      "repair_mode": "detect_only",
+      "confidence": 0.68,
+      "human_outcome": "pending_review"
+    },
+    "table_caption_missing_or_not_centered": {
+      "dimension": "evidence",
+      "scope": "style_aware",
+      "style_scope": [
+        "blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.78,
+      "human_outcome": "pending_review"
+    },
+    "table_cell_text_wrapping_risk": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.78,
+      "human_outcome": "pending_review"
+    },
+    "table_container_height_mismatch": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.74,
+      "human_outcome": "pending_review"
+    },
+    "table_exceeds_container_bounds": {
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.91,
+      "human_outcome": "pending_review"
+    },
+    "table_readability_after_fit": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "human_gated",
+      "confidence": 0.62,
+      "human_outcome": "pending_review"
+    },
+    "table_sparse_columns_rendered": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.78,
+      "human_outcome": "pending_review"
+    },
+    "table_support_band_off_balance": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.7,
+      "human_outcome": "pending_review"
+    },
+    "table_underutilized_in_evidence_panel": {
+      "dimension": "component_fit",
+      "scope": "style_aware",
+      "style_scope": [
+        "blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto_then_human_review",
+      "confidence": 0.73,
+      "human_outcome": "pending_review"
+    },
+    "table_view_label_missing": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.74,
+      "human_outcome": "pending_review"
+    },
+    "text_card_vertical_alignment_top_heavy": {
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "blind_rectangular_research_board"
+      ],
+      "repair_mode": "auto",
+      "confidence": 0.74,
+      "human_outcome": "pending_review"
+    },
+    "text_exceeds_container_bounds": {
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review"
+    },
+    "weak_fragment_point_heading": {
+      "dimension": "content",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.78,
+      "human_outcome": "pending_review"
+    },
+    "weak_table_grammar": {
+      "dimension": "component_fit",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.84,
+      "human_outcome": "pending_review"
+    }
+  },
+  "summary": {
+    "finding_count": 91,
+    "by_type": {
+      "near_text_capacity": 18,
+      "below_ideal_font_band": 32,
+      "estimated_text_overflow": 13,
+      "text_exceeds_container_bounds": 3,
+      "weak_fragment_point_heading": 1,
+      "low_font_size": 23,
+      "table_support_band_off_balance": 1
+    },
+    "by_severity": {
+      "low": 65,
+      "high": 16,
+      "medium": 10
+    },
+    "by_problem_type": {
+      "copy_fitting": 31,
+      "typography": 55,
+      "geometry": 3,
+      "content_semantics": 1,
+      "optical_balance": 1
+    },
+    "by_dimension": {
+      "typography": 73,
+      "layout": 16,
+      "content": 1,
+      "style": 1
+    },
+    "dimension_scores": {
+      "content": 94.0,
+      "evidence": 100.0,
+      "layout": 0.0,
+      "typography": 0.0,
+      "component_fit": 100.0,
+      "style": 98.0,
+      "repair_risk": 100.0
+    },
+    "dimension_score_model": "100 minus severity penalties: high=12, medium=6, low=2",
+    "high_risk_pages": [
+      2,
+      6,
+      8,
+      10,
+      12,
+      13,
+      17,
+      21,
+      22,
+      25,
+      26
+    ],
+    "medium_risk_pages": [
+      2,
+      4,
+      5,
+      17,
+      27,
+      28
+    ],
+    "typography_pages": [
+      2,
+      4,
+      5,
+      6,
+      8,
+      9,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      26,
+      27,
+      28
+    ],
+    "copy_fitting_pages": [
+      2,
+      3,
+      5,
+      6,
+      8,
+      10,
+      12,
+      13,
+      15,
+      17,
+      21,
+      22,
+      25,
+      26,
+      29
+    ],
+    "geometry_pages": [
+      2
+    ],
+    "optical_balance_pages": [
+      8
+    ],
+    "deck_flags": [
+      "deck_type_scale_under_comfort_band"
+    ]
+  },
+  "findings": [
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "title_claim text is estimated at 1.00x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 10,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 3.2,
+            "h": 0.45,
+            "right": 3.92,
+            "bottom": 1.07,
+            "area": 1.44
+          },
+          "font": {
+            "sizes_pt": [
+              30.0
+            ],
+            "min_pt": 30.0,
+            "avg_pt": 30.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Experiment Map",
+          "text_words": 2,
+          "text_capacity": {
+            "font_pt": 30.0,
+            "capacity_chars": 13.3,
+            "effective_chars": 13.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.001
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "support_body text is estimated at 0.90x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "support_body",
+          "bbox": {
+            "x": 0.75,
+            "y": 1.16,
+            "w": 5.8,
+            "h": 0.35,
+            "right": 6.55,
+            "bottom": 1.51,
+            "area": 2.03
+          },
+          "font": {
+            "sizes_pt": [
+              13.0
+            ],
+            "min_pt": 13.0,
+            "avg_pt": 13.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "The deck is organized as a sequence of claim/evidence ledgers.",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 13.0,
+            "capacity_chars": 61.8,
+            "effective_chars": 55.5,
+            "estimated_lines": 1.08,
+            "fill_ratio": 0.898
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 2,
+      "message": "body_text text uses 11.0pt; preferred metadata band starts near 12.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 5.45,
+            "y": 1.92,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 2.22,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Research Problem; Limitations of Existing Methods –",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 47.2,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.858
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "body_text text is estimated at 0.86x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 5.45,
+            "y": 1.92,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 2.22,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Research Problem; Limitations of Existing Methods –",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 47.2,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.858
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "small_text text is estimated at 0.88x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "small_text",
+          "bbox": {
+            "x": 11.0,
+            "y": 1.93,
+            "w": 0.75,
+            "h": 0.25,
+            "right": 11.75,
+            "bottom": 2.18,
+            "area": 0.188
+          },
+          "font": {
+            "sizes_pt": [
+              9.0
+            ],
+            "min_pt": 9.0,
+            "avg_pt": 9.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "3 slides",
+          "text_words": 2,
+          "text_capacity": {
+            "font_pt": 9.0,
+            "capacity_chars": 8.4,
+            "effective_chars": 7.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.876
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 2,
+      "message": "support_body text uses 11.0pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 3.04,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 3.34,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Network Architecture / Stage Design; Training Details – SGD and",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 57.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.04
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "support_body text is estimated at 1.04x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 3.04,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 3.34,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Network Architecture / Stage Design; Training Details – SGD and",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 57.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.04
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "small_text text is estimated at 0.88x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 23,
+          "role": "small_text",
+          "bbox": {
+            "x": 11.0,
+            "y": 3.05,
+            "w": 0.75,
+            "h": 0.25,
+            "right": 11.75,
+            "bottom": 3.3,
+            "area": 0.188
+          },
+          "font": {
+            "sizes_pt": [
+              9.0
+            ],
+            "min_pt": 9.0,
+            "avg_pt": 9.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "2 slides",
+          "text_words": 2,
+          "text_capacity": {
+            "font_pt": 9.0,
+            "capacity_chars": 8.4,
+            "effective_chars": 7.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.876
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 2,
+      "message": "support_body text uses 11.0pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 28,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 4.16,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 4.46,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning Framework –; Residual Building Block – Two‑Layer",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 66.8,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.213
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "support_body text is estimated at 1.21x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 28,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 4.16,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 4.46,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning Framework –; Residual Building Block – Two‑Layer",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 66.8,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.213
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "small_text text is estimated at 0.99x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 29,
+          "role": "small_text",
+          "bbox": {
+            "x": 11.0,
+            "y": 4.17,
+            "w": 0.75,
+            "h": 0.25,
+            "right": 11.75,
+            "bottom": 4.42,
+            "area": 0.188
+          },
+          "font": {
+            "sizes_pt": [
+              9.0
+            ],
+            "min_pt": 9.0,
+            "avg_pt": 9.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "14 slides",
+          "text_words": 2,
+          "text_capacity": {
+            "font_pt": 9.0,
+            "capacity_chars": 8.4,
+            "effective_chars": 8.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.995
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 2,
+      "message": "support_body text uses 11.0pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 34,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 5.28,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 5.58,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning for Image; Normalization, Nonlinearities, and No Gating",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 70.2,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.275
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "support_body text is estimated at 1.27x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 34,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 5.28,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 5.58,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning for Image; Normalization, Nonlinearities, and No Gating",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 70.2,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.275
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 2,
+      "message": "small_text text is estimated at 0.88x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 35,
+          "role": "small_text",
+          "bbox": {
+            "x": 11.0,
+            "y": 5.29,
+            "w": 0.75,
+            "h": 0.25,
+            "right": 11.75,
+            "bottom": 5.54,
+            "area": 0.188
+          },
+          "font": {
+            "sizes_pt": [
+              9.0
+            ],
+            "min_pt": 9.0,
+            "avg_pt": 9.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "3 slides",
+          "text_words": 2,
+          "text_capacity": {
+            "font_pt": 9.0,
+            "capacity_chars": 8.4,
+            "effective_chars": 7.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.876
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "text_exceeds_container_bounds",
+      "severity": "high",
+      "problem_type": "geometry",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": true,
+      "preferred_repair_scope": "minimal component position/size repair only because a structural signal failed",
+      "slide_page": 2,
+      "message": "Text is likely to render beyond its containing component by -0.23in.",
+      "evidence": {
+        "text": {
+          "index": 22,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 3.04,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 3.34,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Network Architecture / Stage Design; Training Details – SGD and",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 57.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.04
+          }
+        },
+        "container": {
+          "index": 18,
+          "role": "container",
+          "bbox": {
+            "x": 0.82,
+            "y": 2.87,
+            "w": 10.8,
+            "h": 0.78,
+            "right": 11.62,
+            "bottom": 3.65,
+            "area": 8.424
+          },
+          "font": {
+            "sizes_pt": [],
+            "min_pt": null,
+            "avg_pt": null
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "",
+          "text_words": 0,
+          "text_capacity": {}
+        },
+        "fill_ratio": 1.04,
+        "expected_text_height_in": 0.26,
+        "expected_bottom_overflow_in": 0.0,
+        "textbox_bottom_overflow_in": 0.0
+      },
+      "repair_strategy": "Resize the evidence card text area, split copy across cards, or shorten the card body before accepting the slide."
+    },
+    {
+      "type": "text_exceeds_container_bounds",
+      "severity": "high",
+      "problem_type": "geometry",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": true,
+      "preferred_repair_scope": "minimal component position/size repair only because a structural signal failed",
+      "slide_page": 2,
+      "message": "Text is likely to render beyond its containing component by -0.09in.",
+      "evidence": {
+        "text": {
+          "index": 28,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 4.16,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 4.46,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning Framework –; Residual Building Block – Two‑Layer",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 66.8,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.213
+          }
+        },
+        "container": {
+          "index": 24,
+          "role": "container",
+          "bbox": {
+            "x": 0.82,
+            "y": 3.99,
+            "w": 10.8,
+            "h": 0.78,
+            "right": 11.62,
+            "bottom": 4.77,
+            "area": 8.424
+          },
+          "font": {
+            "sizes_pt": [],
+            "min_pt": null,
+            "avg_pt": null
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "",
+          "text_words": 0,
+          "text_capacity": {}
+        },
+        "fill_ratio": 1.213,
+        "expected_text_height_in": 0.441,
+        "expected_bottom_overflow_in": 0.0,
+        "textbox_bottom_overflow_in": 0.0
+      },
+      "repair_strategy": "Resize the evidence card text area, split copy across cards, or shorten the card body before accepting the slide."
+    },
+    {
+      "type": "text_exceeds_container_bounds",
+      "severity": "high",
+      "problem_type": "geometry",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": true,
+      "preferred_repair_scope": "minimal component position/size repair only because a structural signal failed",
+      "slide_page": 2,
+      "message": "Text is likely to render beyond its containing component by -0.09in.",
+      "evidence": {
+        "text": {
+          "index": 34,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 5.28,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 5.58,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning for Image; Normalization, Nonlinearities, and No Gating",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 70.2,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.275
+          }
+        },
+        "container": {
+          "index": 30,
+          "role": "container",
+          "bbox": {
+            "x": 0.82,
+            "y": 5.11,
+            "w": 10.8,
+            "h": 0.78,
+            "right": 11.62,
+            "bottom": 5.89,
+            "area": 8.424
+          },
+          "font": {
+            "sizes_pt": [],
+            "min_pt": null,
+            "avg_pt": null
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "",
+          "text_words": 0,
+          "text_capacity": {}
+        },
+        "fill_ratio": 1.275,
+        "expected_text_height_in": 0.441,
+        "expected_bottom_overflow_in": 0.0,
+        "textbox_bottom_overflow_in": 0.0
+      },
+      "repair_strategy": "Resize the evidence card text area, split copy across cards, or shorten the card body before accepting the slide."
+    },
+    {
+      "type": "weak_fragment_point_heading",
+      "severity": "medium",
+      "problem_type": "content_semantics",
+      "dimension": "content",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.78,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "content curation and sourced claim/metric repair before layout changes",
+      "slide_page": 2,
+      "message": "Numbered point/title text looks like an unfinished clause: 'Network Architecture / Stage Design; Training Details – SGD and'.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.45,
+            "y": 3.04,
+            "w": 4.75,
+            "h": 0.3,
+            "right": 10.2,
+            "bottom": 3.34,
+            "area": 1.425
+          },
+          "font": {
+            "sizes_pt": [
+              11.0
+            ],
+            "min_pt": 11.0,
+            "avg_pt": 11.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Network Architecture / Stage Design; Training Details – SGD and",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 11.0,
+            "capacity_chars": 55.0,
+            "effective_chars": 57.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 1.04
+          }
+        }
+      },
+      "repair_strategy": "Regenerate the point claim from the supporting sentence; use a complete idea phrase, not a boilerplate sentence prefix."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 3,
+      "message": "support_body text is estimated at 0.94x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 14,
+          "role": "support_body",
+          "bbox": {
+            "x": 1.18,
+            "y": 4.0,
+            "w": 9.6,
+            "h": 0.45,
+            "right": 10.78,
+            "bottom": 4.45,
+            "area": 4.32
+          },
+          "font": {
+            "sizes_pt": [
+              15.0
+            ],
+            "min_pt": 15.0,
+            "avg_pt": 15.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Research Problem / Limitations of Existing Methods – Vanishing/Exploding / Limitations – T",
+          "text_words": 15,
+          "text_capacity": {
+            "font_pt": 15.0,
+            "capacity_chars": 111.7,
+            "effective_chars": 104.4,
+            "estimated_lines": 1.34,
+            "fill_ratio": 0.935
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 4,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 26,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 3.6,
+            "w": 5.8,
+            "h": 0.76,
+            "right": 11.83,
+            "bottom": 4.36,
+            "area": 4.408
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "The paper addresses the problem of training much deeper convolutional neural networks for ",
+          "text_words": 22,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 249.3,
+            "effective_chars": 135.7,
+            "estimated_lines": 3.62,
+            "fill_ratio": 0.545
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 4,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 29,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 4.81,
+            "w": 5.8,
+            "h": 0.62,
+            "right": 11.83,
+            "bottom": 5.43,
+            "area": 3.596
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Evidence is preserved from this run's fresh parse checkpoints.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 194.7,
+            "effective_chars": 56.2,
+            "estimated_lines": 2.82,
+            "fill_ratio": 0.288
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 5,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Limitations of Existing Methods – Vanishing/Exploding Gradients",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 59.9,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.838
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 5,
+      "message": "title_claim text is estimated at 0.84x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Limitations of Existing Methods – Vanishing/Exploding Gradients",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 59.9,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.838
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 5,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 26,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 3.6,
+            "w": 5.8,
+            "h": 0.76,
+            "right": 11.83,
+            "bottom": 4.36,
+            "area": 4.408
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Early deep models suffered from gradients that vanish or explode during backpropagation, m",
+          "text_words": 22,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 249.3,
+            "effective_chars": 129.4,
+            "estimated_lines": 3.62,
+            "fill_ratio": 0.519
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 5,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 29,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 4.81,
+            "w": 5.8,
+            "h": 0.62,
+            "right": 11.83,
+            "bottom": 5.43,
+            "area": 3.596
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Evidence is preserved from this run's fresh parse checkpoints.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 194.7,
+            "effective_chars": 56.2,
+            "estimated_lines": 2.82,
+            "fill_ratio": 0.288
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 6,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Limitations – The Degradation Problem",
+          "text_words": 5,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 35.2,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.492
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 6,
+      "message": "body_text text is estimated at 1.91x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deeper plain networks have higher training error than shallower.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 58.2,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.909
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 6,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "On CIFAR-10, 56-layer has higher training and test error. Training error increases, indica",
+          "text_words": 15,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 107.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.972
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 6,
+      "message": "support_body text is estimated at 0.97x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "On CIFAR-10, 56-layer has higher training and test error. Training error increases, indica",
+          "text_words": 15,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 107.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.972
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 6,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 21,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.35,
+            "y": 6.02,
+            "w": 10.55,
+            "h": 0.28,
+            "right": 11.9,
+            "bottom": 6.3,
+            "area": 2.954
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Training error on CIFAR-10 showing degradation of deeper plain network.",
+          "text_words": 10,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 185.6,
+            "effective_chars": 64.5,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.347
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 8,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Network Architecture / Stage Design",
+          "text_words": 5,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 32.4,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.454
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 8,
+      "message": "body_text text is estimated at 1.65x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "ResNets are composed of stages with doubling filters at.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 50.2,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.646
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 8,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "When size halves, channels double to maintain complexity. First block of each stage uses s",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 86.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.782
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 8,
+      "message": "card_text text uses 8.2pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.3,
+            "y": 5.9,
+            "w": 10.65,
+            "h": 0.32,
+            "right": 11.95,
+            "bottom": 6.22,
+            "area": 3.408
+          },
+          "font": {
+            "sizes_pt": [
+              8.19
+            ],
+            "min_pt": 8.19,
+            "avg_pt": 8.19
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Architecture details for different ResNet depths.",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 8.19,
+            "capacity_chars": 252.4,
+            "effective_chars": 45.1,
+            "estimated_lines": 1.49,
+            "fill_ratio": 0.179
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "table_support_band_off_balance",
+      "severity": "low",
+      "problem_type": "optical_balance",
+      "dimension": "style",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.7,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "internal text-stack spacing and padding before macro-layout changes",
+      "slide_page": 8,
+      "message": "Table-bottom support copy is optically pulled toward the table panel: claim/support gap 0.49in.",
+      "evidence": {
+        "claim": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Network Architecture / Stage Design",
+          "text_words": 5,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 32.4,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.454
+          }
+        },
+        "support": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "When size halves, channels double to maintain complexity. First block of each stage uses s",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 86.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.782
+          }
+        },
+        "table_panel": {
+          "index": 18,
+          "role": "container",
+          "bbox": {
+            "x": 0.72,
+            "y": 3.05,
+            "w": 11.9,
+            "h": 3.58,
+            "right": 12.62,
+            "bottom": 6.63,
+            "area": 42.602
+          },
+          "font": {
+            "sizes_pt": [],
+            "min_pt": null,
+            "avg_pt": null
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "",
+          "text_words": 0,
+          "text_capacity": {}
+        },
+        "table": {
+          "index": 21,
+          "role": "table",
+          "bbox": {
+            "x": 1.3,
+            "y": 3.88,
+            "w": 10.65,
+            "h": 1.94,
+            "right": 11.95,
+            "bottom": 5.82,
+            "area": 20.661
+          },
+          "font": {
+            "sizes_pt": [],
+            "min_pt": null,
+            "avg_pt": null
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "",
+          "text_words": 0,
+          "text_capacity": {}
+        },
+        "claim_gap_in": 0.49,
+        "max_claim_gap_in": 0.24,
+        "panel_gap_in": 0.97,
+        "min_panel_gap_in": 0.28
+      },
+      "repair_strategy": "Treat claim and support as one upper text stack, then lower the table panel enough to preserve a visible gutter."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 9,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Training Details – SGD and Learning Rate Schedule",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 45.2,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.633
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 9,
+      "message": "card_text text uses 8.2pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 23,
+          "role": "card_text",
+          "bbox": {
+            "x": 5.85,
+            "y": 5.43,
+            "w": 6.05,
+            "h": 0.32,
+            "right": 11.9,
+            "bottom": 5.75,
+            "area": 1.936
+          },
+          "font": {
+            "sizes_pt": [
+              8.19
+            ],
+            "min_pt": 8.19,
+            "avg_pt": 8.19
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Key settings for ImageNet and CIFAR-10.",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 8.19,
+            "capacity_chars": 141.5,
+            "effective_chars": 35.1,
+            "estimated_lines": 1.49,
+            "fill_ratio": 0.248
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 10,
+      "message": "support_body text is estimated at 1.16x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 14,
+          "role": "support_body",
+          "bbox": {
+            "x": 1.18,
+            "y": 4.0,
+            "w": 9.6,
+            "h": 0.45,
+            "right": 10.78,
+            "bottom": 4.45,
+            "area": 4.32
+          },
+          "font": {
+            "sizes_pt": [
+              15.0
+            ],
+            "min_pt": 15.0,
+            "avg_pt": 15.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning Framework – Overview / Residual Building Block – Two‑Layer Block / ",
+          "text_words": 20,
+          "text_capacity": {
+            "font_pt": 15.0,
+            "capacity_chars": 111.7,
+            "effective_chars": 129.4,
+            "estimated_lines": 1.34,
+            "fill_ratio": 1.159
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 11,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning Framework – Overview",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 40.5,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.567
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 11,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "card_text",
+          "bbox": {
+            "x": 5.9,
+            "y": 5.6,
+            "w": 5.95,
+            "h": 0.28,
+            "right": 11.85,
+            "bottom": 5.88,
+            "area": 1.666
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Residual learning: a building block with identity shortcut.",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 103.3,
+            "effective_chars": 53.2,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.515
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 12,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Residual Building Block – Two‑Layer Block",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 39.3,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.549
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 12,
+      "message": "body_text text is estimated at 1.32x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Simple two-layer block used in ResNet-18/34.",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 40.1,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.316
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 12,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Block: Conv3x3-BN-ReLU-Conv3x3-BN plus identity shortcut. Identity shortcut adds no parame",
+          "text_words": 13,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 111.2,
+            "estimated_lines": 1.59,
+            "fill_ratio": 1.008
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 12,
+      "message": "support_body text is estimated at 1.01x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Block: Conv3x3-BN-ReLU-Conv3x3-BN plus identity shortcut. Identity shortcut adds no parame",
+          "text_words": 13,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 111.2,
+            "estimated_lines": 1.59,
+            "fill_ratio": 1.008
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 12,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 21,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.35,
+            "y": 6.02,
+            "w": 10.55,
+            "h": 0.28,
+            "right": 11.9,
+            "bottom": 6.3,
+            "area": 2.954
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Left: two-layer building block for ResNet-34.",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 185.6,
+            "effective_chars": 40.5,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.218
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 13,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Residual Building Block – Bottleneck Three‑Layer Block",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 51.6,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.722
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 13,
+      "message": "body_text text is estimated at 1.56x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Bottleneck block reduces parameters for deeper nets.",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 47.5,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.558
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 13,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "First 1x1 reduces channels, 3x3 operates, last 1x1 restores. Reduces computation compared ",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 95.6,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.866
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 13,
+      "message": "support_body text is estimated at 0.87x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "First 1x1 reduces channels, 3x3 operates, last 1x1 restores. Reduces computation compared ",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 95.6,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.866
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 13,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 21,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.35,
+            "y": 6.02,
+            "w": 10.55,
+            "h": 0.28,
+            "right": 11.9,
+            "bottom": 6.3,
+            "area": 2.954
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Right: bottleneck building block for ResNet-50/101/152.",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 185.6,
+            "effective_chars": 50.5,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.272
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 14,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Shortcut Connection Variants (Options A, B, C)",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 40.8,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.571
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 14,
+      "message": "card_text text uses 8.2pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 23,
+          "role": "card_text",
+          "bbox": {
+            "x": 5.85,
+            "y": 5.43,
+            "w": 6.05,
+            "h": 0.32,
+            "right": 11.9,
+            "bottom": 5.75,
+            "area": 1.936
+          },
+          "font": {
+            "sizes_pt": [
+              8.19
+            ],
+            "min_pt": 8.19,
+            "avg_pt": 8.19
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Options A, B, C for handling dimension changes.",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 8.19,
+            "capacity_chars": 141.5,
+            "effective_chars": 40.5,
+            "estimated_lines": 1.49,
+            "fill_ratio": 0.286
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 15,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Dimension Matching – Identity vs Projection Shortcuts",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 49.9,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.698
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 15,
+      "message": "body_text text is estimated at 0.88x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.05,
+            "y": 1.88,
+            "w": 3.25,
+            "h": 1.28,
+            "right": 4.3,
+            "bottom": 3.16,
+            "area": 4.16
+          },
+          "font": {
+            "sizes_pt": [
+              19.0
+            ],
+            "min_pt": 19.0,
+            "avg_pt": 19.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Identity shortcuts with zero-padding or projection handle dimension changes.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 19.0,
+            "capacity_chars": 79.7,
+            "effective_chars": 70.2,
+            "estimated_lines": 3.73,
+            "fill_ratio": 0.88
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 16,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Key Mathematical Formulations",
+          "text_words": 3,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 27.7,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.388
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 17,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Technical Pipeline – Network Assembly",
+          "text_words": 5,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 35.2,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.492
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 17,
+      "message": "title_claim text uses 19.0pt below the 20.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "title_claim",
+          "bbox": {
+            "x": 1.05,
+            "y": 1.88,
+            "w": 5.8,
+            "h": 0.82,
+            "right": 6.85,
+            "bottom": 2.7,
+            "area": 4.756
+          },
+          "font": {
+            "sizes_pt": [
+              19.0
+            ],
+            "min_pt": 19.0,
+            "avg_pt": 19.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "ResNet assembled by stacking residual blocks with design rules.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 19.0,
+            "capacity_chars": 88.1,
+            "effective_chars": 57.2,
+            "estimated_lines": 2.25,
+            "fill_ratio": 0.649
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 17,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "card_text",
+          "bbox": {
+            "x": 8.83,
+            "y": 5.6,
+            "w": 2.9,
+            "h": 0.28,
+            "right": 11.73,
+            "bottom": 5.88,
+            "area": 0.812
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Example network architectures for ImageNet: VGG-19, plain-34, ResNet-34.",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 48.7,
+            "effective_chars": 64.9,
+            "estimated_lines": 1.15,
+            "fill_ratio": 1.332
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 17,
+      "message": "card_text text is estimated at 1.33x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "card_text",
+          "bbox": {
+            "x": 8.83,
+            "y": 5.6,
+            "w": 2.9,
+            "h": 0.28,
+            "right": 11.73,
+            "bottom": 5.88,
+            "area": 0.812
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Example network architectures for ImageNet: VGG-19, plain-34, ResNet-34.",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 48.7,
+            "effective_chars": 64.9,
+            "estimated_lines": 1.15,
+            "fill_ratio": 1.332
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 18,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Data Preprocessing and Augmentation",
+          "text_words": 4,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 33.1,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.463
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 19,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Monitoring and Verification – Layer Responses",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 42.5,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.595
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 19,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 22,
+          "role": "card_text",
+          "bbox": {
+            "x": 5.9,
+            "y": 5.551,
+            "w": 5.95,
+            "h": 0.28,
+            "right": 11.85,
+            "bottom": 5.831,
+            "area": 1.666
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Standard deviations of layer responses on CIFAR-10, showing small residual values.",
+          "text_words": 11,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 103.3,
+            "effective_chars": 74.2,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.718
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 20,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Testing/Inference for Classification",
+          "text_words": 3,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 34.7,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.486
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 21,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "ImageNet Classification Results – Plain vs ResNet",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 45.9,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.642
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 21,
+      "message": "body_text text is estimated at 1.80x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "ResNet eliminates degradation; deeper nets improve accuracy.",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 54.8,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.799
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 21,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Top-1 error: 25.03% vs 28.54% (Table ResNet eliminates degradation; deeper nets improve ac",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 110.7,
+            "estimated_lines": 1.59,
+            "fill_ratio": 1.003
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 21,
+      "message": "support_body text is estimated at 1.00x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Top-1 error: 25.03% vs 28.54% (Table ResNet eliminates degradation; deeper nets improve ac",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 110.7,
+            "estimated_lines": 1.59,
+            "fill_ratio": 1.003
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 21,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 21,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.35,
+            "y": 6.02,
+            "w": 10.55,
+            "h": 0.28,
+            "right": 11.9,
+            "bottom": 6.3,
+            "area": 2.954
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Training curves on ImageNet: plain vs ResNet.",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 185.6,
+            "effective_chars": 39.8,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.214
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 22,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "CIFAR-10 Classification Results",
+          "text_words": 3,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 29.7,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.416
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 22,
+      "message": "body_text text is estimated at 1.48x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "ResNet-110 achieves state-of-the-art 6.43% error.",
+          "text_words": 5,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 45.1,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.48
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 22,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "6.43% test error on CIFAR-10 with data augmentation. Residual formulation crucial for trai",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 96.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.872
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 22,
+      "message": "support_body text is estimated at 0.87x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "6.43% test error on CIFAR-10 with data augmentation. Residual formulation crucial for trai",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 96.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.872
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 22,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 21,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.35,
+            "y": 6.02,
+            "w": 10.55,
+            "h": 0.28,
+            "right": 11.9,
+            "bottom": 6.3,
+            "area": 2.954
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Training curves on CIFAR-10 for plain and ResNet.",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 185.6,
+            "effective_chars": 43.8,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.236
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 23,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Object Detection Results on PASCAL VOC and MS.",
+          "text_words": 8,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 40.8,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.571
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 23,
+      "message": "card_text text uses 8.2pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 23,
+          "role": "card_text",
+          "bbox": {
+            "x": 5.85,
+            "y": 5.43,
+            "w": 6.05,
+            "h": 0.32,
+            "right": 11.9,
+            "bottom": 5.75,
+            "area": 1.936
+          },
+          "font": {
+            "sizes_pt": [
+              8.19
+            ],
+            "min_pt": 8.19,
+            "avg_pt": 8.19
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Baseline Faster R-CNN mAP on PASCAL VOC.",
+          "text_words": 7,
+          "text_capacity": {
+            "font_pt": 8.19,
+            "capacity_chars": 141.5,
+            "effective_chars": 35.5,
+            "estimated_lines": 1.49,
+            "fill_ratio": 0.251
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 24,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Localization Results on ImageNet",
+          "text_words": 4,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 30.1,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.421
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 24,
+      "message": "card_text text uses 8.2pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 23,
+          "role": "card_text",
+          "bbox": {
+            "x": 5.85,
+            "y": 5.43,
+            "w": 6.05,
+            "h": 0.32,
+            "right": 11.9,
+            "bottom": 5.75,
+            "area": 1.936
+          },
+          "font": {
+            "sizes_pt": [
+              8.19
+            ],
+            "min_pt": 8.19,
+            "avg_pt": 8.19
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Large margin improvement in localization error.",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 8.19,
+            "capacity_chars": 141.5,
+            "effective_chars": 43.1,
+            "estimated_lines": 1.49,
+            "fill_ratio": 0.305
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 25,
+      "message": "support_body text is estimated at 1.23x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 14,
+          "role": "support_body",
+          "bbox": {
+            "x": 1.18,
+            "y": 4.0,
+            "w": 9.6,
+            "h": 0.45,
+            "right": 10.78,
+            "bottom": 4.45,
+            "area": 4.32
+          },
+          "font": {
+            "sizes_pt": [
+              15.0
+            ],
+            "min_pt": 15.0,
+            "avg_pt": 15.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning for Image Recognition / Normalization, Nonlinearities, and No Gatin",
+          "text_words": 19,
+          "text_capacity": {
+            "font_pt": 15.0,
+            "capacity_chars": 111.7,
+            "effective_chars": 137.7,
+            "estimated_lines": 1.34,
+            "fill_ratio": 1.233
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 26,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Deep Residual Learning for Image Recognition",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 40.8,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.57
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "estimated_text_overflow",
+      "severity": "high",
+      "problem_type": "copy_fitting",
+      "dimension": "layout",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.88,
+      "human_outcome": "pending_review",
+      "repair_priority": "P1",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 26,
+      "message": "body_text text is estimated at 1.65x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 16,
+          "role": "body_text",
+          "bbox": {
+            "x": 1.02,
+            "y": 1.68,
+            "w": 4.25,
+            "h": 0.42,
+            "right": 5.27,
+            "bottom": 2.1,
+            "area": 1.785
+          },
+          "font": {
+            "sizes_pt": [
+              18.0
+            ],
+            "min_pt": 18.0,
+            "avg_pt": 18.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "ResNet enables training of very deep networks for image.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 18.0,
+            "capacity_chars": 30.5,
+            "effective_chars": 50.2,
+            "estimated_lines": 1.02,
+            "fill_ratio": 1.646
+          }
+        }
+      },
+      "repair_strategy": "Shorten text, add a line break, or move secondary detail into notes; resize only if capacity remains impossible."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 26,
+      "message": "support_body text uses 11.5pt; preferred metadata band starts near 12.5pt.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Reformulates layers as residual functions to ease optimization. 152-layer ResNet achieves ",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 109.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.99
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 26,
+      "message": "support_body text is estimated at 0.99x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 17,
+          "role": "support_body",
+          "bbox": {
+            "x": 5.6,
+            "y": 1.66,
+            "w": 6.2,
+            "h": 0.42,
+            "right": 11.8,
+            "bottom": 2.08,
+            "area": 2.604
+          },
+          "font": {
+            "sizes_pt": [
+              11.5
+            ],
+            "min_pt": 11.5,
+            "avg_pt": 11.5
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Reformulates layers as residual functions to ease optimization. 152-layer ResNet achieves ",
+          "text_words": 16,
+          "text_capacity": {
+            "font_pt": 11.5,
+            "capacity_chars": 110.4,
+            "effective_chars": 109.3,
+            "estimated_lines": 1.59,
+            "fill_ratio": 0.99
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 26,
+      "message": "card_text text uses 8.5pt below the 9.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 21,
+          "role": "card_text",
+          "bbox": {
+            "x": 1.35,
+            "y": 6.02,
+            "w": 10.55,
+            "h": 0.28,
+            "right": 11.9,
+            "bottom": 6.3,
+            "area": 2.954
+          },
+          "font": {
+            "sizes_pt": [
+              8.5
+            ],
+            "min_pt": 8.5,
+            "avg_pt": 8.5
+          },
+          "paragraph_alignment": "CENTER (2)",
+          "vertical_anchor": "",
+          "text_preview": "Training error (left) and test error (right) on CIFAR-10 with 20-layer and 56-layer “plain",
+          "text_words": 18,
+          "text_capacity": {
+            "font_pt": 8.5,
+            "capacity_chars": 185.6,
+            "effective_chars": 109.8,
+            "estimated_lines": 1.15,
+            "fill_ratio": 0.591
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 27,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Normalization, Nonlinearities, and No Gating",
+          "text_words": 5,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 40.1,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.561
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 27,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 26,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 3.6,
+            "w": 5.8,
+            "h": 0.76,
+            "right": 11.83,
+            "bottom": 4.36,
+            "area": 4.408
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Batch Normalization (BN) is applied after each convolution and before activation (ReLU). I",
+          "text_words": 22,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 249.3,
+            "effective_chars": 132.4,
+            "estimated_lines": 3.62,
+            "fill_ratio": 0.531
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 27,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 29,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 4.81,
+            "w": 5.8,
+            "h": 0.62,
+            "right": 11.83,
+            "bottom": 5.43,
+            "area": 3.596
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Evidence is preserved from this run's fresh parse checkpoints.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 194.7,
+            "effective_chars": 56.2,
+            "estimated_lines": 2.82,
+            "fill_ratio": 0.288
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "below_ideal_font_band",
+      "severity": "low",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 28,
+      "message": "title_claim text uses 20.0pt; preferred metadata band starts near 24.0pt.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "title_claim",
+          "bbox": {
+            "x": 0.72,
+            "y": 0.62,
+            "w": 8.4,
+            "h": 0.55,
+            "right": 9.12,
+            "bottom": 1.17,
+            "area": 4.62
+          },
+          "font": {
+            "sizes_pt": [
+              20.0
+            ],
+            "min_pt": 20.0,
+            "avg_pt": 20.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Adaptation for Downstream Tasks – Detection/Localization",
+          "text_words": 6,
+          "text_capacity": {
+            "font_pt": 20.0,
+            "capacity_chars": 71.4,
+            "effective_chars": 53.5,
+            "estimated_lines": 1.31,
+            "fill_ratio": 0.749
+          }
+        }
+      },
+      "repair_strategy": "Prefer a small typography lift before changing component geometry."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 28,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 26,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 3.6,
+            "w": 5.8,
+            "h": 0.76,
+            "right": 11.83,
+            "bottom": 4.36,
+            "area": 4.408
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "For object detection and localization, ResNet is adapted as a backbone for Faster R-CNN. T",
+          "text_words": 22,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 249.3,
+            "effective_chars": 123.7,
+            "estimated_lines": 3.62,
+            "fill_ratio": 0.496
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "low_font_size",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "auto",
+      "confidence": 0.86,
+      "human_outcome": "pending_review",
+      "repair_priority": "P2",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 28,
+      "message": "support_body text uses 10.8pt below the 11.0pt metadata floor.",
+      "evidence": {
+        "shape": {
+          "index": 29,
+          "role": "support_body",
+          "bbox": {
+            "x": 6.03,
+            "y": 4.81,
+            "w": 5.8,
+            "h": 0.62,
+            "right": 11.83,
+            "bottom": 5.43,
+            "area": 3.596
+          },
+          "font": {
+            "sizes_pt": [
+              10.8
+            ],
+            "min_pt": 10.8,
+            "avg_pt": 10.8
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Evidence is preserved from this run's fresh parse checkpoints.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 10.8,
+            "capacity_chars": 194.7,
+            "effective_chars": 56.2,
+            "estimated_lines": 2.82,
+            "fill_ratio": 0.288
+          }
+        }
+      },
+      "repair_strategy": "Increase font size or shorten copy while preserving the component's accepted composition."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 29,
+      "message": "support_body text is estimated at 0.97x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 11,
+          "role": "support_body",
+          "bbox": {
+            "x": 0.75,
+            "y": 1.5,
+            "w": 7.5,
+            "h": 0.4,
+            "right": 8.25,
+            "bottom": 1.9,
+            "area": 3.0
+          },
+          "font": {
+            "sizes_pt": [
+              14.0
+            ],
+            "min_pt": 14.0,
+            "avg_pt": 14.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "The final branch keeps content traceability while avoiding both protected visual grammars.",
+          "text_words": 12,
+          "text_capacity": {
+            "font_pt": 14.0,
+            "capacity_chars": 84.5,
+            "effective_chars": 82.2,
+            "estimated_lines": 1.22,
+            "fill_ratio": 0.972
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    },
+    {
+      "type": "near_text_capacity",
+      "severity": "low",
+      "problem_type": "copy_fitting",
+      "dimension": "typography",
+      "scope": "global",
+      "style_scope": [],
+      "repair_mode": "suggest",
+      "confidence": 0.72,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "copy allocation, line breaks, richer notes, or notes splitting before resizing",
+      "slide_page": 29,
+      "message": "body_text text is estimated at 0.92x box capacity.",
+      "evidence": {
+        "shape": {
+          "index": 19,
+          "role": "body_text",
+          "bbox": {
+            "x": 8.99,
+            "y": 3.22,
+            "w": 1.6,
+            "h": 0.25,
+            "right": 10.59,
+            "bottom": 3.47,
+            "area": 0.4
+          },
+          "font": {
+            "sizes_pt": [
+              13.0
+            ],
+            "min_pt": 13.0,
+            "avg_pt": 13.0
+          },
+          "paragraph_alignment": "",
+          "vertical_anchor": "",
+          "text_preview": "Bounded repair",
+          "text_words": 2,
+          "text_capacity": {
+            "font_pt": 13.0,
+            "capacity_chars": 14.5,
+            "effective_chars": 13.3,
+            "estimated_lines": 1.0,
+            "fill_ratio": 0.923
+          }
+        }
+      },
+      "repair_strategy": "Keep composition fixed; slightly shorten text or raise the box's assigned font only after checking capacity."
+    }
+  ],
+  "slides": [
+    {
+      "page": 1,
+      "shape_count": 30,
+      "meaningful_shape_count": 12,
+      "visible_words": 28,
+      "occupancy_ratio": 0.72,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 8,
+        "component_label": 4,
+        "title_claim": 2,
+        "card_text": 1,
+        "support_body": 1,
+        "decorative": 3,
+        "source_footer": 2
+      },
+      "finding_count": 0,
+      "finding_types": []
+    },
+    {
+      "page": 2,
+      "shape_count": 38,
+      "meaningful_shape_count": 23,
+      "visible_words": 71,
+      "occupancy_ratio": 0.487,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 5,
+        "title_claim": 1,
+        "support_body": 4,
+        "decorative": 4,
+        "body_text": 9,
+        "small_text": 4,
+        "source_footer": 2
+      },
+      "finding_count": 18,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "near_text_capacity",
+        "text_exceeds_container_bounds",
+        "weak_fragment_point_heading"
+      ]
+    },
+    {
+      "page": 3,
+      "shape_count": 17,
+      "meaningful_shape_count": 5,
+      "visible_words": 18,
+      "occupancy_ratio": 0.8,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 1,
+        "title_claim": 1,
+        "support_body": 1,
+        "source_footer": 2
+      },
+      "finding_count": 1,
+      "finding_types": [
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 4,
+      "shape_count": 31,
+      "meaningful_shape_count": 13,
+      "visible_words": 54,
+      "occupancy_ratio": 1.051,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 2,
+        "support_body": 3,
+        "decorative": 3,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 5,
+      "shape_count": 31,
+      "meaningful_shape_count": 13,
+      "visible_words": 58,
+      "occupancy_ratio": 1.051,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 2,
+        "support_body": 3,
+        "decorative": 3,
+        "source_footer": 1
+      },
+      "finding_count": 4,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 6,
+      "shape_count": 23,
+      "meaningful_shape_count": 8,
+      "visible_words": 39,
+      "occupancy_ratio": 0.9,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 7,
+      "shape_count": 17,
+      "meaningful_shape_count": 5,
+      "visible_words": 15,
+      "occupancy_ratio": 0.8,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 1,
+        "title_claim": 1,
+        "support_body": 1,
+        "source_footer": 2
+      },
+      "finding_count": 0,
+      "finding_types": []
+    },
+    {
+      "page": 8,
+      "shape_count": 24,
+      "meaningful_shape_count": 9,
+      "visible_words": 39,
+      "occupancy_ratio": 0.971,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "small_text": 1,
+        "table": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "table_support_band_off_balance"
+      ]
+    },
+    {
+      "page": 9,
+      "shape_count": 25,
+      "meaningful_shape_count": 10,
+      "visible_words": 38,
+      "occupancy_ratio": 0.994,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "small_text": 1,
+        "table": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 10,
+      "shape_count": 17,
+      "meaningful_shape_count": 5,
+      "visible_words": 23,
+      "occupancy_ratio": 0.8,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 1,
+        "title_claim": 1,
+        "support_body": 1,
+        "source_footer": 2
+      },
+      "finding_count": 1,
+      "finding_types": [
+        "estimated_text_overflow"
+      ]
+    },
+    {
+      "page": 11,
+      "shape_count": 24,
+      "meaningful_shape_count": 9,
+      "visible_words": 34,
+      "occupancy_ratio": 1.011,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 12,
+      "shape_count": 23,
+      "meaningful_shape_count": 8,
+      "visible_words": 31,
+      "occupancy_ratio": 0.892,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 13,
+      "shape_count": 23,
+      "meaningful_shape_count": 8,
+      "visible_words": 36,
+      "occupancy_ratio": 0.892,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 14,
+      "shape_count": 25,
+      "meaningful_shape_count": 10,
+      "visible_words": 38,
+      "occupancy_ratio": 0.994,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "small_text": 1,
+        "table": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 15,
+      "shape_count": 31,
+      "meaningful_shape_count": 16,
+      "visible_words": 38,
+      "occupancy_ratio": 0.96,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 7,
+        "support_body": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 16,
+      "shape_count": 31,
+      "meaningful_shape_count": 16,
+      "visible_words": 34,
+      "occupancy_ratio": 0.96,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 7,
+        "support_body": 1,
+        "source_footer": 1
+      },
+      "finding_count": 1,
+      "finding_types": [
+        "below_ideal_font_band"
+      ]
+    },
+    {
+      "page": 17,
+      "shape_count": 24,
+      "meaningful_shape_count": 9,
+      "visible_words": 40,
+      "occupancy_ratio": 0.841,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 2,
+        "page_marker": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 4,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 18,
+      "shape_count": 31,
+      "meaningful_shape_count": 16,
+      "visible_words": 34,
+      "occupancy_ratio": 0.96,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 7,
+        "support_body": 1,
+        "source_footer": 1
+      },
+      "finding_count": 1,
+      "finding_types": [
+        "below_ideal_font_band"
+      ]
+    },
+    {
+      "page": 19,
+      "shape_count": 24,
+      "meaningful_shape_count": 9,
+      "visible_words": 36,
+      "occupancy_ratio": 1.007,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 20,
+      "shape_count": 31,
+      "meaningful_shape_count": 16,
+      "visible_words": 31,
+      "occupancy_ratio": 0.96,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 7,
+        "support_body": 1,
+        "source_footer": 1
+      },
+      "finding_count": 1,
+      "finding_types": [
+        "below_ideal_font_band"
+      ]
+    },
+    {
+      "page": 21,
+      "shape_count": 23,
+      "meaningful_shape_count": 8,
+      "visible_words": 37,
+      "occupancy_ratio": 0.91,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 22,
+      "shape_count": 23,
+      "meaningful_shape_count": 8,
+      "visible_words": 32,
+      "occupancy_ratio": 0.955,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 23,
+      "shape_count": 25,
+      "meaningful_shape_count": 10,
+      "visible_words": 37,
+      "occupancy_ratio": 0.994,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "small_text": 1,
+        "table": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 24,
+      "shape_count": 25,
+      "meaningful_shape_count": 10,
+      "visible_words": 35,
+      "occupancy_ratio": 0.994,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "small_text": 1,
+        "table": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 25,
+      "shape_count": 17,
+      "meaningful_shape_count": 5,
+      "visible_words": 20,
+      "occupancy_ratio": 0.8,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 1,
+        "title_claim": 1,
+        "support_body": 1,
+        "source_footer": 2
+      },
+      "finding_count": 1,
+      "finding_types": [
+        "estimated_text_overflow"
+      ]
+    },
+    {
+      "page": 26,
+      "shape_count": 23,
+      "meaningful_shape_count": 8,
+      "visible_words": 49,
+      "occupancy_ratio": 0.9,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 3,
+        "component_label": 3,
+        "title_claim": 1,
+        "page_marker": 1,
+        "decorative": 1,
+        "body_text": 1,
+        "support_body": 1,
+        "picture": 1,
+        "card_text": 1,
+        "source_footer": 1
+      },
+      "finding_count": 5,
+      "finding_types": [
+        "below_ideal_font_band",
+        "estimated_text_overflow",
+        "low_font_size",
+        "near_text_capacity"
+      ]
+    },
+    {
+      "page": 27,
+      "shape_count": 31,
+      "meaningful_shape_count": 13,
+      "visible_words": 56,
+      "occupancy_ratio": 1.051,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 3,
+        "decorative": 3,
+        "card_label": 1,
+        "source_footer": 1
+      },
+      "finding_count": 3,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 28,
+      "shape_count": 31,
+      "meaningful_shape_count": 13,
+      "visible_words": 58,
+      "occupancy_ratio": 1.051,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 7,
+        "component_label": 4,
+        "title_claim": 1,
+        "page_marker": 1,
+        "body_text": 1,
+        "support_body": 3,
+        "decorative": 3,
+        "card_label": 1,
+        "source_footer": 1
+      },
+      "finding_count": 3,
+      "finding_types": [
+        "below_ideal_font_band",
+        "low_font_size"
+      ]
+    },
+    {
+      "page": 29,
+      "shape_count": 23,
+      "meaningful_shape_count": 12,
+      "visible_words": 37,
+      "occupancy_ratio": 0.235,
+      "role_counts": {
+        "background": 1,
+        "decorative_rule": 8,
+        "container": 4,
+        "title_claim": 1,
+        "support_body": 1,
+        "body_text": 3,
+        "card_text": 3,
+        "source_footer": 2
+      },
+      "finding_count": 2,
+      "finding_types": [
+        "near_text_capacity"
+      ]
+    }
+  ],
+  "repair_policy": {
+    "preserve_component_composition": true,
+    "default_text_repair": "adjust typography, copy allocation, or line breaks before resizing visual components",
+    "avoid": [
+      "auto-shrinking accepted v5 components only because text density is low",
+      "moving cards to a new macro-layout without accepted-reference comparison",
+      "rendering every slide for visual judging"
+    ]
+  }
+}

@@ -16,6 +16,85 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 EMU_PER_INCH = 914400
 
+RULE_SCHEMA_VERSION = "benchmark_rule_schema.v3"
+
+BLIND_RECTANGULAR_STYLE_SCOPES = [
+    "blind_rectangular_research_board",
+    "golden_baseline2_blind_rectangular_research_board",
+]
+
+DIMENSIONS = [
+    "content",
+    "evidence",
+    "layout",
+    "typography",
+    "component_fit",
+    "style",
+    "repair_risk",
+]
+
+DEFAULT_RULE_METADATA = {
+    "dimension": "layout",
+    "scope": "global",
+    "style_scope": [],
+    "repair_mode": "suggest",
+    "confidence": 0.55,
+    "human_outcome": "pending_review",
+}
+
+RULE_METADATA: Dict[str, Dict[str, Any]] = {
+    "low_font_size": {"dimension": "typography", "scope": "global", "repair_mode": "auto", "confidence": 0.86},
+    "below_ideal_font_band": {"dimension": "typography", "scope": "global", "repair_mode": "suggest", "confidence": 0.72},
+    "cover_left_typography_underpowered": {"dimension": "typography", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.68},
+    "estimated_text_overflow": {"dimension": "layout", "scope": "global", "repair_mode": "auto", "confidence": 0.88},
+    "text_exceeds_container_bounds": {"dimension": "layout", "scope": "global", "repair_mode": "auto", "confidence": 0.86},
+    "near_text_capacity": {"dimension": "typography", "scope": "global", "repair_mode": "suggest", "confidence": 0.72},
+    "low_text_density": {"dimension": "typography", "scope": "style_aware", "repair_mode": "suggest", "confidence": 0.58},
+    "sparse_slide_risk": {"dimension": "typography", "scope": "style_aware", "repair_mode": "suggest", "confidence": 0.62},
+    "card_copy_imbalance": {"dimension": "typography", "scope": "style_aware", "repair_mode": "suggest", "confidence": 0.68},
+    "shape_overlap_risk": {"dimension": "layout", "scope": "global", "repair_mode": "auto", "confidence": 0.9},
+    "component_boundary_inset_violation": {"dimension": "layout", "scope": "global", "repair_mode": "auto", "confidence": 0.82},
+    "weak_table_grammar": {"dimension": "component_fit", "scope": "global", "repair_mode": "auto", "confidence": 0.84},
+    "dense_table_readability_risk": {"dimension": "component_fit", "scope": "global", "repair_mode": "suggest", "confidence": 0.76},
+    "table_exceeds_container_bounds": {"dimension": "layout", "scope": "global", "repair_mode": "auto", "confidence": 0.91},
+    "table_container_height_mismatch": {"dimension": "component_fit", "scope": "global", "repair_mode": "auto_then_human_review", "confidence": 0.74},
+    "table_readability_after_fit": {"dimension": "component_fit", "scope": "global", "repair_mode": "human_gated", "confidence": 0.62},
+    "table_sparse_columns_rendered": {"dimension": "component_fit", "scope": "global", "repair_mode": "auto_then_human_review", "confidence": 0.78},
+    "table_cell_text_wrapping_risk": {"dimension": "component_fit", "scope": "global", "repair_mode": "auto_then_human_review", "confidence": 0.78},
+    "table_view_label_missing": {"dimension": "style", "scope": "style_aware", "style_scope": BLIND_RECTANGULAR_STYLE_SCOPES, "repair_mode": "auto", "confidence": 0.74},
+    "table_caption_missing_or_not_centered": {"dimension": "evidence", "scope": "style_aware", "style_scope": BLIND_RECTANGULAR_STYLE_SCOPES, "repair_mode": "auto", "confidence": 0.78},
+    "table_underutilized_in_evidence_panel": {"dimension": "component_fit", "scope": "style_aware", "style_scope": BLIND_RECTANGULAR_STYLE_SCOPES, "repair_mode": "auto_then_human_review", "confidence": 0.73},
+    "figure_picture_aspect_distortion": {"dimension": "component_fit", "scope": "global", "repair_mode": "auto", "confidence": 0.88},
+    "figure_panel_aspect_mismatch": {"dimension": "component_fit", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.72},
+    "image_underutilized_in_wide_panel": {"dimension": "component_fit", "scope": "style_aware", "style_scope": BLIND_RECTANGULAR_STYLE_SCOPES, "repair_mode": "auto_then_human_review", "confidence": 0.7},
+    "figure_caption_not_centered_in_wide_panel": {"dimension": "style", "scope": "style_aware", "style_scope": BLIND_RECTANGULAR_STYLE_SCOPES, "repair_mode": "auto", "confidence": 0.76},
+    "figure_image_off_center_in_panel": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.7},
+    "figure_badge_identity_label_conflation": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.72},
+    "figure_label_anchor_drift": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.72},
+    "figure_label_text_alignment_off_center": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.74},
+    "panel_identity_label_anchor_drift": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.74},
+    "panel_identity_label_text_alignment_off_center": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.74},
+    "stacked_figure_identity_label_overcorrection": {"dimension": "repair_risk", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "detect_only", "confidence": 0.66},
+    "metric_label_gap_too_large": {"dimension": "style", "scope": "style_aware", "repair_mode": "suggest", "confidence": 0.64},
+    "container_stack_off_balance": {"dimension": "style", "scope": "style_aware", "repair_mode": "suggest", "confidence": 0.64},
+    "paired_label_body_gap_too_large": {"dimension": "style", "scope": "style_aware", "repair_mode": "suggest", "confidence": 0.64},
+    "component_frame_overallocated_after_text_fit": {"dimension": "component_fit", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.66},
+    "card_internal_spacing_not_scaled_to_frame": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.72},
+    "text_card_vertical_alignment_top_heavy": {"dimension": "style", "scope": "style_aware", "style_scope": BLIND_RECTANGULAR_STYLE_SCOPES, "repair_mode": "auto", "confidence": 0.74},
+    "agenda_read_path_header_too_close": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.72},
+    "table_support_band_off_balance": {"dimension": "style", "scope": "style_aware", "style_scope": ["golden_baseline1_from_scratch_warm_academic"], "repair_mode": "human_gated", "confidence": 0.7},
+    "academic_right_evidence_void": {"dimension": "style", "scope": "style_aware", "style_scope": ["academic"], "repair_mode": "human_gated", "confidence": 0.76},
+    "academic_toc_missing_canonical_sections": {"dimension": "content", "scope": "style_aware", "style_scope": ["academic"], "repair_mode": "human_gated", "confidence": 0.78},
+    "weak_fragment_point_heading": {"dimension": "content", "scope": "global", "repair_mode": "auto", "confidence": 0.78},
+    "spurious_generic_metric_card": {"dimension": "content", "scope": "global", "repair_mode": "auto", "confidence": 0.76},
+    "metric_improved_visual_regressed": {"dimension": "repair_risk", "scope": "human_feedback", "repair_mode": "detect_only", "confidence": 0.64, "human_outcome": "tradeoff_review"},
+    "likely_overcorrection": {"dimension": "repair_risk", "scope": "human_feedback", "repair_mode": "detect_only", "confidence": 0.62, "human_outcome": "likely_overcorrection"},
+    "style_scope_mismatch": {"dimension": "repair_risk", "scope": "style_aware", "repair_mode": "detect_only", "confidence": 0.68},
+    "repair_introduced_new_findings": {"dimension": "repair_risk", "scope": "human_feedback", "repair_mode": "detect_only", "confidence": 0.78},
+    "image_legibility_regression": {"dimension": "repair_risk", "scope": "human_feedback", "repair_mode": "detect_only", "confidence": 0.62},
+    "layout_rhythm_regression": {"dimension": "repair_risk", "scope": "human_feedback", "repair_mode": "detect_only", "confidence": 0.6},
+}
+
 NONVISUAL_AUDIT_RULES = {
     "title_claim_min_pt": 20.0,
     "support_min_pt": 11.0,
@@ -71,6 +150,28 @@ NONVISUAL_AUDIT_RULES = {
     "figure_identity_label_vertical_gap_min_in": -0.08,
     "figure_identity_label_vertical_gap_max_in": 0.18,
     "panel_identity_label_center_tolerance_in": 0.35,
+    "table_container_padding_in": 0.08,
+    "table_container_overflow_tolerance_in": 0.03,
+    "table_container_height_fill_max": 0.96,
+    "table_readable_row_height_min_in": 0.18,
+    "table_readable_col_width_min_in": 0.45,
+    "table_sparse_column_count_min": 8,
+    "table_sparse_empty_cell_ratio": 0.34,
+    "table_sparse_min_non_empty_cells": 8,
+    "table_wrapping_col_width_max_in": 0.56,
+    "table_wrapping_effective_units_per_in": 18.0,
+    "table_underutilized_area_ratio": 0.42,
+    "table_underutilized_margin_in": 0.55,
+    "table_caption_center_tolerance_in": 0.25,
+    "text_container_padding_in": 0.08,
+    "text_container_overflow_tolerance_in": 0.04,
+    "text_card_vertical_slack_ratio": 1.45,
+    "text_card_vertical_extra_min_in": 0.18,
+    "wide_panel_aspect_min": 2.3,
+    "wide_panel_min_area_sq_in": 4.5,
+    "image_underutilized_area_ratio": 0.28,
+    "image_underutilized_margin_in": 0.42,
+    "figure_caption_center_tolerance_in": 0.25,
 }
 
 
@@ -103,13 +204,18 @@ def inspect_pptx_nonvisual(pptx_path: Path, rules: Optional[Dict[str, Any]] = No
         slide_findings.extend(_table_support_band_findings(slide_index, records, active_rules))
         slide_findings.extend(_metric_stack_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_boundary_findings(slide_index, records, active_rules))
+        slide_findings.extend(_text_container_bounds_findings(slide_index, records, active_rules))
+        slide_findings.extend(_text_card_vertical_alignment_findings(slide_index, records, active_rules))
+        slide_findings.extend(_academic_right_evidence_void_findings(slide_index, records))
+        slide_findings.extend(_academic_toc_canonical_sections_findings(slide_index, records))
+        slide_findings.extend(_semantic_content_findings(slide_index, records))
         slide_findings.extend(_figure_label_semantics_findings(slide_index, records, active_rules))
         slide_findings.extend(_panel_identity_label_findings(slide_index, records, active_rules))
         slide_findings.extend(_component_frame_fit_findings(slide_index, records, active_rules))
         slide_findings.extend(_card_internal_spacing_findings(slide_index, records, active_rules))
         slide_findings.extend(_container_balance_findings(slide_index, records, active_rules))
         slide_findings.extend(_overlap_findings(slide_index, records, active_rules))
-        slide_findings.extend(_table_findings(slide_index, records))
+        slide_findings.extend(_table_findings(slide_index, records, active_rules))
         slide_findings.extend(_picture_findings(slide_index, records, active_rules))
         slide_findings.extend(_slide_density_findings(slide_index, records, slide_w, slide_h, active_rules))
         findings.extend(slide_findings)
@@ -122,9 +228,11 @@ def inspect_pptx_nonvisual(pptx_path: Path, rules: Optional[Dict[str, Any]] = No
         "review_mode": "non_visual_metadata_only",
         "rendering_used": False,
         "vision_model_used": False,
+        "rule_schema_version": RULE_SCHEMA_VERSION,
         "slide_count": len(prs.slides),
         "slide_size": {"width_in": round(slide_w, 3), "height_in": round(slide_h, 3)},
         "rules": active_rules,
+        "rule_registry": _rule_registry_snapshot(findings),
         "summary": _summarize_findings(findings, active_rules),
         "findings": findings,
         "slides": slide_summaries,
@@ -179,6 +287,7 @@ def _shape_record(shape: Any, index: int, slide_w: float, slide_h: float) -> Dic
             "avg_pt": round(sum(font_sizes) / len(font_sizes), 2) if font_sizes else None,
         },
         "paragraph_alignment": _paragraph_alignment(shape),
+        "vertical_anchor": _vertical_anchor(shape),
         "is_picture": is_picture,
         "picture": picture_info,
         "is_line_like": is_line_like,
@@ -213,15 +322,36 @@ def _table_info(shape: Any) -> Dict[str, Any]:
         return {"has_table": False}
     table = shape.table
     rows = []
+    empty_cells = 0
+    non_empty_cells = 0
+    max_cell_units = 0.0
+    long_cell_count = 0
     for row in table.rows:
-        cells = [_clean_text(cell.text) for cell in row.cells]
+        cells = []
+        for cell in row.cells:
+            text = _clean_text(cell.text)
+            cells.append(text)
+            if text:
+                non_empty_cells += 1
+                units = _effective_char_units(text)
+                max_cell_units = max(max_cell_units, units)
+                if units >= 12.0 or any(_effective_char_units(word) >= 7.0 for word in text.split()):
+                    long_cell_count += 1
+            else:
+                empty_cells += 1
         if any(cells):
             rows.append(cells)
+    total_cells = max(1, len(table.rows) * len(table.columns))
     return {
         "has_table": True,
         "row_count": len(table.rows),
         "col_count": len(table.columns),
         "non_empty_rows": len(rows),
+        "non_empty_cells": non_empty_cells,
+        "empty_cells": empty_cells,
+        "empty_cell_ratio": round(empty_cells / total_cells, 3),
+        "max_cell_effective_units": round(max_cell_units, 1),
+        "long_cell_count": long_cell_count,
         "preview_rows": rows[:4],
     }
 
@@ -246,6 +376,12 @@ def _paragraph_alignment(shape: Any) -> str:
     if not paragraphs:
         return ""
     return str(paragraphs[0].alignment or "")
+
+
+def _vertical_anchor(shape: Any) -> str:
+    if not getattr(shape, "has_text_frame", False):
+        return ""
+    return str(getattr(shape.text_frame, "vertical_anchor", "") or "")
 
 
 def _infer_role(record: Dict[str, Any], slide_h: float) -> str:
@@ -776,6 +912,98 @@ def _component_boundary_findings(slide_index: int, records: List[Dict[str, Any]]
     return findings
 
 
+def _text_container_bounds_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    findings = []
+    containers = _container_records(records)
+    padding = float(rules["text_container_padding_in"])
+    tolerance = float(rules["text_container_overflow_tolerance_in"])
+    for record in records:
+        if not record.get("has_text"):
+            continue
+        if record.get("role") in {"component_label", "card_label", "source_footer", "page_marker"}:
+            continue
+        if int(record.get("text_words") or 0) < 4:
+            continue
+        parent = _nearest_container_for_record(record, containers)
+        if not parent:
+            continue
+        parent_box = parent.get("bbox", {})
+        record_box = record.get("bbox", {})
+        if parent_box.get("area", 0.0) > 12.0:
+            continue
+        estimate = record.get("text_capacity") or _text_capacity_estimate(record)
+        fill_ratio = float(estimate.get("fill_ratio", 0.0) or 0.0)
+        expected_h = _estimated_rendered_text_height(record)
+        expected_bottom = record_box.get("y", 0.0) + expected_h
+        overflow_bottom = expected_bottom - (parent_box.get("bottom", 0.0) - padding)
+        explicit_box_overflow = record_box.get("bottom", 0.0) - (parent_box.get("bottom", 0.0) - padding)
+        if max(overflow_bottom, explicit_box_overflow) <= tolerance and fill_ratio < float(rules["overflow_ratio"]):
+            continue
+        severity = "high" if fill_ratio >= float(rules["overflow_ratio"]) or overflow_bottom >= 0.12 else "medium"
+        findings.append(
+            {
+                "type": "text_exceeds_container_bounds",
+                "severity": severity,
+                **_finding_meta("text_exceeds_container_bounds", severity),
+                "slide_page": slide_index,
+                "message": f"Text is likely to render beyond its containing component by {max(overflow_bottom, explicit_box_overflow):.2f}in.",
+                "evidence": {
+                    "text": _shape_evidence(record),
+                    "container": _shape_evidence(parent),
+                    "fill_ratio": round(fill_ratio, 3),
+                    "expected_text_height_in": round(expected_h, 3),
+                    "expected_bottom_overflow_in": round(max(0.0, overflow_bottom), 3),
+                    "textbox_bottom_overflow_in": round(max(0.0, explicit_box_overflow), 3),
+                },
+                "repair_strategy": "Resize the evidence card text area, split copy across cards, or shorten the card body before accepting the slide.",
+            }
+        )
+    return findings
+
+
+def _text_card_vertical_alignment_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
+    findings = []
+    containers = _container_records(records)
+    slack_ratio = float(rules["text_card_vertical_slack_ratio"])
+    min_extra = float(rules["text_card_vertical_extra_min_in"])
+    for record in records:
+        if record.get("role") not in {"card_text", "support_body", "body_text"}:
+            continue
+        if int(record.get("text_words") or 0) < 5:
+            continue
+        parent = _nearest_container_for_record(record, containers)
+        if not parent:
+            continue
+        parent_box = parent.get("bbox", {})
+        record_box = record.get("bbox", {})
+        if parent_box.get("area", 0.0) > 8.5 or parent_box.get("h", 0.0) > 1.65:
+            continue
+        expected_h = _estimated_rendered_text_height(record)
+        extra_h = record_box.get("h", 0.0) - expected_h
+        if extra_h < min_extra or record_box.get("h", 0.0) / max(0.01, expected_h) < slack_ratio:
+            continue
+        if _has_middle_vertical_anchor(record):
+            continue
+        findings.append(
+            {
+                "type": "text_card_vertical_alignment_top_heavy",
+                "severity": "medium",
+                **_finding_meta("text_card_vertical_alignment_top_heavy", "medium"),
+                "slide_page": slide_index,
+                "message": f"Text card has {extra_h:.2f}in vertical slack but is not middle-anchored, so copy appears top-heavy.",
+                "evidence": {
+                    "text": _shape_evidence(record),
+                    "container": _shape_evidence(parent),
+                    "expected_text_height_in": round(expected_h, 3),
+                    "vertical_extra_in": round(extra_h, 3),
+                    "vertical_anchor": record.get("vertical_anchor", ""),
+                },
+                "repair_strategy": "Use middle vertical anchoring for shallow straight-rectangle evidence cards, or reduce the card height to match text.",
+            }
+        )
+    return findings
+
+
 def _figure_label_semantics_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
     findings = []
     containers = _container_records(records)
@@ -1130,6 +1358,16 @@ def _text_capacity_estimate(record: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _estimated_rendered_text_height(record: Dict[str, Any]) -> float:
+    bbox = record.get("bbox", {})
+    text = record.get("text", "")
+    font = record.get("font", {}).get("avg_pt") or _fallback_font(record.get("role", ""))
+    usable_w = max(0.1, float(bbox.get("w", 0.0)) - 0.18)
+    chars_per_line = max(1.0, usable_w * 72.0 / max(1.0, font * 0.50))
+    line_count = max(1.0, math.ceil(_effective_char_units(text) / chars_per_line))
+    return line_count * font * 1.18 / 72.0 + 0.08
+
+
 def _overlap_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
     findings = []
     for i, left in enumerate(records):
@@ -1167,8 +1405,9 @@ def _overlap_findings(slide_index: int, records: List[Dict[str, Any]], rules: Di
     return findings
 
 
-def _table_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _table_findings(slide_index: int, records: List[Dict[str, Any]], rules: Dict[str, Any]) -> List[Dict[str, Any]]:
     findings = []
+    containers = _container_records(records)
     for record in records:
         if record.get("role") != "table":
             continue
@@ -1189,7 +1428,7 @@ def _table_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dic
             )
         row_height = bbox.get("h", 0) / max(1, rows)
         col_width = bbox.get("w", 0) / max(1, cols)
-        if row_height < 0.18 or col_width < 0.45:
+        if row_height < float(rules["table_readable_row_height_min_in"]) or col_width < float(rules["table_readable_col_width_min_in"]):
             findings.append(
                 _finding(
                     slide_index,
@@ -1199,6 +1438,166 @@ def _table_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dic
                     record,
                     "Preserve table size and simplify visible columns/rows, or move dense detail into appendix-style treatment.",
                 )
+            )
+        empty_ratio = float(table.get("empty_cell_ratio") or 0.0)
+        non_empty_cells = int(table.get("non_empty_cells") or 0)
+        if (
+            cols >= int(rules["table_sparse_column_count_min"])
+            and empty_ratio >= float(rules["table_sparse_empty_cell_ratio"])
+            and non_empty_cells >= int(rules["table_sparse_min_non_empty_cells"])
+        ):
+            findings.append(
+                {
+                    "type": "table_sparse_columns_rendered",
+                    "severity": "medium",
+                    **_finding_meta("table_sparse_columns_rendered", "medium"),
+                    "slide_page": slide_index,
+                    "message": f"Table renders {cols} columns with {empty_ratio:.2f} empty cells, producing a sparse/cramped grid.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "row_count": rows,
+                        "col_count": cols,
+                        "empty_cell_ratio": empty_ratio,
+                        "non_empty_cells": non_empty_cells,
+                    },
+                    "repair_strategy": "Collapse empty columns, preserve source table spanning as an image, or split the table into focused stage blocks before accepting the slide.",
+                }
+            )
+        wrapping_capacity_units = max(1.0, col_width * float(rules["table_wrapping_effective_units_per_in"]))
+        wrapping_risk = (
+            col_width <= float(rules["table_wrapping_col_width_max_in"])
+            and int(table.get("long_cell_count") or 0) > 0
+            and float(table.get("max_cell_effective_units") or 0.0) >= wrapping_capacity_units
+        )
+        if wrapping_risk:
+            findings.append(
+                {
+                    "type": "table_cell_text_wrapping_risk",
+                    "severity": "medium",
+                    **_finding_meta("table_cell_text_wrapping_risk", "medium"),
+                    "slide_page": slide_index,
+                    "message": f"Table column width {col_width:.2f}in is too narrow for long cell text, causing wrapping/readability risk.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "col_width_in": round(col_width, 3),
+                        "max_cell_effective_units": table.get("max_cell_effective_units"),
+                        "long_cell_count": table.get("long_cell_count"),
+                        "wrapping_capacity_units": round(wrapping_capacity_units, 1),
+                    },
+                    "repair_strategy": "Increase effective column width, reduce visible columns, or render the source table/diagram as a fitted image when native cells become unreadable.",
+                }
+            )
+        parent = _nearest_container_for_record(record, containers)
+        if not parent:
+            continue
+        parent_box = parent.get("bbox", {})
+        view_label = _nearest_table_view_label(record, parent, records)
+        if not view_label:
+            findings.append(
+                {
+                    "type": "table_view_label_missing",
+                    "severity": "medium",
+                    **_finding_meta("table_view_label_missing", "medium"),
+                    "slide_page": slide_index,
+                    "message": "Table evidence lacks a Focused table view label above the table.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "container": _shape_evidence(parent),
+                    },
+                    "repair_strategy": "Add a compact Focused table view label above every table evidence object in the straight-rectangle style.",
+                }
+            )
+        caption = _nearest_table_caption(record, parent, records)
+        caption_center_dx = abs(_center_x(caption.get("bbox", {})) - _center_x(parent_box)) if caption else 999.0
+        if not caption or not _is_center_aligned_text(caption) or caption_center_dx > float(rules["table_caption_center_tolerance_in"]):
+            findings.append(
+                {
+                    "type": "table_caption_missing_or_not_centered",
+                    "severity": "medium",
+                    **_finding_meta("table_caption_missing_or_not_centered", "medium"),
+                    "slide_page": slide_index,
+                    "message": "Table evidence lacks a centered explanatory note below the table.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "container": _shape_evidence(parent),
+                        "caption": _shape_evidence(caption) if caption else None,
+                        "caption_center_delta_in": round(caption_center_dx, 3) if caption else None,
+                    },
+                    "repair_strategy": "Place a short paper/table caption or proof focus note below the table and center-align it.",
+                }
+            )
+        table_area_ratio = bbox.get("area", 0.0) / max(0.01, parent_box.get("area", 0.0))
+        table_margins = _inner_margins(bbox, parent_box)
+        if (
+            parent_box.get("area", 0.0) >= float(rules["wide_panel_min_area_sq_in"])
+            and bbox.get("area", 0.0) >= 0.8
+            and table_area_ratio <= float(rules["table_underutilized_area_ratio"])
+            and max(table_margins.values()) >= float(rules["table_underutilized_margin_in"])
+        ):
+            findings.append(
+                {
+                    "type": "table_underutilized_in_evidence_panel",
+                    "severity": "medium",
+                    **_finding_meta("table_underutilized_in_evidence_panel", "medium"),
+                    "slide_page": slide_index,
+                    "message": f"Table uses only {table_area_ratio:.2f} of its evidence panel while leaving large internal margins.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "container": _shape_evidence(parent),
+                        "table_area_ratio": round(table_area_ratio, 3),
+                        "inner_margins_in": table_margins,
+                    },
+                    "repair_strategy": "Use a larger focused table or route dense/long tables into the bottom wide evidence rectangle.",
+                }
+            )
+        padding = float(rules["table_container_padding_in"])
+        tolerance = float(rules["table_container_overflow_tolerance_in"])
+        overflow = {
+            "left": round(max(0.0, parent_box.get("x", 0.0) + padding - bbox.get("x", 0.0)), 3),
+            "top": round(max(0.0, parent_box.get("y", 0.0) + padding - bbox.get("y", 0.0)), 3),
+            "right": round(max(0.0, bbox.get("right", 0.0) - (parent_box.get("right", 0.0) - padding)), 3),
+            "bottom": round(max(0.0, bbox.get("bottom", 0.0) - (parent_box.get("bottom", 0.0) - padding)), 3),
+        }
+        max_overflow = max(overflow.values())
+        if max_overflow > tolerance:
+            severity = "high" if max_overflow >= 0.12 else "medium"
+            findings.append(
+                {
+                    "type": "table_exceeds_container_bounds",
+                    "severity": severity,
+                    **_finding_meta("table_exceeds_container_bounds", severity),
+                    "slide_page": slide_index,
+                    "message": f"Native table exceeds its nearest container padding by up to {max_overflow:.2f}in.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "container": _shape_evidence(parent),
+                        "padding_in": padding,
+                        "overflow_in": overflow,
+                    },
+                    "repair_strategy": "Treat this as a global correctness issue: resize or reflow the table inside the container before applying style polish.",
+                }
+            )
+        table_to_container_ratio = bbox.get("h", 0.0) / max(0.01, parent_box.get("h", 0.0))
+        if (
+            max_overflow <= tolerance
+            and table_to_container_ratio > float(rules["table_container_height_fill_max"])
+            and row_height < float(rules["table_readable_row_height_min_in"]) * 1.12
+        ):
+            findings.append(
+                {
+                    "type": "table_container_height_mismatch",
+                    "severity": "medium",
+                    **_finding_meta("table_container_height_mismatch", "medium"),
+                    "slide_page": slide_index,
+                    "message": f"Table uses {table_to_container_ratio:.2f} of container height while estimated row height is only {row_height:.2f}in.",
+                    "evidence": {
+                        "table": _shape_evidence(record),
+                        "container": _shape_evidence(parent),
+                        "height_ratio": round(table_to_container_ratio, 3),
+                        "row_height_in": round(row_height, 3),
+                    },
+                    "repair_strategy": "Compare a taller table container, fewer visible rows, or appendix-style treatment before accepting the fitted result.",
+                }
             )
     return findings
 
@@ -1232,6 +1631,53 @@ def _picture_findings(slide_index: int, records: List[Dict[str, Any]], rules: Di
                         "Treat figure labels as compact annotations, not reserved layout columns; center the image and caption in the full proof panel.",
                     )
                 )
+            image_area_ratio = record.get("bbox", {}).get("area", 0.0) / max(0.01, parent_box.get("area", 0.0))
+            margins = _inner_margins(record.get("bbox", {}), parent_box)
+            if (
+                parent_aspect >= float(rules["wide_panel_aspect_min"])
+                and parent_box.get("area", 0.0) >= float(rules["wide_panel_min_area_sq_in"])
+                and record.get("bbox", {}).get("area", 0.0) >= 0.45
+                and image_area_ratio <= float(rules["image_underutilized_area_ratio"])
+                and max(margins.values()) >= float(rules["image_underutilized_margin_in"])
+            ):
+                findings.append(
+                    {
+                        "type": "image_underutilized_in_wide_panel",
+                        "severity": "medium",
+                        **_finding_meta("image_underutilized_in_wide_panel", "medium"),
+                        "slide_page": slide_index,
+                        "message": f"Wide panel aspect {parent_aspect:.2f} has a figure using only {image_area_ratio:.2f} of panel area.",
+                        "evidence": {
+                            "picture": _shape_evidence(record),
+                            "container": _shape_evidence(parent),
+                            "source_aspect": source_aspect,
+                            "parent_aspect": round(parent_aspect, 3),
+                            "image_area_ratio": round(image_area_ratio, 3),
+                            "inner_margins_in": margins,
+                        },
+                        "repair_strategy": "Do not blindly keep the bottom-band repair. Compare readable area against a right-panel-large layout and send this slide to human visual review.",
+                    }
+                )
+            caption = _nearest_caption_for_picture(record, parent, records)
+            if caption and parent_aspect >= float(rules["wide_panel_aspect_min"]) and parent_box.get("area", 0.0) >= float(rules["wide_panel_min_area_sq_in"]):
+                caption_center_dx = abs(_center_x(caption.get("bbox", {})) - _center_x(parent_box))
+                if not _is_center_aligned_text(caption) or caption_center_dx > float(rules["figure_caption_center_tolerance_in"]):
+                    findings.append(
+                        {
+                            "type": "figure_caption_not_centered_in_wide_panel",
+                            "severity": "medium",
+                            **_finding_meta("figure_caption_not_centered_in_wide_panel", "medium"),
+                            "slide_page": slide_index,
+                            "message": "Wide-panel figure caption is not center-aligned under the image.",
+                            "evidence": {
+                                "picture": _shape_evidence(record),
+                                "caption": _shape_evidence(caption),
+                                "container": _shape_evidence(parent),
+                                "caption_center_delta_in": round(caption_center_dx, 3),
+                            },
+                            "repair_strategy": "Center the caption across the proof panel under the fitted image.",
+                        }
+                    )
             if (
                 source_aspect <= float(rules["tall_figure_aspect_max"])
                 and parent_aspect > float(rules["tall_figure_panel_aspect_max"])
@@ -1273,6 +1719,193 @@ def _picture_findings(slide_index: int, records: List[Dict[str, Any]], rules: Di
                 "Fit the figure inside the component box while preserving the source image aspect ratio; route non-square figures to panels that match their source shape.",
             )
         )
+    return findings
+
+
+def _academic_right_evidence_void_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Detect academic bottom-table pages that leave the upper-right evidence area empty."""
+    has_key_message = any(_clean_text(record.get("text", "")).lower() == "key message" for record in records)
+    if not has_key_message:
+        return []
+    bottom_tables = [
+        record
+        for record in records
+        if record.get("has_table")
+        and record.get("bbox", {}).get("x", 0.0) <= 1.05
+        and record.get("bbox", {}).get("w", 0.0) >= 9.8
+        and record.get("bbox", {}).get("y", 0.0) >= 4.6
+    ]
+    if not bottom_tables:
+        return []
+    right_region = {"x": 6.25, "y": 1.05, "right": 12.5, "bottom": 4.75}
+    right_content = []
+    for record in records:
+        if not _meaningful_for_occupancy(record) or record.get("has_table"):
+            continue
+        if record.get("role") in {"source_footer", "page_marker", "background", "decorative", "decorative_rule"}:
+            continue
+        box = record.get("bbox", {})
+        if box.get("area", 0.0) < 0.12:
+            continue
+        if _intersection(box, right_region) >= 0.18:
+            right_content.append(record)
+    if right_content:
+        return []
+    return [
+        {
+            "type": "academic_right_evidence_void",
+            "severity": "medium",
+            **_finding_meta("academic_right_evidence_void", "medium"),
+            "slide_page": slide_index,
+            "message": "Academic bottom-table slide leaves the upper-right evidence region empty.",
+            "evidence": {
+                "bottom_table": _shape_evidence(bottom_tables[0]),
+                "right_region": {"x_min": 6.25, "y_min": 1.05, "y_max": 4.75},
+            },
+            "repair_strategy": "Render metric cards, evidence notes, or a compact proof summary in the right evidence column instead of leaving the region blank.",
+        }
+    ]
+
+
+def _academic_toc_canonical_sections_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Detect original academic Contents slides that lost the six-module golden-baseline route."""
+    texts = [_clean_text(record.get("text", "")) for record in records if record.get("has_text")]
+    text_set = {text for text in texts if text}
+    has_academic_contents = "Contents" in text_set and any(
+        "A sectioned route through the paper" in text for text in texts
+    )
+    if not has_academic_contents:
+        return []
+
+    expected = ["Motivation", "Method", "Analysis", "Ablations", "Results", "Conclusion"]
+    missing = [section for section in expected if section not in text_set]
+    if not missing:
+        return []
+    title_record = next((record for record in records if _clean_text(record.get("text", "")) == "Contents"), records[0])
+    return [
+        {
+            "type": "academic_toc_missing_canonical_sections",
+            "severity": "medium",
+            **_finding_meta("academic_toc_missing_canonical_sections", "medium"),
+            "slide_page": slide_index,
+            "message": "Original academic Contents slide does not preserve the six-module golden-baseline route.",
+            "evidence": {
+                "missing_sections": missing,
+                "expected_sections": expected,
+                "contents_title": _shape_evidence(title_record),
+            },
+            "repair_strategy": "Render the original academic table of contents with Motivation, Method, Analysis, Ablations, Results, and Conclusion.",
+        }
+    ]
+
+
+def _semantic_content_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Catch content-quality failures that are visible in PPTX text metadata."""
+    findings: List[Dict[str, Any]] = []
+    for record in records:
+        text = _clean_text(record.get("text", ""))
+        if _looks_like_fragment_heading(text, record):
+            findings.append(
+                _finding(
+                    slide_index,
+                    "weak_fragment_point_heading",
+                    "medium",
+                    f"Numbered point/title text looks like an unfinished clause: '{text}'.",
+                    record,
+                    "Regenerate the point claim from the supporting sentence; use a complete idea phrase, not a boilerplate sentence prefix.",
+                )
+            )
+    findings.extend(_spurious_metric_card_findings(slide_index, records))
+    return findings
+
+
+def _looks_like_fragment_heading(text: str, record: Dict[str, Any]) -> bool:
+    text = _clean_text(text).strip(" .;:-")
+    if not text:
+        return False
+    role = record.get("role", "")
+    bbox = record.get("bbox", {})
+    if role == "source_footer" or bbox.get("y", 0.0) > 6.7:
+        return False
+    words = text.lower().split()
+    if len(words) > 10:
+        return False
+    weak_exact = {
+        "in short",
+        "taken together",
+        "the paper addresses the problem of",
+        "its goal is to make it",
+        "this meant practitioners could not reliably",
+        "even with improved initialization and batch",
+        "they can help but are not",
+    }
+    lower = text.lower()
+    if re.fullmatch(r"(?:slide|page)\s*\d+", lower):
+        return True
+    if lower in weak_exact:
+        return True
+    if lower.startswith(("the paper addresses", "this paper addresses", "its goal is", "in short", "taken together")):
+        return True
+    if lower.startswith(("this meant", "even with", "they can help")):
+        return True
+    weak_endings = {
+        "a", "an", "the", "of", "to", "in", "on", "for", "with", "by", "and", "or", "that", "which",
+        "it", "its", "not", "but", "while",
+    }
+    if words and words[-1].strip(" ,;:-()[]").lower() in weak_endings:
+        return True
+    if text.count("(") != text.count(")"):
+        return True
+    return False
+
+
+def _spurious_metric_card_findings(slide_index: int, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    findings: List[Dict[str, Any]] = []
+    value_records = [
+        record
+        for record in records
+        if record.get("has_text")
+        and record.get("role") != "source_footer"
+        and record.get("bbox", {}).get("y", 0.0) < 6.7
+        and re.fullmatch(r"\d+(?:\.\d+)?", _clean_text(record.get("text", "")))
+    ]
+    generic_labels = {"accuracy", "rating", "score", "metric", "key metric", "key number"}
+    for value_record in value_records:
+        value = _clean_text(value_record.get("text", ""))
+        try:
+            number = float(value)
+        except ValueError:
+            continue
+        if number > 100:
+            continue
+        value_box = value_record.get("bbox", {})
+        for label_record in records:
+            if label_record is value_record or not label_record.get("has_text"):
+                continue
+            label = _clean_text(label_record.get("text", "")).lower()
+            if label not in generic_labels:
+                continue
+            label_box = label_record.get("bbox", {})
+            vertical_gap = label_box.get("y", 0.0) - value_box.get("bottom", 0.0)
+            x_overlap = _axis_overlap(
+                value_box.get("x", 0.0),
+                value_box.get("right", 0.0),
+                label_box.get("x", 0.0),
+                label_box.get("right", 0.0),
+            )
+            min_width = max(0.01, min(value_box.get("w", 0.0), label_box.get("w", 0.0)))
+            if -0.05 <= vertical_gap <= 0.55 and x_overlap / min_width >= 0.35:
+                findings.append(
+                    _finding(
+                        slide_index,
+                        "spurious_generic_metric_card",
+                        "medium",
+                        f"Metric card shows bare value '{value}' with generic label '{label_record.get('text')}', which often comes from dataset/model names rather than a real paper result.",
+                        value_record,
+                        "Drop the metric card or replace it with a sourced value that has a unit, percentage, layer/count noun, or explicit table/figure provenance.",
+                    )
+                )
+                break
     return findings
 
 
@@ -1330,16 +1963,29 @@ def _summarize_findings(findings: List[Dict[str, Any]], rules: Dict[str, Any]) -
     by_type: Dict[str, int] = {}
     by_severity: Dict[str, int] = {}
     by_problem_type: Dict[str, int] = {}
+    by_dimension: Dict[str, int] = {}
+    dimension_penalty: Dict[str, float] = {}
+    severity_weight = {"high": 12.0, "medium": 6.0, "low": 2.0}
     for finding in findings:
         by_type[finding["type"]] = by_type.get(finding["type"], 0) + 1
         by_severity[finding["severity"]] = by_severity.get(finding["severity"], 0) + 1
         problem_type = finding.get("problem_type", _problem_type_for_finding(finding["type"]))
         by_problem_type[problem_type] = by_problem_type.get(problem_type, 0) + 1
+        dimension = finding.get("dimension", _rule_metadata(finding["type"]).get("dimension", "layout"))
+        by_dimension[dimension] = by_dimension.get(dimension, 0) + 1
+        dimension_penalty[dimension] = dimension_penalty.get(dimension, 0.0) + severity_weight.get(finding.get("severity", "low"), 2.0)
+    dimension_scores = {
+        dimension: max(0.0, round(100.0 - dimension_penalty.get(dimension, 0.0), 1))
+        for dimension in DIMENSIONS
+    }
     return {
         "finding_count": len(findings),
         "by_type": by_type,
         "by_severity": by_severity,
         "by_problem_type": by_problem_type,
+        "by_dimension": by_dimension,
+        "dimension_scores": dimension_scores,
+        "dimension_score_model": "100 minus severity penalties: high=12, medium=6, low=2",
         "high_risk_pages": sorted({finding["slide_page"] for finding in findings if finding["severity"] == "high"}),
         "medium_risk_pages": sorted({finding["slide_page"] for finding in findings if finding["severity"] == "medium"}),
         "typography_pages": sorted({finding["slide_page"] for finding in findings if finding.get("problem_type") == "typography"}),
@@ -1377,6 +2023,7 @@ def _shape_evidence(record: Dict[str, Any]) -> Dict[str, Any]:
         "bbox": record.get("bbox"),
         "font": record.get("font"),
         "paragraph_alignment": record.get("paragraph_alignment", ""),
+        "vertical_anchor": record.get("vertical_anchor", ""),
         "text_preview": text[:90],
         "text_words": record.get("text_words", 0),
         "text_capacity": record.get("text_capacity", {}),
@@ -1409,8 +2056,15 @@ def _font_ideal_floor(role: str, rules: Dict[str, Any]) -> float:
 
 def _finding_meta(kind: str, severity: str) -> Dict[str, Any]:
     problem_type = _problem_type_for_finding(kind)
+    rule_meta = _rule_metadata(kind)
     return {
         "problem_type": problem_type,
+        "dimension": rule_meta["dimension"],
+        "scope": rule_meta["scope"],
+        "style_scope": rule_meta["style_scope"],
+        "repair_mode": rule_meta["repair_mode"],
+        "confidence": rule_meta["confidence"],
+        "human_outcome": rule_meta["human_outcome"],
         "repair_priority": _repair_priority(kind, severity),
         "geometry_repair_allowed": problem_type == "geometry" or kind == "component_frame_overallocated_after_text_fit",
         "preferred_repair_scope": _preferred_repair_scope(problem_type),
@@ -1424,16 +2078,28 @@ def _problem_type_for_finding(kind: str) -> str:
         return "copy_fitting"
     if kind in {
         "shape_overlap_risk",
+        "text_exceeds_container_bounds",
         "weak_table_grammar",
         "dense_table_readability_risk",
+        "table_exceeds_container_bounds",
+        "table_container_height_mismatch",
+        "table_readability_after_fit",
         "flow_nodes_overpacked",
         "flow_grid_alignment_drift",
         "component_boundary_inset_violation",
-        "figure_panel_aspect_mismatch",
         "figure_picture_aspect_distortion",
     }:
         return "geometry"
     if kind in {
+        "figure_panel_aspect_mismatch",
+        "image_underutilized_in_wide_panel",
+        "figure_caption_not_centered_in_wide_panel",
+        "table_view_label_missing",
+        "table_caption_missing_or_not_centered",
+        "table_underutilized_in_evidence_panel",
+        "text_card_vertical_alignment_top_heavy",
+        "table_sparse_columns_rendered",
+        "table_cell_text_wrapping_risk",
         "metric_label_gap_too_large",
         "container_stack_off_balance",
         "paired_label_body_gap_too_large",
@@ -1448,8 +2114,21 @@ def _problem_type_for_finding(kind: str) -> str:
         "panel_identity_label_anchor_drift",
         "panel_identity_label_text_alignment_off_center",
         "stacked_figure_identity_label_overcorrection",
+        "academic_right_evidence_void",
+        "academic_toc_missing_canonical_sections",
     }:
         return "optical_balance"
+    if kind in {
+        "metric_improved_visual_regressed",
+        "likely_overcorrection",
+        "style_scope_mismatch",
+        "repair_introduced_new_findings",
+        "image_legibility_regression",
+        "layout_rhythm_regression",
+    }:
+        return "repair_risk"
+    if kind in {"weak_fragment_point_heading", "spurious_generic_metric_card"}:
+        return "content_semantics"
     return "metadata"
 
 
@@ -1458,15 +2137,34 @@ def _repair_priority(kind: str, severity: str) -> str:
         return "P1"
     if kind in {
         "shape_overlap_risk",
+        "text_exceeds_container_bounds",
         "weak_table_grammar",
         "dense_table_readability_risk",
+        "table_exceeds_container_bounds",
+        "table_container_height_mismatch",
+        "table_view_label_missing",
+        "table_caption_missing_or_not_centered",
+        "table_sparse_columns_rendered",
+        "table_cell_text_wrapping_risk",
+        "table_underutilized_in_evidence_panel",
         "component_boundary_inset_violation",
-        "figure_panel_aspect_mismatch",
         "figure_picture_aspect_distortion",
+    }:
+        return "P2"
+    if kind in {
+        "figure_panel_aspect_mismatch",
+        "image_underutilized_in_wide_panel",
+        "figure_caption_not_centered_in_wide_panel",
+        "table_view_label_missing",
+        "table_caption_missing_or_not_centered",
+        "text_card_vertical_alignment_top_heavy",
+        "metric_improved_visual_regressed",
     }:
         return "P2"
     if kind in {"low_font_size", "estimated_text_overflow", "near_text_capacity"}:
         return "P2" if severity == "medium" else "P3"
+    if kind in {"weak_fragment_point_heading", "spurious_generic_metric_card"}:
+        return "P2"
     return "P3"
 
 
@@ -1479,7 +2177,25 @@ def _preferred_repair_scope(problem_type: str) -> str:
         return "minimal component position/size repair only because a structural signal failed"
     if problem_type == "optical_balance":
         return "internal text-stack spacing and padding before macro-layout changes"
+    if problem_type == "content_semantics":
+        return "content curation and sourced claim/metric repair before layout changes"
+    if problem_type == "repair_risk":
+        return "human review and style-scope validation before accepting the repair"
     return "metadata review"
+
+
+def _rule_metadata(kind: str) -> Dict[str, Any]:
+    meta = dict(DEFAULT_RULE_METADATA)
+    meta.update(RULE_METADATA.get(kind, {}))
+    meta["confidence"] = round(float(meta.get("confidence", 0.55)), 2)
+    meta["style_scope"] = list(meta.get("style_scope") or [])
+    return meta
+
+
+def _rule_registry_snapshot(findings: List[Dict[str, Any]]) -> Dict[str, Any]:
+    observed = {finding.get("type", "") for finding in findings if finding.get("type")}
+    rules = observed | set(RULE_METADATA)
+    return {kind: _rule_metadata(kind) for kind in sorted(rules)}
 
 
 def _deck_flags(by_type: Dict[str, int], rules: Dict[str, Any]) -> List[str]:
@@ -1546,6 +2262,23 @@ def _contained_records(container: Dict[str, Any], records: List[Dict[str, Any]],
     return result
 
 
+def _nearest_container_for_record(record: Dict[str, Any], containers: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    bbox = record.get("bbox", {})
+    containing = [container for container in containers if _center_inside(bbox, container.get("bbox", {}))]
+    if containing:
+        return min(containing, key=lambda item: item.get("bbox", {}).get("area", 0.0))
+    overlapping = []
+    for container in containers:
+        container_box = container.get("bbox", {})
+        overlap = _intersection(bbox, container_box)
+        if overlap <= 0:
+            continue
+        overlapping.append((overlap / max(0.01, bbox.get("area", 0.0)), container))
+    if overlapping:
+        return max(overlapping, key=lambda item: item[0])[1]
+    return None
+
+
 def _smallest_containing_container(label_box: Dict[str, float], containers: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     containing = [container for container in containers if _center_inside(label_box, container.get("bbox", {}))]
     if not containing:
@@ -1610,7 +2343,7 @@ def _is_allowed_containment(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
     contained = b if a.get("role") == "container" else a
     if contained.get("role") in {"picture", "table"}:
         return _center_inside(contained["bbox"], container["bbox"])
-    if contained.get("role") == "title_claim" and (contained.get("text_words") or 0) <= 2:
+    if contained.get("role") == "title_claim":
         return _center_inside(contained["bbox"], container["bbox"])
     if contained.get("role") in {"card_label", "card_text", "small_text", "body_text", "support_body"}:
         return _center_inside(contained["bbox"], container["bbox"])
@@ -1625,6 +2358,96 @@ def _center_inside(inner: Dict[str, float], outer: Dict[str, float]) -> bool:
 
 def _center_x(box: Dict[str, float]) -> float:
     return box.get("x", 0.0) + box.get("w", 0.0) / 2
+
+
+def _inner_margins(inner: Dict[str, float], outer: Dict[str, float]) -> Dict[str, float]:
+    return {
+        "left": round(max(0.0, inner.get("x", 0.0) - outer.get("x", 0.0)), 3),
+        "top": round(max(0.0, inner.get("y", 0.0) - outer.get("y", 0.0)), 3),
+        "right": round(max(0.0, outer.get("right", 0.0) - inner.get("right", 0.0)), 3),
+        "bottom": round(max(0.0, outer.get("bottom", 0.0) - inner.get("bottom", 0.0)), 3),
+    }
+
+
+def _nearest_caption_for_picture(
+    picture: Dict[str, Any],
+    parent: Dict[str, Any],
+    records: List[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    picture_box = picture.get("bbox", {})
+    parent_box = parent.get("bbox", {})
+    candidates = []
+    for record in records:
+        if record is picture or not record.get("has_text"):
+            continue
+        if record.get("role") in {"source_footer", "page_marker", "component_label"}:
+            continue
+        bbox = record.get("bbox", {})
+        if not _center_inside(bbox, parent_box):
+            continue
+        if bbox.get("y", 0.0) < picture_box.get("bottom", 0.0) - 0.08:
+            continue
+        if bbox.get("h", 0.0) > 0.48 or (record.get("font", {}).get("avg_pt") or 99) > 10.5:
+            continue
+        candidates.append(record)
+    if not candidates:
+        return None
+    return min(candidates, key=lambda item: abs(item.get("bbox", {}).get("y", 0.0) - picture_box.get("bottom", 0.0)))
+
+
+def _nearest_table_view_label(
+    table: Dict[str, Any],
+    parent: Dict[str, Any],
+    records: List[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    table_box = table.get("bbox", {})
+    parent_box = parent.get("bbox", {})
+    candidates = []
+    for record in records:
+        if record is table or not record.get("has_text"):
+            continue
+        text_token = _label_token(record.get("text", ""))
+        if "TABLEVIEW" not in text_token:
+            continue
+        bbox = record.get("bbox", {})
+        if not _center_inside(bbox, parent_box):
+            continue
+        if bbox.get("bottom", 0.0) > table_box.get("y", 0.0) + 0.12:
+            continue
+        candidates.append(record)
+    if not candidates:
+        return None
+    return min(candidates, key=lambda item: abs(item.get("bbox", {}).get("bottom", 0.0) - table_box.get("y", 0.0)))
+
+
+def _nearest_table_caption(
+    table: Dict[str, Any],
+    parent: Dict[str, Any],
+    records: List[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    table_box = table.get("bbox", {})
+    parent_box = parent.get("bbox", {})
+    candidates = []
+    for record in records:
+        if record is table or not record.get("has_text"):
+            continue
+        if record.get("role") in {"source_footer", "page_marker", "component_label"}:
+            continue
+        bbox = record.get("bbox", {})
+        if not _center_inside(bbox, parent_box):
+            continue
+        if bbox.get("y", 0.0) < table_box.get("bottom", 0.0) - 0.08:
+            continue
+        if bbox.get("h", 0.0) > 0.55 or (record.get("font", {}).get("avg_pt") or 99) > 10.8:
+            continue
+        candidates.append(record)
+    if not candidates:
+        return None
+    return min(candidates, key=lambda item: abs(item.get("bbox", {}).get("y", 0.0) - table_box.get("bottom", 0.0)))
+
+
+def _has_middle_vertical_anchor(record: Dict[str, Any]) -> bool:
+    return "MIDDLE" in str(record.get("vertical_anchor", "")).upper()
 
 
 def _intersection(a: Dict[str, float], b: Dict[str, float]) -> float:
@@ -1643,6 +2466,14 @@ def _horizontal_overlap_ratio(a: Dict[str, float], b: Dict[str, float]) -> float
     if x2 <= x1:
         return 0.0
     return (x2 - x1) / max(0.01, min(float(a.get("w", 0.0)), float(b.get("w", 0.0))))
+
+
+def _axis_overlap(start_a: float, end_a: float, start_b: float, end_b: float) -> float:
+    left = max(float(start_a), float(start_b))
+    right = min(float(end_a), float(end_b))
+    if right <= left:
+        return 0.0
+    return right - left
 
 
 def _emu_to_inches(value: Any) -> float:

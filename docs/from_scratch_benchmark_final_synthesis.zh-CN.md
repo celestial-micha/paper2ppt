@@ -2,6 +2,14 @@
 
 本文档记录截至 2026-06-15 的结论：原 `academic` golden baseline 已经稳定；从零 warm academic proof-panel 风格也已经通过 Kimi K2、mHC、DeepSeek_V4 的 human-in-the-loop 迭代，并在 DeepSeek_V4 v25 被保存为 `golden_baseline1_from_scratch_warm_academic`。
 
+2026-07-01 追加：Deep Residual 的 `blind_rectangular_research_board` 经过 style-aware benchmark 和 human-in-the-loop 迭代后，已保存为第三个 frozen reference：
+
+```text
+golden_baseline2_blind_rectangular_research_board
+```
+
+因此后续 benchmark 不再只有两个黄金参考，而是三套 human-tuned references 与 autonomous style proposal 分轨推进。
+
 目标不是多保存一套 PPT，而是把“人类指出问题 -> 系统转成 badcase -> renderer 修复 -> audit 回归”的过程固化为 benchmark 和 agent workflow。
 
 ## 1. 当前两个黄金参考
@@ -280,9 +288,80 @@ experimental_from_scratch_loop
 
 > 我不是只做了一个 PPT 生成器，而是做了一个可回归的生成评测 harness。系统解析论文一次，然后并行生成多个风格版本；benchmark 会检测内容缺失、文本溢出、图表错误、布局几何、审美 polish 和风格漂移，并且根据 style scope 决定哪些问题能自动修、哪些只能报告。这样既保护原 golden baseline，又能把 human-in-the-loop 反馈转化成可泛化的自动迭代能力。
 
-## 6. 立即下一步
+## 6. 2026-07-01 追加：第三个 frozen reference 与下一阶段路线
+
+### 当前三套 frozen references
+
+```text
+golden_baseline0: academic
+golden_baseline1: golden_baseline1_from_scratch_warm_academic
+golden_baseline2: golden_baseline2_blind_rectangular_research_board
+```
+
+`golden_baseline2` 的保存位置：
+
+```text
+outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/
+```
+
+它的意义不是证明系统已经完全自主生成了第三套风格，而是证明：
+
+- human feedback 可以被稳定转成 scoped benchmark rules；
+- style-aware repair 能发现“指标变好但视觉变差”的误修风险；
+- 三套人工迭代成熟参考可以作为后续评测的 frozen baselines；
+- 下一阶段可以把“成熟参考”和“自主风格生成”严格隔离。
+
+### 下一阶段实验形态
+
+下一篇新论文应采用六路 smoke：
+
+1. `academic` frozen reference；
+2. `golden_baseline1_from_scratch_warm_academic` frozen reference；
+3. `golden_baseline2_blind_rectangular_research_board` frozen reference；
+4. autonomous style proposal A；
+5. autonomous style proposal B；
+6. autonomous style proposal C。
+
+前三路允许读取各自 frozen style contract；后三路禁止读取 golden0/1/2 的完整 PPTX、style contract 和 layout grammar，只允许读取：
+
+- paper content inventory；
+- deck requirements；
+- abstract design primitives library；
+- badcase registry；
+- global / scoped rule metadata。
+
+### 评价重点
+
+六路结果不再只看 badcase 数量下降，而要同时记录：
+
+- content fidelity；
+- evidence coverage；
+- layout safety；
+- typography fit；
+- component fit；
+- style consistency；
+- visual readability；
+- repair risk；
+- human acceptance；
+- human feedback effort；
+- native editability and traceability。
+
+主计划见：
+
+```text
+docs/autonomous_style_proposal_benchmark_plan.zh-CN.md
+```
+
+## 7. 立即下一步
 
 1. 在新窗口用一篇新论文做三路单篇验证；
 2. 如果三路都稳定，再扩展到 ai20；
 3. 然后做一次 blind from-scratch loop，证明 benchmark 能创造新风格；
 4. 最后把三路生成、audit、repair、report 包装成 benchmark harness。
+
+2026-07-01 后这四步需要改为：
+
+1. 先用用户提供的一篇未解析新论文做六路 smoke；
+2. smoke 稳定后扩展到五篇论文，而不是立刻跑 ai20 全量；
+3. 重点统计 autonomous routes 的 repair curve 与 human feedback effort；
+4. 再决定是否进入 10 篇或 ai20 全量。

@@ -1,0 +1,84 @@
+{
+  "schema_version": "golden_style_manifest.v1",
+  "style_id": "golden_baseline2_blind_rectangular_research_board",
+  "family": "blind_rectangular_research_board",
+  "promotion_status": "human_tuned_frozen_reference",
+  "promotion_date": "2026-07-01",
+  "source_paper_case": "Deep_Residual_Learning_for_Image_Recognition",
+  "source_benchmark_run": "benchmark_runs/deep_residual_style_aware_rescore_20260630_0001",
+  "primary_artifacts": {
+    "pptx": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/DeepResidual_20260630_blind_rectangular_golden2_reference.pptx",
+    "nonvisual_audit": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/nonvisual_audit_DeepResidual_20260630_blind_rectangular_golden2_reference.json",
+    "last_iteration_report": "outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/iter04_table_notes_report.md"
+  },
+  "human_feedback_summary": [
+    "Text evidence cards in straight rectangular panels should use visually centered body text rather than top-heavy text anchoring.",
+    "Figures placed inside wide bottom evidence panels should use the panel space aggressively while preserving source aspect ratio.",
+    "Figure captions in wide panels should be centered under the fitted image.",
+    "Dense or long tables should be converted into a focused readable table view rather than rendering unreadable source-width tables.",
+    "Focused table views should include a top label and a centered explanatory caption when the source table has usable context.",
+    "Tables and images should be judged by actual space use and readability, not only by raw metadata finding counts."
+  ],
+  "style_contract": {
+    "container_shape": "straight_rectangle",
+    "container_padding_model": {
+      "horizontal_in": 0.24,
+      "vertical_in": 0.18,
+      "space_efficiency": "high"
+    },
+    "preferred_layouts": {
+      "text_evidence": "right_panel_stacked_cards_with_middle_body_anchor",
+      "moderately_wide_figure": "right_panel_large_or_bottom_panel_if_readability_improves",
+      "extremely_wide_figure": "bottom_wide_panel_with_large_fitted_image",
+      "tall_figure": "large_asymmetric_panel_preserving_source_aspect",
+      "dense_table": "focused_table_view_inside_large_evidence_panel",
+      "sparse_table": "native_table_fit_with_caption"
+    },
+    "protected_rhythm": [
+      "white research-board canvas with faint vertical grid lines and a restrained top rail",
+      "straight rectangular claim and evidence containers with crisp academic spacing",
+      "large left claim panel plus large right evidence panel for premise/mechanism text evidence",
+      "full-width top claim band plus wide lower proof panel for figure/table evidence pages",
+      "evidence area should feel used, not decorative or empty"
+    ],
+    "known_style_specific_rules": [
+      "text_card_vertical_alignment_top_heavy",
+      "image_underutilized_in_wide_panel",
+      "figure_caption_not_centered_in_wide_panel",
+      "table_underutilized_in_evidence_panel",
+      "table_view_label_missing",
+      "table_caption_missing_or_not_centered"
+    ],
+    "global_correctness_rules_validated": [
+      "text_exceeds_container_bounds",
+      "table_exceeds_container_bounds",
+      "table_cell_text_wrapping_risk"
+    ]
+  },
+  "autonomous_style_proposal_policy": {
+    "may_use_as_evaluation_reference": true,
+    "may_use_as_training_example_for_badcase_rules": true,
+    "may_read_style_contract_during_frozen_reference_generation": true,
+    "may_read_style_contract_during_autonomous_style_proposal": false,
+    "may_copy_layout_grammar_during_autonomous_style_proposal": false,
+    "allowed_indirect_inputs_for_autonomous_proposal": [
+      "abstract design primitives library",
+      "paper content inventory",
+      "design constraints",
+      "badcase registry",
+      "style-scoped rule metadata without full golden layout parameters"
+    ],
+    "forbidden_inputs_for_autonomous_proposal": [
+      "this frozen PPTX as a template",
+      "this style manifest as a layout recipe",
+      "golden_baseline0 academic full style contract",
+      "golden_baseline1 rounded proof-panel full style contract",
+      "golden_baseline2 blind rectangular full style contract"
+    ]
+  },
+  "evaluation_notes": {
+    "human_in_the_loop_level": "high_to_medium_during_promotion",
+    "use_for_automation_curve": "Do not use this promoted artifact itself as proof of a fully autonomous repair loop. Use it as a frozen reference and as evidence that human feedback can be converted into scoped benchmark rules.",
+    "future_validation": "For new papers, generate this route as a frozen reference baseline separately from autonomous fresh style proposals."
+  }
+}

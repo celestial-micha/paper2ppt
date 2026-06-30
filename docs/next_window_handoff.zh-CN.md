@@ -609,3 +609,77 @@ paper2slides/benchmark/nonvisual_audit.py
 
 请先检查当前 git 状态和现有 runner 能力，然后给我一个三路验证实施计划；如果已有代码能直接复用，就开始落地。
 ```
+
+## 2026-07-01 最新交接：golden2 已封版，下一步做六路 autonomous proposal smoke
+
+上面的“三路验证”是 `golden_baseline1` 刚封版时的历史入口。现在状态已经更新：
+
+```text
+golden_baseline0: academic
+golden_baseline1: golden_baseline1_from_scratch_warm_academic
+golden_baseline2: golden_baseline2_blind_rectangular_research_board
+```
+
+`golden_baseline2` 保存位置：
+
+```text
+outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/
+```
+
+它是 human-in-the-loop 调好的 frozen reference，不要把它当成 fully autonomous style proposal 的证明。下一阶段真正要验证的是：系统能否只使用抽象 design primitives 和 badcase registry，自主提出新的 style_contract + layout grammar，并通过多轮 repair loop 变好。
+
+### 新窗口首条消息建议
+
+用户给新论文时，建议直接发送：
+
+```text
+Codex老师，我们继续 Paper2Slides-main 下一阶段：autonomous style proposal benchmark。
+
+项目路径：
+D:\coding\agent_paper_to_slider\Paper2Slides-main
+
+请先阅读：
+1. docs/autonomous_style_proposal_benchmark_plan.zh-CN.md
+2. docs/style_registry.zh-CN.md
+3. docs/benchmark_recording_schema.zh-CN.md
+4. docs/style_aware_multistage_benchmark_plan.zh-CN.md
+5. docs/from_scratch_benchmark_final_synthesis.zh-CN.md
+6. docs/human_feedback_benchmark_synthesis.zh-CN.md
+7. benchmarks/from_scratch_human_feedback_benchmark.json
+8. paper2slides/benchmark/nonvisual_audit.py
+9. paper2slides/benchmark/fourway.py
+
+当前状态：
+- academic、golden_baseline1、golden_baseline2 都已经 frozen。
+- golden2 是 human-tuned blind_rectangular_research_board，不要把它当成 autonomous style proposal 的证明。
+- 下一阶段要用我提供的新论文先做一篇 smoke test。
+- 同一篇论文只解析一次，然后生成六路：
+  1. academic frozen reference
+  2. golden_baseline1 frozen reference
+  3. golden_baseline2 frozen reference
+  4. autonomous style proposal A
+  5. autonomous style proposal B
+  6. autonomous style proposal C
+- autonomous style proposal 只能使用论文解析内容、设计约束、抽象 design primitives library 和 badcase registry，不能读取 golden0/1/2 完整模板或 PPTX。
+- repair loop 至少支持 2-3 轮，连续两轮无改善或触发 style/human risk 后停止。
+
+我现在给你一篇新下载的论文。请先确认它是否从未解析过，再给出 six-route smoke 执行计划、需要修改的 runner/audit 文件范围，以及预计输出目录结构。不要先跑五篇论文。
+```
+
+### 新窗口第一轮应避免
+
+- 不要继续手工微调 golden2；
+- 不要把 `golden_baseline2` 的 layout grammar 给 autonomous route 当模板；
+- 不要直接跑 5 篇或 ai20；
+- 不要删除已有 `benchmark_runs`；
+- 不要在没有确认输出目录和 route schema 前大改 runner。
+
+### 新窗口第一轮应完成
+
+1. 确认新论文是否已有 checkpoint；
+2. 如果没有，规划 parse-once checkpoint；
+3. 规划六路 route config；
+4. 规划 autonomous proposal 的 forbidden-reference attestation；
+5. 检查现有 `fourway.py` 是否应升级为 generalized multi-route runner；
+6. 列出要新增的 artifacts：`style_proposal_policy.json`、`human_feedback_effort.csv`、`novelty_report.json`、`sixway_result.json`；
+7. 只在计划确认后开始跑 smoke。

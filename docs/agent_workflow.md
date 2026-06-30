@@ -253,3 +253,36 @@ In interview terms:
 Updated phrasing after v25:
 
 > The project now has two protected references: the original `academic` golden baseline and a from-scratch `golden_baseline1`. The benchmark harness parses a paper once, generates multiple style branches, audits them, and applies repairs with style scope so a rule learned from one visual grammar cannot silently damage another.
+
+## 2026-07-01 Update: Frozen References And Autonomous Proposal
+
+After the Deep Residual blind-rectangular work, the project has a third human-tuned frozen reference:
+
+```text
+golden_baseline2_blind_rectangular_research_board
+```
+
+This changes the benchmark story. The three frozen references are now evaluation branches, not inputs to a future autonomous style generator:
+
+```text
+academic
+golden_baseline1_from_scratch_warm_academic
+golden_baseline2_blind_rectangular_research_board
+```
+
+The next agentic layer should add a `style proposal` step before rendering. That proposal step may use the parsed paper content, deck requirements, an abstract design-primitives library, and the badcase registry. It must not read the complete PPTX, style contract, or layout grammar of the three frozen references.
+
+The intended smoke test now has six branches from one fresh-paper parse:
+
+1. `academic` frozen reference;
+2. `golden_baseline1` frozen reference;
+3. `golden_baseline2` frozen reference;
+4. autonomous style proposal A;
+5. autonomous style proposal B;
+6. autonomous style proposal C.
+
+The Observe/Repair loop remains bounded. The difference is that autonomous proposal branches must also output a `style_contract`, `novelty_report`, and `forbidden_reference_attestation`, then run 2-3 repair rounds until high/medium findings are gone, two consecutive attempts fail to improve, or a repair-risk rule such as `metric_improved_visual_regressed` is triggered.
+
+Updated interview phrasing:
+
+> We first used human-in-the-loop work to create three frozen PPT style references. Then we separated evaluation from generation: frozen references can be used as baselines, but the autonomous style proposal agent is only allowed to use abstract design primitives, paper content, and badcase rules. That lets us test whether the system can propose and repair new styles rather than merely copying a template.

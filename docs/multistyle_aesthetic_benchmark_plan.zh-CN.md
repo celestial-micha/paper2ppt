@@ -678,3 +678,60 @@ style contract differs -> report / suggest only
 ### Blind from-scratch loop
 
 最后再选一篇新论文，要求 agent 不复用 `academic` 或 `golden_baseline1` 的视觉骨架，只复用 checkpoint 内容和 benchmark badcases，自动迭代出第三种风格。这个实验用于证明 benchmark 的能力不是“记住两套模板”，而是能驱动新的审美系统形成。
+
+## 2026-07-01 补充：golden2 封版后改为六路实验
+
+Deep Residual 的 `blind_rectangular_research_board` 已经通过 human-in-the-loop 迭代保存为：
+
+```text
+golden_baseline2_blind_rectangular_research_board
+```
+
+这意味着它不再是“待生成的第三种风格”，而是第三个 frozen reference。下一阶段不能把它继续当成 autonomous blind loop 的目标，而应把它和 `academic`、`golden_baseline1` 一起冻结，然后重新测试系统是否能在不读取三套完整模板的情况下提出新风格。
+
+### 新的单篇 smoke 路线
+
+同一篇未解析新论文只解析一次，生成六路：
+
+1. `academic` frozen reference；
+2. `golden_baseline1_from_scratch_warm_academic` frozen reference；
+3. `golden_baseline2_blind_rectangular_research_board` frozen reference；
+4. autonomous style proposal A；
+5. autonomous style proposal B；
+6. autonomous style proposal C。
+
+前三路回答“人工迭代成熟风格是否可复用”；后三路回答“系统能否不复制成熟模板，自主提出新风格并通过 benchmark repair loop 变好”。
+
+### 新的 from-scratch 限制
+
+autonomous proposal 允许使用：
+
+- paper content inventory；
+- deck requirements；
+- abstract design primitives library；
+- badcase registry；
+- scoped rule metadata。
+
+autonomous proposal 禁止使用：
+
+- golden0/1/2 PPTX；
+- golden0/1/2 完整 style contract；
+- golden0/1/2 layout grammar；
+- 从三套 golden reference 提取出的成熟页面模板。
+
+### 新的量化重点
+
+后续 5 篇论文量化时，不只统计 badcase 数量下降，还要记录：
+
+- 每条 autonomous route 的 proposal novelty；
+- 每轮 repair 是否引入新问题；
+- human feedback turns 是否下降；
+- 人工反馈转 rule 的比例；
+- native editability / source traceability / human correction cost；
+- 三套 frozen references 是否被 style-specific rules 误伤。
+
+详细计划见：
+
+```text
+docs/autonomous_style_proposal_benchmark_plan.zh-CN.md
+```

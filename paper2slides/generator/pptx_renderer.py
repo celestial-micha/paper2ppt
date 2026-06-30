@@ -10,11 +10,23 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
 from .slide_schema import MetricBlock, PresentationSpec, SlideSpec, TextBlock
+from .style_presets import get_style_preset
+
+
+ACADEMIC_BASELINE_SECTIONS = [
+    "Motivation",
+    "Method",
+    "Analysis",
+    "Ablations",
+    "Results",
+    "Conclusion",
+]
 
 
 @dataclass(frozen=True)
@@ -33,13 +45,23 @@ class DeckTheme:
     pale_neutral: tuple[int, int, int] = (241, 243, 246)
     title_font: str = "Aptos Display"
     body_font: str = "Aptos"
+    layout_family: str = "academic"
+    display_name: str = "Academic Golden Baseline"
 
 
 class PptxRenderer:
     """Render structured slide specs into an editable PPTX file."""
 
-    def __init__(self, theme: DeckTheme | None = None):
-        self.theme = theme or DeckTheme()
+    def __init__(self, theme: DeckTheme | None = None, style: str = "academic"):
+        self.style = (style or "academic").strip().lower()
+        self.theme = theme or self._theme_from_style(self.style)
+
+    def _theme_from_style(self, style: str) -> DeckTheme:
+        preset = get_style_preset(style)
+        theme = DeckTheme()
+        if preset.theme:
+            theme = replace(theme, **preset.theme)
+        return replace(theme, layout_family=preset.layout_family, display_name=preset.display_name)
 
     def render(self, spec: PresentationSpec, output_path: Path) -> Path:
         try:
@@ -153,10 +175,18 @@ class PptxRenderer:
 
     def _paint_background(self, slide, prs, title: bool = False) -> None:
         t = self.theme
+        family = t.layout_family
         bg = slide.shapes.add_shape(self.MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
         bg.fill.solid()
         bg.fill.fore_color.rgb = self._rgb(t.background)
         bg.line.fill.background()
+
+        if family == "editorial":
+            self._rounded_rect(slide, self.Inches(0.72), self.Inches(0.42), self.Inches(11.9), self.Inches(0.015), t.rule, t.rule)
+            self._rounded_rect(slide, self.Inches(0.72), self.Inches(6.86), self.Inches(11.9), self.Inches(0.015), t.rule, t.rule)
+            if title:
+                self._rounded_rect(slide, self.Inches(0.72), self.Inches(0.88), self.Inches(0.1), self.Inches(5.35), t.primary, t.primary)
+            return
 
         rail = slide.shapes.add_shape(self.MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, 0, prs.slide_width, self.Inches(0.06))
         rail.fill.solid()
@@ -190,6 +220,14 @@ class PptxRenderer:
             accent.fill.fore_color.rgb = self._rgb(t.secondary)
             accent.line.fill.background()
 
+        if family == "systems":
+            for i in range(1, 12):
+                x = self.Inches(0.72 + i * 1.0)
+                self._rounded_rect(slide, x, self.Inches(0.2), self.Inches(0.006), self.Inches(6.55), t.rule, t.rule)
+            for i in range(1, 7):
+                y = self.Inches(0.35 + i * 0.95)
+                self._rounded_rect(slide, self.Inches(0.56), y, self.Inches(12.05), self.Inches(0.006), t.rule, t.rule)
+
     def _section_sequence(self, spec: PresentationSpec) -> List[str]:
         sections: List[str] = []
         for slide in spec.slides:
@@ -198,9 +236,21 @@ class PptxRenderer:
                 continue
             if label not in sections:
                 sections.append(label)
+        if self._uses_mature_academic_toc(sections):
+            return list(ACADEMIC_BASELINE_SECTIONS)
         if not sections:
             sections = ["Motivation", "Core Ideas", "Method", "Results", "Conclusion"]
         return sections[:7]
+
+    def _uses_mature_academic_toc(self, sections: Sequence[str]) -> bool:
+        if self.style != "academic" or self.theme.layout_family != "academic":
+            return False
+        labels = set(sections)
+        return (
+            "Motivation" in labels
+            and "Method" in labels
+            and ("Results" in labels or "Conclusion" in labels)
+        )
 
     def _deck_identity(self, spec: PresentationSpec) -> tuple[str, str, str, str]:
         first = spec.slides[0] if spec.slides else None
@@ -237,6 +287,15 @@ class PptxRenderer:
     def _render_title_page(self, slide, spec: PresentationSpec, sections: Sequence[str], slide_index: int) -> None:
         t = self.theme
         title, authors, affiliation, date_text = self._deck_identity(spec)
+        if t.layout_family == "editorial":
+            self._render_editorial_title_page(slide, spec, sections, slide_index, title, authors, affiliation, date_text)
+            return
+        if t.layout_family == "systems":
+            self._render_systems_title_page(slide, spec, sections, slide_index, title, authors, affiliation, date_text)
+            return
+        if t.layout_family in {"conference", "report", "explainer"}:
+            self._render_presentation_style_title_page(slide, spec, sections, slide_index, title, authors, affiliation, date_text)
+            return
 
         self._add_text(
             slide,
@@ -290,6 +349,107 @@ class PptxRenderer:
         self._render_title_summary_tiles(slide, spec, sections)
         self._footer(slide, slide_index)
 
+    def _render_editorial_title_page(
+        self,
+        slide,
+        spec: PresentationSpec,
+        sections: Sequence[str],
+        slide_index: int,
+        title: str,
+        authors: str,
+        affiliation: str,
+        date_text: str,
+    ) -> None:
+        t = self.theme
+        self._add_text(slide, "TECHNICAL REPORT", self.Inches(1.08), self.Inches(0.86), self.Inches(3.4), self.Inches(0.24), 9.5, True, t.primary, t.body_font, 1)
+        self._add_text(
+            slide,
+            title,
+            self.Inches(1.05),
+            self.Inches(1.34),
+            self.Inches(9.9),
+            self.Inches(1.68),
+            size=self._fit_title_size(title, base=36, min_size=25),
+            bold=True,
+            color=t.ink,
+            font=t.title_font,
+            max_lines=2,
+        )
+        self._rounded_rect(slide, self.Inches(1.08), self.Inches(3.18), self.Inches(1.25), self.Inches(0.035), t.primary, t.primary)
+        self._add_text(slide, authors, self.Inches(1.08), self.Inches(3.58), self.Inches(8.1), self.Inches(0.35), 14, True, t.primary, t.body_font, 1)
+        self._add_text(slide, affiliation, self.Inches(1.08), self.Inches(4.0), self.Inches(8.1), self.Inches(0.3), 10.5, False, t.muted, t.body_font, 1)
+        self._add_text(slide, date_text, self.Inches(1.08), self.Inches(4.38), self.Inches(2.3), self.Inches(0.25), 9.5, False, t.muted, t.body_font, 1)
+        if sections:
+            self._add_text(slide, " / ".join(sections[:5]), self.Inches(1.08), self.Inches(5.52), self.Inches(9.7), self.Inches(0.32), 10.5, True, t.secondary, t.body_font, 1)
+        self._render_title_summary_tiles(slide, spec, sections)
+        self._footer(slide, slide_index)
+
+    def _render_systems_title_page(
+        self,
+        slide,
+        spec: PresentationSpec,
+        sections: Sequence[str],
+        slide_index: int,
+        title: str,
+        authors: str,
+        affiliation: str,
+        date_text: str,
+    ) -> None:
+        t = self.theme
+        self._rounded_rect(slide, self.Inches(0.78), self.Inches(0.8), self.Inches(11.75), self.Inches(5.75), t.surface, t.rule)
+        self._add_text(slide, "SYSTEMS / AGENTIC WORKFLOW", self.Inches(1.08), self.Inches(1.08), self.Inches(4.2), self.Inches(0.24), 9.0, True, t.secondary, t.body_font, 1)
+        self._add_text(
+            slide,
+            title,
+            self.Inches(1.06),
+            self.Inches(1.58),
+            self.Inches(7.7),
+            self.Inches(1.45),
+            size=self._fit_title_size(title, base=32, min_size=24),
+            bold=True,
+            color=t.ink,
+            font=t.title_font,
+            max_lines=2,
+        )
+        self._add_text(slide, authors, self.Inches(1.08), self.Inches(3.28), self.Inches(6.9), self.Inches(0.33), 13.5, True, t.primary, t.body_font, 1)
+        self._add_text(slide, affiliation, self.Inches(1.08), self.Inches(3.72), self.Inches(6.9), self.Inches(0.3), 10.2, False, t.muted, t.body_font, 1)
+        labels = sections[:4] or ["Context", "Data", "Training", "Evaluation"]
+        for index, label in enumerate(labels, start=1):
+            x = self.Inches(8.9)
+            y = self.Inches(1.22 + (index - 1) * 0.9)
+            self._rounded_rect(slide, x, y, self.Inches(2.35), self.Inches(0.46), t.pale_primary if index % 2 else t.pale_secondary, t.rule)
+            self._add_text(slide, f"{index:02d}", int(x + self.Inches(0.16)), int(y + self.Inches(0.12)), self.Inches(0.34), self.Inches(0.18), 8, True, t.primary, t.title_font, 1)
+            self._add_text(slide, self._truncate(label, 24), int(x + self.Inches(0.62)), int(y + self.Inches(0.1)), self.Inches(1.55), self.Inches(0.22), 8.3, True, t.ink, t.body_font, 1)
+        self._add_text(slide, date_text, self.Inches(1.08), self.Inches(5.95), self.Inches(2.3), self.Inches(0.25), 9, False, t.muted, t.body_font, 1)
+        self._footer(slide, slide_index)
+
+    def _render_presentation_style_title_page(
+        self,
+        slide,
+        spec: PresentationSpec,
+        sections: Sequence[str],
+        slide_index: int,
+        title: str,
+        authors: str,
+        affiliation: str,
+        date_text: str,
+    ) -> None:
+        t = self.theme
+        label = {
+            "conference": "CONFERENCE ORAL",
+            "report": "BENCHMARK REPORT",
+            "explainer": "VISUAL EXPLAINER",
+        }.get(t.layout_family, "PRESENTATION")
+        self._add_text(slide, label, self.Inches(0.86), self.Inches(0.86), self.Inches(3.4), self.Inches(0.24), 9.0, True, t.primary, t.body_font, 1)
+        self._add_text(slide, title, self.Inches(0.84), self.Inches(1.28), self.Inches(8.4), self.Inches(1.36), self._fit_title_size(title, 34, 24), True, t.ink, t.title_font, 2)
+        self._render_title_summary_tiles(slide, spec, sections)
+        self._add_text(slide, authors, self.Inches(0.88), self.Inches(3.24), self.Inches(7.2), self.Inches(0.32), 13.5, True, t.primary, t.body_font, 1)
+        self._add_text(slide, affiliation, self.Inches(0.88), self.Inches(3.66), self.Inches(7.2), self.Inches(0.26), 10, False, t.muted, t.body_font, 1)
+        if sections:
+            self._render_stage_cards(slide, [TextBlock(text=s, claim=s, detail="Section route") for s in sections[:4]], self.Inches(0.9), self.Inches(4.55), self.Inches(8.5), self.Inches(0.92), horizontal=True)
+        self._add_text(slide, date_text, self.Inches(0.88), self.Inches(6.26), self.Inches(2.1), self.Inches(0.2), 8.5, False, t.muted, t.body_font, 1)
+        self._footer(slide, slide_index)
+
     def _render_title_summary_tiles(self, slide, spec: PresentationSpec, sections: Sequence[str]) -> None:
         t = self.theme
         content_slides = [slide_spec for slide_spec in spec.slides if slide_spec.section_type != "opening"]
@@ -311,10 +471,13 @@ class PptxRenderer:
 
     def _render_toc(self, slide, sections: Sequence[str], slide_index: int) -> None:
         t = self.theme
-        self._add_text(slide, "Contents", self.Inches(0.78), self.Inches(0.62), self.Inches(4.5), self.Inches(0.68), 30, True, t.ink, t.title_font, 1)
+        title_text = "Contents" if t.layout_family != "systems" else "System Route"
+        self._add_text(slide, title_text, self.Inches(0.78), self.Inches(0.62), self.Inches(4.5), self.Inches(0.68), 30, True, t.ink, t.title_font, 1)
         self._add_text(
             slide,
-            "A sectioned route through the paper: why it matters, what is new, how it works, and what it proves.",
+            "A sectioned route through the paper: why it matters, what is new, how it works, and what it proves."
+            if t.layout_family != "editorial"
+            else "A report-style reading path: argument first, evidence second, implications last.",
             self.Inches(0.82),
             self.Inches(1.35),
             self.Inches(9.4),
@@ -334,7 +497,8 @@ class PptxRenderer:
         for index, section in enumerate(sections[:7], start=1):
             y = int(start_top + (index - 1) * (row_h + gap))
             accent = palette[(index - 1) % len(palette)]
-            self._rounded_rect(slide, self.Inches(0.86), y, self.Inches(0.62), row_h, accent, accent)
+            marker_w = self.Inches(0.62 if t.layout_family != "editorial" else 0.42)
+            self._rounded_rect(slide, self.Inches(0.86), y, marker_w, row_h, accent, accent)
             self._add_text(
                 slide,
                 f"{index:02d}",
@@ -359,6 +523,9 @@ class PptxRenderer:
 
     def _render_cover(self, slide, slide_spec: SlideSpec, slide_index: int) -> None:
         t = self.theme
+        if t.layout_family in {"editorial", "systems", "conference", "report", "explainer"}:
+            self._render_style_cover(slide, slide_spec, slide_index)
+            return
         title = self._clean_title(slide_spec.title)
         self._add_text(
             slide,
@@ -424,8 +591,99 @@ class PptxRenderer:
 
         self._footer(slide, slide_index)
 
+    def _render_style_cover(self, slide, slide_spec: SlideSpec, slide_index: int) -> None:
+        t = self.theme
+        title = self._clean_title(slide_spec.title)
+        claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
+        if t.layout_family == "systems":
+            self._render_header(slide, slide_spec)
+            self._render_key_message(slide, claim, self.Inches(0.9), self.Inches(1.35), self.Inches(5.2), self.Inches(0.88))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:4], self.Inches(0.9), self.Inches(2.55), self.Inches(7.2), self.Inches(2.75), horizontal=True)
+            if slide_spec.metric_blocks:
+                self._render_metric_column(slide, slide_spec.metric_blocks[:4], self.Inches(8.65), self.Inches(1.35), self.Inches(3.2), self.Inches(4.4))
+            elif slide_spec.image_blocks:
+                self._render_images(slide, slide_spec, self.Inches(8.25), self.Inches(1.45), self.Inches(3.8), self.Inches(3.8), caption=True)
+            self._footer(slide, slide_index)
+            return
+
+        if t.layout_family == "conference":
+            self._add_text(slide, "OPENING CLAIM", self.Inches(0.82), self.Inches(0.75), self.Inches(2.4), self.Inches(0.22), 8.5, True, t.primary, t.body_font, 1)
+            self._add_text(slide, title, self.Inches(0.78), self.Inches(1.08), self.Inches(10.9), self.Inches(1.1), self._fit_title_size(title, 34, 24), True, t.ink, t.title_font, 2)
+            self._render_key_message(slide, claim, self.Inches(0.82), self.Inches(2.48), self.Inches(6.8), self.Inches(0.88))
+            if slide_spec.image_blocks:
+                self._render_images(slide, slide_spec, self.Inches(7.95), self.Inches(2.34), self.Inches(4.35), self.Inches(3.0), caption=True)
+            self._render_metric_band(slide, slide_spec.metric_blocks[:3], self.Inches(0.86), self.Inches(5.45), self.Inches(10.9), self.Inches(0.72))
+            self._footer(slide, slide_index)
+            return
+
+        if t.layout_family == "report":
+            self._render_header(slide, slide_spec)
+            self._add_text(slide, "SCORECARD", self.Inches(0.9), self.Inches(1.28), self.Inches(2.1), self.Inches(0.2), 8.5, True, t.secondary, t.body_font, 1)
+            self._render_metric_band(slide, slide_spec.metric_blocks[:4], self.Inches(0.9), self.Inches(1.68), self.Inches(11.1), self.Inches(0.96))
+            self._render_key_message(slide, claim, self.Inches(0.9), self.Inches(3.05), self.Inches(6.2), self.Inches(0.86))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.9), self.Inches(4.22), self.Inches(10.9), self.Inches(1.45), horizontal=True)
+            self._footer(slide, slide_index)
+            return
+
+        if t.layout_family == "explainer":
+            if slide_spec.image_blocks:
+                self._render_images(slide, slide_spec, self.Inches(6.4), self.Inches(0.95), self.Inches(5.75), self.Inches(4.85), caption=True)
+            self._add_text(slide, title, self.Inches(0.78), self.Inches(0.98), self.Inches(5.15), self.Inches(1.2), self._fit_title_size(title, 30, 22), True, t.ink, t.title_font, 2)
+            self._render_key_message(slide, claim, self.Inches(0.82), self.Inches(2.48), self.Inches(4.85), self.Inches(0.94))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.86), self.Inches(3.78), self.Inches(4.9), self.Inches(1.75), horizontal=False)
+            self._footer(slide, slide_index)
+            return
+
+        self._add_text(slide, "TECHNICAL WHITE PAPER", self.Inches(0.9), self.Inches(0.82), self.Inches(3.2), self.Inches(0.22), 8.5, True, t.primary, t.body_font, 1)
+        self._add_text(slide, title, self.Inches(0.88), self.Inches(1.18), self.Inches(9.5), self.Inches(1.36), self._fit_title_size(title, 36, 25), True, t.ink, t.title_font, 2)
+        self._render_key_message(slide, claim, self.Inches(0.92), self.Inches(2.98), self.Inches(7.1), self.Inches(0.78))
+        self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.95), self.Inches(4.18), self.Inches(7.25), self.Inches(1.34), horizontal=True)
+        if slide_spec.image_blocks:
+            self._render_images(slide, slide_spec, self.Inches(8.55), self.Inches(1.36), self.Inches(3.7), self.Inches(3.8), caption=True)
+        elif slide_spec.metric_blocks:
+            self._render_metric_column(slide, slide_spec.metric_blocks[:3], self.Inches(8.65), self.Inches(1.45), self.Inches(3.0), self.Inches(3.4))
+        self._footer(slide, slide_index)
+
     def _render_section_divider(self, slide, section: str, slide_index: int) -> None:
         t = self.theme
+        if t.layout_family == "editorial":
+            self._add_text(slide, "CHAPTER", self.Inches(0.98), self.Inches(1.52), self.Inches(1.6), self.Inches(0.24), 9, True, t.primary, t.body_font, 1)
+            self._add_text(
+                slide,
+                section,
+                self.Inches(0.95),
+                self.Inches(2.1),
+                self.Inches(10.6),
+                self.Inches(0.96),
+                size=self._fit_title_size(section, base=38, min_size=27),
+                bold=True,
+                color=t.ink,
+                font=t.title_font,
+                max_lines=1,
+            )
+            self._rounded_rect(slide, self.Inches(0.98), self.Inches(3.42), self.Inches(7.4), self.Inches(0.035), t.primary, t.primary)
+            self._footer(slide, slide_index)
+            return
+        if t.layout_family == "systems":
+            self._rounded_rect(slide, self.Inches(0.86), self.Inches(1.58), self.Inches(10.9), self.Inches(2.0), t.surface, t.rule)
+            self._add_text(slide, "STAGE TRANSITION", self.Inches(1.12), self.Inches(1.9), self.Inches(2.6), self.Inches(0.24), 9, True, t.secondary, t.body_font, 1)
+            self._add_text(
+                slide,
+                section,
+                self.Inches(1.1),
+                self.Inches(2.32),
+                self.Inches(9.7),
+                self.Inches(0.68),
+                size=self._fit_title_size(section, base=32, min_size=24),
+                bold=True,
+                color=t.ink,
+                font=t.title_font,
+                max_lines=1,
+            )
+            self._rounded_rect(slide, self.Inches(1.1), self.Inches(3.22), self.Inches(2.4), self.Inches(0.07), t.primary, t.primary)
+            self._rounded_rect(slide, self.Inches(3.65), self.Inches(3.22), self.Inches(4.8), self.Inches(0.07), t.secondary, t.secondary)
+            self._footer(slide, slide_index)
+            return
         self._add_text(
             slide,
             "Next section",
@@ -458,6 +716,9 @@ class PptxRenderer:
 
     def _render_statement(self, slide, slide_spec: SlideSpec, slide_index: int, closing: bool = False) -> None:
         t = self.theme
+        if t.layout_family in {"editorial", "systems", "conference", "report", "explainer"}:
+            self._render_style_statement(slide, slide_spec, slide_index, closing=closing)
+            return
         self._render_header(slide, slide_spec)
 
         claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
@@ -498,24 +759,94 @@ class PptxRenderer:
 
         self._footer(slide, slide_index)
 
-    def _render_visual_or_mixed(self, slide, slide_spec: SlideSpec, slide_index: int, visual_left: bool = False) -> None:
+    def _render_style_statement(self, slide, slide_spec: SlideSpec, slide_index: int, closing: bool = False) -> None:
         t = self.theme
         self._render_header(slide, slide_spec)
+        claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
 
-        image_left = self.Inches(0.75 if visual_left else 6.2)
-        text_left = self.Inches(6.85 if visual_left else 0.82)
-        visual_width = self.Inches(5.65 if visual_left else 6.25)
-        text_width = self.Inches(5.6 if visual_left else 5.0)
+        if t.layout_family == "editorial":
+            self._add_text(slide, "Argument", self.Inches(0.9), self.Inches(1.38), self.Inches(1.4), self.Inches(0.2), 8, True, t.primary, t.body_font, 1)
+            self._render_key_message(slide, claim, self.Inches(0.9), self.Inches(1.72), self.Inches(7.6), self.Inches(0.82 if not closing else 1.0))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.95), self.Inches(3.0), self.Inches(7.6), self.Inches(2.6), horizontal=False)
+            if slide_spec.metric_blocks:
+                self._render_metric_column(slide, slide_spec.metric_blocks[:4], self.Inches(9.25), self.Inches(1.5), self.Inches(2.7), self.Inches(4.55))
+            self._footer(slide, slide_index)
+            return
+
+        if t.layout_family == "systems":
+            self._render_key_message(slide, claim, self.Inches(0.86), self.Inches(1.24), self.Inches(5.6), self.Inches(0.78))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:4], self.Inches(0.92), self.Inches(2.32), self.Inches(7.65), self.Inches(3.42), horizontal=True)
+            if slide_spec.metric_blocks:
+                self._render_metric_column(slide, slide_spec.metric_blocks[:4], self.Inches(9.0), self.Inches(1.28), self.Inches(2.9), self.Inches(4.7))
+            else:
+                self._add_system_lane(slide, self.Inches(9.0), self.Inches(1.42), self.Inches(2.9), self.Inches(4.28), slide_spec)
+            self._footer(slide, slide_index)
+            return
+
+        if t.layout_family == "conference":
+            self._add_text(slide, self._body_sentence(claim, 190), self.Inches(0.9), self.Inches(1.3), self.Inches(10.4), self.Inches(0.98), 21, True, t.ink, t.title_font, 2)
+            self._rounded_rect(slide, self.Inches(0.9), self.Inches(2.55), self.Inches(3.2), self.Inches(0.07), t.primary, t.primary)
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.9), self.Inches(3.1), self.Inches(10.4), self.Inches(2.1), horizontal=True)
+            if slide_spec.metric_blocks:
+                self._render_metric_band(slide, slide_spec.metric_blocks[:4], self.Inches(0.9), self.Inches(5.82), self.Inches(10.8), self.Inches(0.62))
+            self._footer(slide, slide_index)
+            return
+
+        if t.layout_family == "report":
+            if slide_spec.metric_blocks:
+                self._render_metric_band(slide, slide_spec.metric_blocks[:4], self.Inches(0.86), self.Inches(1.18), self.Inches(11.15), self.Inches(0.98))
+                claim_top = self.Inches(2.55)
+            else:
+                claim_top = self.Inches(1.28)
+            self._render_key_message(slide, claim, self.Inches(0.86), claim_top, self.Inches(6.7), self.Inches(0.82))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.92), int(claim_top + self.Inches(1.16)), self.Inches(10.85), self.Inches(2.8), horizontal=False)
+            self._footer(slide, slide_index)
+            return
+
+        if slide_spec.image_blocks:
+            self._render_images(slide, slide_spec, self.Inches(0.82), self.Inches(1.28), self.Inches(6.35), self.Inches(4.65), caption=True)
+            text_left = self.Inches(7.55)
+            text_width = self.Inches(4.65)
+        else:
+            text_left = self.Inches(0.92)
+            text_width = self.Inches(7.8)
+        self._render_key_message(slide, claim, text_left, self.Inches(1.28), text_width, self.Inches(0.86))
+        self._render_stage_cards(slide, slide_spec.text_blocks[:3], text_left, self.Inches(2.55), text_width, self.Inches(3.05), horizontal=False)
+        if slide_spec.metric_blocks and not slide_spec.image_blocks:
+            self._render_metric_column(slide, slide_spec.metric_blocks[:3], self.Inches(9.3), self.Inches(1.3), self.Inches(2.75), self.Inches(3.6))
+        self._footer(slide, slide_index)
+
+    def _render_visual_or_mixed(self, slide, slide_spec: SlideSpec, slide_index: int, visual_left: bool = False) -> None:
+        t = self.theme
+        if t.layout_family in {"conference", "report", "explainer"}:
+            self._render_style_visual(slide, slide_spec, slide_index, visual_left=visual_left)
+            return
+        self._render_header(slide, slide_spec)
+
+        if t.layout_family == "editorial":
+            image_left = self.Inches(6.0 if not visual_left else 0.78)
+            text_left = self.Inches(0.86 if not visual_left else 7.1)
+            visual_width = self.Inches(6.4 if not visual_left else 5.95)
+            text_width = self.Inches(4.75 if not visual_left else 4.55)
+        elif t.layout_family == "systems":
+            image_left = self.Inches(0.82 if visual_left else 6.35)
+            text_left = self.Inches(6.9 if visual_left else 0.82)
+            visual_width = self.Inches(5.75 if visual_left else 5.9)
+            text_width = self.Inches(5.2 if visual_left else 5.15)
+        else:
+            image_left = self.Inches(0.75 if visual_left else 6.2)
+            text_left = self.Inches(6.85 if visual_left else 0.82)
+            visual_width = self.Inches(5.65 if visual_left else 6.25)
+            text_width = self.Inches(5.6 if visual_left else 5.0)
 
         has_table = bool(slide_spec.table_blocks)
-        image_height = self.Inches(3.0 if has_table else 4.45)
         self._render_images(
             slide,
             slide_spec,
             image_left,
-            self.Inches(1.72),
+            self.Inches(1.58 if t.layout_family == "editorial" else 1.72),
             visual_width,
-            self.Inches(2.9 if has_table else 4.12),
+            self.Inches(3.05 if has_table else (4.55 if t.layout_family == "editorial" else 4.12)),
             caption=True,
         )
 
@@ -546,6 +877,24 @@ class PptxRenderer:
         )
 
         if has_table:
+            if slide_spec.metric_blocks and not slide_spec.image_blocks:
+                self._render_metric_column(
+                    slide,
+                    slide_spec.metric_blocks[:3],
+                    image_left,
+                    self.Inches(1.72),
+                    visual_width,
+                    self.Inches(3.05),
+                )
+            elif not slide_spec.image_blocks:
+                self._render_evidence_column(
+                    slide,
+                    slide_spec.text_blocks[2:5] or slide_spec.text_blocks[:2],
+                    image_left,
+                    self.Inches(1.72),
+                    visual_width,
+                    self.Inches(3.05),
+                )
             self._render_table(
                 slide,
                 slide_spec,
@@ -566,7 +915,65 @@ class PptxRenderer:
 
         self._footer(slide, slide_index)
 
+    def _render_evidence_column(self, slide, blocks: Sequence[TextBlock], left, top, width, height) -> None:
+        blocks = list(blocks)[:3]
+        if not blocks:
+            return
+        self._rounded_rect(slide, left, top, width, height, self.theme.pale_neutral, self.theme.rule)
+        self._add_text(
+            slide,
+            "Evidence notes",
+            int(left + self.Inches(0.28)),
+            int(top + self.Inches(0.22)),
+            int(width - self.Inches(0.56)),
+            self.Inches(0.18),
+            7.6,
+            True,
+            self.theme.primary,
+            self.theme.body_font,
+            1,
+        )
+        self._render_stage_cards(
+            slide,
+            blocks,
+            int(left + self.Inches(0.22)),
+            int(top + self.Inches(0.58)),
+            int(width - self.Inches(0.44)),
+            int(height - self.Inches(0.78)),
+            horizontal=False,
+        )
+
+    def _render_style_visual(self, slide, slide_spec: SlideSpec, slide_index: int, visual_left: bool = False) -> None:
+        t = self.theme
+        self._render_header(slide, slide_spec)
+        claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
+        if t.layout_family == "explainer":
+            self._render_images(slide, slide_spec, self.Inches(0.82), self.Inches(1.28), self.Inches(7.05), self.Inches(4.85), caption=True)
+            self._render_key_message(slide, claim, self.Inches(8.25), self.Inches(1.28), self.Inches(3.75), self.Inches(0.86))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:4], self.Inches(8.25), self.Inches(2.52), self.Inches(3.75), self.Inches(3.05), horizontal=False)
+        elif t.layout_family == "conference":
+            self._add_text(slide, self._body_sentence(claim, 180), self.Inches(0.9), self.Inches(1.24), self.Inches(10.3), self.Inches(0.72), 18.5, True, t.ink, t.title_font, 2)
+            self._render_images(slide, slide_spec, self.Inches(1.0), self.Inches(2.18), self.Inches(6.4), self.Inches(3.65), caption=True)
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(7.8), self.Inches(2.3), self.Inches(3.95), self.Inches(2.85), horizontal=False)
+            if slide_spec.metric_blocks:
+                self._render_metric_band(slide, slide_spec.metric_blocks[:3], self.Inches(0.95), self.Inches(6.08), self.Inches(10.3), self.Inches(0.52))
+        else:
+            if slide_spec.metric_blocks:
+                self._render_metric_band(slide, slide_spec.metric_blocks[:4], self.Inches(0.9), self.Inches(1.12), self.Inches(11.0), self.Inches(0.74))
+                visual_top = self.Inches(2.12)
+            else:
+                visual_top = self.Inches(1.34)
+            self._render_images(slide, slide_spec, self.Inches(0.92), visual_top, self.Inches(5.8), self.Inches(3.6), caption=True)
+            self._render_key_message(slide, claim, self.Inches(7.15), visual_top, self.Inches(4.55), self.Inches(0.72))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(7.15), int(visual_top + self.Inches(1.03)), self.Inches(4.55), self.Inches(2.35), horizontal=False)
+            if slide_spec.table_blocks:
+                self._render_table(slide, slide_spec, self.Inches(0.95), self.Inches(5.72), self.Inches(10.9), self.Inches(0.78))
+        self._footer(slide, slide_index)
+
     def _render_table_focus(self, slide, slide_spec: SlideSpec, slide_index: int) -> None:
+        if self.theme.layout_family in {"editorial", "systems", "conference", "report", "explainer"}:
+            self._render_style_table_focus(slide, slide_spec, slide_index)
+            return
         self._render_header(slide, slide_spec)
         has_image = bool(slide_spec.image_blocks)
         if has_image:
@@ -626,9 +1033,75 @@ class PptxRenderer:
         self._render_table(slide, slide_spec, self.Inches(0.9), table_top, self.Inches(11.45), table_height)
         self._footer(slide, slide_index)
 
+    def _render_style_table_focus(self, slide, slide_spec: SlideSpec, slide_index: int) -> None:
+        t = self.theme
+        self._render_header(slide, slide_spec)
+        claim = slide_spec.takeaway or (slide_spec.text_blocks[0].text if slide_spec.text_blocks else "")
+        if t.layout_family == "report":
+            if slide_spec.metric_blocks:
+                self._render_metric_band(slide, slide_spec.metric_blocks[:4], self.Inches(0.88), self.Inches(1.12), self.Inches(11.0), self.Inches(0.72))
+                top = self.Inches(2.12)
+            else:
+                top = self.Inches(1.3)
+            self._render_key_message(slide, claim, self.Inches(0.9), top, self.Inches(10.7), self.Inches(0.62))
+            self._render_table(slide, slide_spec, self.Inches(0.9), int(top + self.Inches(0.95)), self.Inches(11.2), self.Inches(2.8))
+        elif t.layout_family == "conference":
+            self._render_key_message(slide, claim, self.Inches(0.9), self.Inches(1.24), self.Inches(10.6), self.Inches(0.72))
+            self._render_table(slide, slide_spec, self.Inches(0.9), self.Inches(2.25), self.Inches(11.0), self.Inches(3.45))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:2], self.Inches(0.9), self.Inches(6.0), self.Inches(8.0), self.Inches(0.55), horizontal=True)
+        elif t.layout_family == "systems":
+            self._render_key_message(slide, claim, self.Inches(0.9), self.Inches(1.22), self.Inches(5.6), self.Inches(0.74))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:3], self.Inches(0.9), self.Inches(2.25), self.Inches(5.6), self.Inches(2.8), horizontal=False)
+            self._render_table(slide, slide_spec, self.Inches(6.85), self.Inches(1.32), self.Inches(5.25), self.Inches(4.35))
+        else:
+            self._render_key_message(slide, claim, self.Inches(0.9), self.Inches(1.25), self.Inches(6.2), self.Inches(0.72))
+            if slide_spec.image_blocks and t.layout_family == "explainer":
+                self._render_images(slide, slide_spec, self.Inches(7.35), self.Inches(1.3), self.Inches(4.65), self.Inches(2.4), caption=True)
+            self._render_table(slide, slide_spec, self.Inches(0.9), self.Inches(2.45), self.Inches(11.2), self.Inches(2.9))
+            self._render_stage_cards(slide, slide_spec.text_blocks[:2], self.Inches(0.9), self.Inches(5.75), self.Inches(9.0), self.Inches(0.75), horizontal=True)
+        self._footer(slide, slide_index)
+
     def _render_header(self, slide, slide_spec: SlideSpec) -> None:
         t = self.theme
         title = self._clean_title(slide_spec.title)
+        if t.layout_family in {"report", "conference"}:
+            title = self._truncate(title, 66)
+        if t.layout_family == "editorial":
+            section = self._truncate(slide_spec.section_label or "Research note", 36)
+            self._add_text(slide, section.upper(), self.Inches(0.78), self.Inches(0.34), self.Inches(3.1), self.Inches(0.2), 7.4, True, t.primary, t.body_font, 1)
+            self._add_text(
+                slide,
+                title,
+                self.Inches(0.78),
+                self.Inches(0.58),
+                self.Inches(10.7),
+                self.Inches(0.44),
+                size=self._fit_title_size(title, base=22, min_size=16),
+                bold=True,
+                color=t.ink,
+                font=t.title_font,
+                max_lines=1,
+            )
+            self._rounded_rect(slide, self.Inches(0.78), self.Inches(1.08), self.Inches(10.95), self.Inches(0.02), t.rule, t.rule)
+            return
+        if t.layout_family == "systems":
+            self._rounded_rect(slide, self.Inches(0.68), self.Inches(0.28), self.Inches(11.88), self.Inches(0.68), t.surface, t.rule)
+            self._rounded_rect(slide, self.Inches(0.82), self.Inches(0.44), self.Inches(0.52), self.Inches(0.22), t.primary, t.primary)
+            self._add_text(slide, "SYS", self.Inches(0.9), self.Inches(0.48), self.Inches(0.35), self.Inches(0.12), 6.5, True, (255, 255, 255), t.body_font, 1, alignment=self.PP_ALIGN.CENTER)
+            self._add_text(
+                slide,
+                title,
+                self.Inches(1.55),
+                self.Inches(0.4),
+                self.Inches(10.5),
+                self.Inches(0.52),
+                size=self._fit_title_size(title, base=21, min_size=16),
+                bold=True,
+                color=t.ink,
+                font=t.title_font,
+                max_lines=1,
+            )
+            return
         self._rounded_rect(slide, self.Inches(0.68), self.Inches(0.28), self.Inches(11.88), self.Inches(0.64), t.surface, t.rule)
         self._rounded_rect(slide, self.Inches(0.68), self.Inches(0.28), self.Inches(0.13), self.Inches(0.64), t.primary, t.primary)
         self._add_text(
@@ -693,9 +1166,18 @@ class PptxRenderer:
         accents = [self.theme.primary, self.theme.secondary, self.theme.ink, self.theme.accent]
         for index, metric in enumerate(metrics):
             x = int(left + index * (slot_width + gap))
-            self._rounded_rect(slide, x, top, slot_width, height, fills[index % len(fills)], self.theme.rule)
-            self._add_text(slide, self._metric_value(metric.value), x + int(slot_width * 0.07), int(top + height * 0.08), int(slot_width * 0.86), int(height * 0.42), 14, True, accents[index % len(accents)], self.theme.title_font, 1)
-            self._add_text(slide, self._metric_label(metric), x + int(slot_width * 0.07), int(top + height * 0.53), int(slot_width * 0.86), int(height * 0.32), 7.8, False, self.theme.muted, self.theme.body_font, 1)
+            if self.theme.layout_family == "editorial":
+                self._rounded_rect(slide, x, top, slot_width, self.Inches(0.03), accents[index % len(accents)], accents[index % len(accents)])
+                self._add_text(slide, self._metric_value(metric.value), x, int(top + height * 0.1), int(slot_width * 0.86), int(height * 0.38), 16, True, accents[index % len(accents)], self.theme.title_font, 1)
+                self._add_text(slide, self._metric_label(metric), x, int(top + height * 0.55), int(slot_width * 0.92), int(height * 0.34), 7.8, False, self.theme.muted, self.theme.body_font, 1)
+            elif self.theme.layout_family == "report":
+                self._rounded_rect(slide, x, top, slot_width, height, fills[index % len(fills)], self.theme.rule)
+                self._add_text(slide, self._metric_value(metric.value), x + int(slot_width * 0.07), int(top + height * 0.06), int(slot_width * 0.86), int(height * 0.46), 16.8, True, accents[index % len(accents)], self.theme.title_font, 1)
+                self._add_text(slide, self._truncate(self._metric_label(metric), 22), x + int(slot_width * 0.07), int(top + height * 0.57), int(slot_width * 0.86), int(height * 0.3), 7.2, True, self.theme.ink, self.theme.body_font, 1)
+            else:
+                self._rounded_rect(slide, x, top, slot_width, height, fills[index % len(fills)], self.theme.rule)
+                self._add_text(slide, self._metric_value(metric.value), x + int(slot_width * 0.07), int(top + height * 0.08), int(slot_width * 0.86), int(height * 0.42), 14, True, accents[index % len(accents)], self.theme.title_font, 1)
+                self._add_text(slide, self._metric_label(metric), x + int(slot_width * 0.07), int(top + height * 0.53), int(slot_width * 0.86), int(height * 0.32), 7.8, False, self.theme.muted, self.theme.body_font, 1)
 
     def _render_metric_column(self, slide, metrics: Sequence[MetricBlock], left, top, width, height) -> None:
         metrics = list(metrics)[:4]
@@ -707,7 +1189,8 @@ class PptxRenderer:
             y = int(top + index * (slot_height + int(gap)))
             fill = self.theme.pale_primary if index % 2 == 0 else self.theme.pale_secondary
             self._rounded_rect(slide, left, y, width, slot_height, fill, self.theme.rule)
-            self._add_text(slide, self._metric_value(metric.value), int(left + width * 0.08), y + int(slot_height * 0.16), int(width * 0.84), int(slot_height * 0.36), 18, True, self.theme.primary, self.theme.title_font, 1)
+            value_size = 20 if self.theme.layout_family in {"report", "systems"} else 18
+            self._add_text(slide, self._metric_value(metric.value), int(left + width * 0.08), y + int(slot_height * 0.16), int(width * 0.84), int(slot_height * 0.36), value_size, True, self.theme.primary, self.theme.title_font, 1)
             self._add_text(slide, self._metric_label(metric), int(left + width * 0.08), y + int(slot_height * 0.58), int(width * 0.84), int(slot_height * 0.28), 8.2, True, self.theme.muted, self.theme.body_font, 1)
 
     def _render_table(self, slide, slide_spec: SlideSpec, table_left, table_top, table_width, table_height) -> None:
@@ -741,11 +1224,99 @@ class PptxRenderer:
             return
         self._render_numbered_points(slide, blocks, left, top, width, height, size=size, max_items=max_items)
 
+    def _render_stage_cards(self, slide, blocks: Sequence[TextBlock], left, top, width, height, horizontal: bool) -> None:
+        blocks = list(blocks)
+        if not blocks:
+            return
+        t = self.theme
+        max_count = 4 if t.layout_family == "systems" else 3
+        count = min(max_count, len(blocks))
+        gap = self.Inches(0.12)
+        palette = [t.primary, t.secondary, t.accent, t.ink]
+        if horizontal:
+            slot_w = int((int(width) - int(gap) * (count - 1)) / count)
+            slot_h = int(height)
+            for idx, block in enumerate(blocks[:count], start=1):
+                x = int(left + (idx - 1) * (slot_w + int(gap)))
+                self._render_one_stage_card(slide, block, idx, x, top, slot_w, slot_h, palette[(idx - 1) % len(palette)])
+        else:
+            slot_h = int((int(height) - int(gap) * (count - 1)) / count)
+            slot_h = max(slot_h, self.Inches(0.48))
+            for idx, block in enumerate(blocks[:count], start=1):
+                y = int(top + (idx - 1) * (slot_h + int(gap)))
+                self._render_one_stage_card(slide, block, idx, left, y, width, slot_h, palette[(idx - 1) % len(palette)])
+
+    def _render_one_stage_card(self, slide, block: TextBlock, index: int, left, top, width, height, accent) -> None:
+        t = self.theme
+        lead, detail = self._point_parts(block)
+        fill = t.surface if t.layout_family in {"editorial", "conference", "explainer"} else t.pale_neutral
+        if t.layout_family == "systems":
+            fill = t.pale_primary if index % 2 else t.pale_secondary
+        if t.layout_family == "report":
+            fill = t.surface_alt if index % 2 else t.surface
+        self._rounded_rect(slide, left, top, width, height, fill, t.rule)
+        marker_w = min(self.Inches(0.44), int(width * 0.18))
+        self._rounded_rect(slide, left, top, marker_w, height, accent, accent)
+        self._add_text(slide, f"{index:02d}", int(left + marker_w * 0.08), int(top + height * 0.18), int(marker_w * 0.82), self.Inches(0.18), 7.2, True, (255, 255, 255), t.title_font, 1, alignment=self.PP_ALIGN.CENTER)
+        text_left = int(left + marker_w + self.Inches(0.12))
+        text_width = int(width - marker_w - self.Inches(0.22))
+        compact = int(height) < self.Inches(0.82) or int(width) < self.Inches(2.25)
+        lead_size = 8.6 if compact else 10.2
+        detail_size = 7.2 if compact else 8.3
+        lead_text = self._headline_text(lead or block.text, 34 if compact else 46)
+        self._add_text(slide, lead_text, text_left, int(top + height * 0.16), text_width, int(height * (0.56 if compact else 0.3)), lead_size, True, accent, t.body_font, 1)
+        if not compact and int(height) >= self.Inches(0.74):
+            self._add_text(slide, self._body_sentence(detail or block.text, 92), text_left, int(top + height * 0.48), text_width, int(height * 0.38), detail_size, False, t.ink, t.body_font, 2)
+
+    def _add_system_lane(self, slide, left, top, width, height, slide_spec: SlideSpec) -> None:
+        t = self.theme
+        self._rounded_rect(slide, left, top, width, height, t.surface, t.rule)
+        self._add_text(slide, "Workflow Reading", int(left + self.Inches(0.18)), int(top + self.Inches(0.18)), int(width - self.Inches(0.36)), self.Inches(0.2), 8.2, True, t.secondary, t.body_font, 1)
+        labels = [slide_spec.section_label or "Input", "Evidence", "Decision", "Output"]
+        for idx, label in enumerate(labels[:4], start=1):
+            y = int(top + self.Inches(0.72) + (idx - 1) * self.Inches(0.74))
+            self._rounded_rect(slide, int(left + self.Inches(0.2)), y, int(width - self.Inches(0.4)), self.Inches(0.38), t.pale_primary if idx % 2 else t.pale_secondary, t.rule)
+            self._add_text(slide, self._truncate(str(label), 24), int(left + self.Inches(0.38)), int(y + self.Inches(0.1)), int(width - self.Inches(0.76)), self.Inches(0.16), 7.6, True, t.ink, t.body_font, 1)
+
     def _render_key_message(self, slide, text: str, left, top, width, height, accent=None) -> None:
         if not text:
             return
         t = self.theme
         accent = accent or t.primary
+        if t.layout_family == "editorial":
+            self._rounded_rect(slide, left, top, self.Inches(0.05), height, accent, accent)
+            self._add_text(
+                slide,
+                self._body_sentence(text, 240),
+                int(left + self.Inches(0.24)),
+                int(top + self.Inches(0.04)),
+                int(width - self.Inches(0.28)),
+                int(height - self.Inches(0.06)),
+                self._fit_title_size(text, base=14.2, min_size=10.5),
+                True,
+                t.ink,
+                t.title_font,
+                2,
+            )
+            return
+        if t.layout_family == "systems":
+            self._rounded_rect(slide, left, top, width, height, t.surface, t.rule)
+            self._rounded_rect(slide, left, top, self.Inches(0.18), height, accent, accent)
+            self._add_text(slide, "STATE", int(left + self.Inches(0.34)), int(top + self.Inches(0.1)), int(width - self.Inches(0.46)), self.Inches(0.16), 6.8, True, accent, t.body_font, 1)
+            self._add_text(
+                slide,
+                self._body_sentence(text, 220),
+                int(left + self.Inches(0.34)),
+                int(top + self.Inches(0.3)),
+                int(width - self.Inches(0.48)),
+                int(height - self.Inches(0.34)),
+                self._fit_title_size(text, base=12.6, min_size=9.8),
+                True,
+                t.ink,
+                t.body_font,
+                2,
+            )
+            return
         self._rounded_rect(slide, left, top, width, height, t.pale_primary, t.rule)
         self._rounded_rect(slide, left, top, self.Inches(0.12), height, accent, accent)
         self._add_text(
@@ -981,9 +1552,13 @@ class PptxRenderer:
 
     def _headline_text(self, text: str, max_len: int) -> str:
         text = self._strip_ellipsis(text).strip(" .;:-")
-        if len(text) <= max_len:
-            return text
-        return text[:max_len].rsplit(" ", 1)[0].strip(" .;:-")
+        if len(text) > max_len:
+            text = text[:max_len].rsplit(" ", 1)[0].strip(" .;:-")
+        words = text.split()
+        weak_endings = {"a", "an", "the", "of", "to", "in", "on", "for", "with", "by", "and", "or", "that", "which"}
+        while len(words) > 2 and words[-1].strip(" ,;:-").lower() in weak_endings:
+            words.pop()
+        return " ".join(words)
 
     def _ensure_sentence(self, text: str) -> str:
         text = self._strip_ellipsis(text).strip()
@@ -1016,7 +1591,7 @@ class PptxRenderer:
         label = metric.label or metric.note
         if not label and metric.note:
             label = metric.note
-        return self._truncate(label or "", 34)
+        return self._headline_text(label or "", 34)
 
     def _rgb(self, value):
         return self.RGBColor(*value)

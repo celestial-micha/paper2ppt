@@ -3,7 +3,20 @@ Path handling utilities
 """
 from pathlib import Path
 
-PREDEFINED_STYLES = {"academic", "doraemon"}
+PREDEFINED_STYLES = {
+    "academic",
+    "academic_azure",
+    "academic_ink",
+    "academic_warm",
+    "editorial",
+    "editorial_mono",
+    "systems",
+    "systems_dark",
+    "data_report",
+    "conference",
+    "visual_explainer",
+    "doraemon",
+}
 
 
 def normalize_input_path(input_path: str) -> str:
@@ -34,4 +47,3 @@ def parse_style(style_str: str) -> tuple:
         return style_str.lower(), None
     else:
         return "custom", style_str
-
