@@ -484,3 +484,110 @@ D:\coding\agent_paper_to_slider\Paper2Slides-main
 请先不要急着跑五篇论文。
 先检查这篇新论文是否从未解析过，再给出 six-route smoke 执行计划和需要改动的 runner/audit 文件范围。今天先以稳定面试叙事为主，不要把三条新风格都强行做成 fully autonomous。
 ```
+## 2026-07-02 补充：外部 PPT 项目吸收层
+
+在 GPT-5 System Card six-way smoke 后，本计划新增一层 external style brief，用来吸收外部 PPT 项目的工程与视觉经验，但不让外部项目直接替代 Paper2Slides 的 benchmark。
+
+本轮评审了两个项目：
+
+- `hugohe3/ppt-master`：重点借鉴 spec lock、project pipeline、template architecture、preview/checker/export 质量链路，以及“最终 PPTX 必须保持原生可编辑对象”的工程目标。
+- `op7418/guizang-ppt-skill`：重点借鉴 Swiss locked-mode、layout registry、单一 accent 色、标题左上纪律、图片 slot 绑定和 validator gate。
+
+已生成的参考样稿位于：
+
+```text
+benchmark_runs/openai_gpt5_system_card_sixway_20260701_smoke/deliverables/
+```
+
+新增文件：
+
+```text
+07_ppt_master_inspired_native.pptx
+08_guizang_swiss_inspired_native.pptx
+08_guizang_swiss_inspired_html/index.html
+```
+
+计划调整：
+
+1. route 04-06 可读取 external style brief，但不得读取 golden0/1/2 的完整 PPTX、完整 style contract 或 layout grammar。
+2. external style brief 必须被降维成 `style_contract`、`layout_registry`、`design_primitives`、`validator_rules` 四类资产。
+3. 每个新外部风格先生成 7-8 页 visual probe，覆盖 cover、comparison、structure diagram、metric ledger、evidence/image hero、closing，再决定是否扩展为完整 24 页论文 deck。
+4. 新增指标：native editability、layout diversity、evidence density、typography risk、baseline similarity、human pick/reject/borrow notes。
+5. HTML/browser preview 可以作为视觉实验室，但正式 benchmark 交付仍以可编辑 PPTX 为主。
+
+详细评审与执行建议见：
+
+```text
+docs/openai_gpt5_external_ppt_project_review_plan.zh-CN.md
+```
+## 2026-07-02 决策修订：抛开归藏主线，转向 PPT Master-style seed pipeline
+
+GPT-5 System Card six-way smoke 的人工复盘结论更新如下：
+
+- 历史 route 04 `assisted_seed_scaffold_style` 是 Codex 先给弱脚手架的路线，暂不继续作为主线模板。
+- 历史 route 05 `autonomous_style_proposal_a` 可归档为对照。
+- 历史 route 06 `autonomous_style_proposal_b` 保留，因为它有继续调到好看的潜力。
+- `07_ppt_master_inspired_native.pptx` 的视觉效果和工程思想更贴近下一阶段目标。
+- `08_guizang_swiss_inspired_*` 作为规则型视觉参考归档，当前不作为主线。
+
+下一阶段不再把“随机给一个初步款式，然后靠 bounded repair 局部修”作为默认路线。新的主线是：
+
+```text
+parse-once paper checkpoint
+ -> PPT Master-style strategist
+ -> seed_template_package
+ -> 7-8 page visual probe
+ -> template gate
+ -> full deck generation
+ -> template-level repair + page-level repair
+ -> human feedback packet
+ -> benchmark report
+```
+
+推荐新 six-route 对照：
+
+```text
+01 academic frozen reference
+02 golden1 frozen reference
+03 golden2 frozen reference
+04 retained_autonomous_b_control
+05 ppt_master_seed_probe
+06 ppt_master_seed_full_repair
+```
+
+Route 06 历史下降曲线记录：
+
+```text
+total findings: 136 -> 112 -> 112, -17.6%
+high severity: 26 -> 25 -> 25, -3.8%
+medium severity: 34 -> 35 -> 35, +2.9%
+low severity: 76 -> 52 -> 52, -31.6%
+typography dimension: 88 -> 64 -> 64, -27.3%
+copy_fitting problem type: 37 -> 27 -> 27, -27.0%
+near_text_capacity rule: 16 -> 7 -> 7, -56.3%
+```
+
+这说明现有 bounded repair 能消化一部分文本容量/字号类问题，但不能解决模板起点、全局审美、版式骨架和中高风险视觉问题。因此，后续 benchmark 重点从 page-level local repair 前移到 seed-template generation + template-level gate。
+
+详细计划见：
+
+```text
+docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md
+```
+## 2026-07-02 主计划入口更新
+
+更完整的新计划已经单独整理为：
+
+```text
+docs/ppt_master_universal_benchmark_upgrade_plan.zh-CN.md
+```
+
+该计划是下一阶段主入口。它把目标从“继续多生成几套内部模板”改为“构建可评多来源 PPT 的通用 benchmark，并用 ppt-master 的 strategist/spec_lock/seed-template 思想补强初稿生成阶段”。
+
+第一步不是直接重写 renderer，而是先做：
+
+```text
+DeckIR + external PPTX intake + universal scorecard v0
+```
+
+只有当历史 06、07_ppt_master_inspired_native.pptx、academic frozen baseline 都能进入同一套 DeckIR 和 scorecard 后，再推进 seed strategist、visual probe、template gate、full deck repair。

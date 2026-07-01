@@ -14,6 +14,7 @@ from .human_feedback import (
     summarize_human_feedback_benchmark,
 )
 from .nonvisual_audit import inspect_pptx_nonvisual
+from .sixway import run_sixway_hybrid_smoke
 
 __all__ = [
     "DEFAULT_HUMAN_FEEDBACK_BENCHMARK",
@@ -23,6 +24,7 @@ __all__ = [
     "collect_layout_qa_results",
     "inspect_pptx_nonvisual",
     "load_human_feedback_benchmark",
+    "run_sixway_hybrid_smoke",
     "summarize_human_feedback_benchmark",
     "summarize_layout_qa",
     "write_summary_report",

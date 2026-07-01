@@ -686,3 +686,58 @@ D:\coding\agent_paper_to_slider\Paper2Slides-main
 6. 检查现有 `fourway.py` 是否应升级为 generalized multi-route runner；
 7. 列出要新增的 artifacts：`style_proposal_policy.json`、`human_feedback_effort.csv`、`seed_scaffold_contract.json`、`novelty_report.json`、`sixway_result.json`；
 8. 只在计划确认后开始跑 smoke。
+
+## 2026-07-02 最新交接：PPT Master 融合与通用 PPT Benchmark 升级
+
+当前方向已经从“六路 hybrid smoke 继续调 04/05/06”升级为：
+
+```text
+吸收 ppt-master 的 strategist / spec_lock / seed-template / quality-gate 思想，
+但目标不是只向 ppt-master 靠拢，而是让 Paper2Slides 的 benchmark 能评多来源 PPT：
+Paper2Slides、ppt-master、人工 PPT、其他 Agent PPT。
+```
+
+本轮继续使用的论文是：
+
+```text
+D:\coding\agent_paper_to_slider\Paper2Slides-main\test_papers\OpenAI_GPT-5_System_Card.pdf
+```
+
+已完成解析与 six-way smoke 的本地运行目录是：
+
+```text
+D:\coding\agent_paper_to_slider\Paper2Slides-main\benchmark_runs\openai_gpt5_system_card_sixway_20260701_smoke
+```
+
+其中 `benchmark_runs/` 是运行产物目录，默认不提交到 GitHub；新窗口应优先复用其中的 checkpoint、routes 和 deliverables 做本地实验。
+
+请新窗口优先阅读：
+
+1. `docs/ppt_master_universal_benchmark_upgrade_plan.zh-CN.md`
+2. `docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md`
+3. `docs/openai_gpt5_external_ppt_project_review_plan.zh-CN.md`
+4. `docs/autonomous_style_proposal_benchmark_plan.zh-CN.md`
+5. `paper2slides/benchmark/sixway.py`
+6. `paper2slides/benchmark/nonvisual_audit.py`
+7. `external_refs/ppt-master_readonly/SKILL.md`
+8. `external_refs/ppt-master_readonly/templates-architecture.md`
+9. `external_refs/ppt-master_readonly/why-ppt-master.md`
+
+当前决策：
+
+- 保留 parse-once checkpoint、native PPTX、nonvisual audit、sixway benchmark、repair log、frozen references。
+- 历史 04/05 不再作为主线；历史 06 保留为可调潜力样式和旧路线对照。
+- 暂时抛开 guizang 主线，重点吸收 ppt-master 的初稿生成 pipeline。
+- 第一轮不要大改 renderer；先实现 DeckIR 和 external PPTX intake，让历史 06、07_ppt_master_inspired_native.pptx、academic frozen baseline 都能被同一套 universal benchmark 评。
+- 第一轮验收不是“生成更好看的 PPT”，而是“同一套 DeckIR/scorecard 能解释 07 为什么更好、06 为什么有潜力但 plateau、baseline 为什么稳定但不够现代”。
+
+建议第一步任务：
+
+```text
+新增 paper2slides/benchmark/universal/deck_ir.py
+新增 paper2slides/benchmark/universal/pptx_intake.py
+把 06 / 07 / academic baseline 转成 deck_ir.json
+给出 universal scorecard v0
+```
+
+成功标准：同一套 benchmark 能解释为什么 07 更好看、为什么 06 有潜力但 plateau、旧 nonvisual audit 哪些规则仍适用、哪些视觉规则需要 human feedback 校准。
