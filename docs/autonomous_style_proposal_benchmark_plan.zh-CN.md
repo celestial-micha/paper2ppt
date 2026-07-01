@@ -1,8 +1,17 @@
-# Autonomous Style Proposal Benchmark 下一阶段计划书
+# Hybrid Style Proposal Benchmark 下一阶段计划书
 
 日期：2026-07-01
 
-本文档接住 `blind_rectangular_research_board` 晋升为 `golden_baseline2` 后的新阶段目标：把三套 human-tuned golden references 冻结起来，然后让系统在**不读取完整模板**的情况下，基于论文解析内容、抽象设计原语和 badcase registry，自主提出新的 PPT 款式，并通过多轮 benchmark / repair / human feedback 评估它。
+本文档接住 `blind_rectangular_research_board` 晋升为 `golden_baseline2` 后的新阶段目标：把三套 human-tuned golden references 冻结起来，然后让系统在**不读取完整 golden 模板**的情况下，生成三个新 PPT 款式并通过 benchmark / repair / human feedback 评估它。
+
+2026-07-01 面试前调整：三个新款式不再全部要求 fully autonomous。为避免临面试前步子过大，采用更稳的 hybrid 方案：
+
+```text
+1 assisted seed scaffold route
++ 2 autonomous free proposal routes
+```
+
+其中 assisted seed route 允许 Codex 先给一个非常基础、未成熟、未复用 golden0/1/2 的视觉脚手架；系统随后必须通过同一套 benchmark loop 迭代和修正。剩下两条 route 仍然是完全自由 proposal，只能用论文解析内容、抽象设计原语和 badcase registry。
 
 ## 0. 当前结论
 
@@ -21,11 +30,11 @@ golden_baseline2: golden_baseline2_blind_rectangular_research_board
 - 风格隔离验证；
 - human-in-the-loop 经验展示。
 
-但它们不应该再作为下一阶段 autonomous style proposal 的输入模板。下一阶段要回答的问题不是“golden2 能不能继续套到新论文”，而是：
+但它们不应该再作为下一阶段新风格实验的输入模板。下一阶段要回答的问题不是“golden2 能不能继续套到新论文”，而是：
 
 ```text
-只给论文解析内容、设计约束、抽象设计原语和 badcase registry，
-系统能不能自己提出新的 style_contract + layout grammar，
+在冻结 golden0/1/2 的前提下，
+系统能不能从一个弱 assisted seed 或两个自由 proposal 出发，
 再通过 benchmark repair loop 把它迭代到可用？
 ```
 
@@ -33,10 +42,11 @@ golden_baseline2: golden_baseline2_blind_rectangular_research_board
 
 用户提出的担忧是对的：完全不给任何审美先验，系统可能生成空、散、弱的页面；但如果直接给成熟模板，系统又会退化成“把内容塞进别人的模板”。
 
-因此下一阶段采用中间路线：
+因此下一阶段采用双轨路线：
 
 ```text
 允许：抽象 design primitives library
+允许：一条 Codex-provided weak seed scaffold route
 禁止：完整模板、成熟布局策略、golden style_contract
 ```
 
@@ -56,9 +66,25 @@ golden_baseline2: golden_baseline2_blind_rectangular_research_board
 
 这些原语相当于“设计词汇表”，不是模板。
 
-### 1.2 禁止输入
+### 1.2 Codex seed scaffold 的边界
 
-Autonomous style proposal agent 在生成新风格时不得读取：
+`assisted_seed_scaffold` route 允许 Codex 在 smoke test 开始时提供一个很基础的初始款式雏形，但它必须满足：
+
+- 只能定义粗粒度画布、页面角色、容器类型、基础配色、初始 renderer 参数；
+- 不能复用 `academic`、`golden_baseline1`、`golden_baseline2` 的完整页面骨架；
+- 不能复制三套 golden reference 的 PPTX、style contract 或 layout grammar；
+- 不能一步到位做成成熟模板；
+- 必须输出 `seed_scaffold_contract.json` 和 `seed_authoring_note.md`，说明它只是 weak scaffold；
+- 必须进入同样的 `iter0 -> audit -> repair -> rerender -> compare` loop；
+- benchmark 统计时标记为 `L3.5_assisted_seed_scaffold_repair`，不能和 fully autonomous route 混在一起。
+
+面试时可以这样解释：
+
+> 我们把系统能力拆成层级。短期为了让实验稳定，我们允许一条 Codex 给初始弱脚手架的路线；但这个脚手架不是完整模板，也不能读取三套 golden。真正被评估的是 benchmark 能不能把这个粗糙雏形自动迭代得更好。与此同时，我们保留两条完全自由 proposal route，用来探索更高自主度。
+
+### 1.3 禁止输入
+
+无论 assisted seed 还是 autonomous free proposal，在生成新风格时都不得读取：
 
 - `academic` 的完整 layout grammar；
 - `golden_baseline1` 的 rounded proof-panel style contract；
@@ -66,13 +92,13 @@ Autonomous style proposal agent 在生成新风格时不得读取：
 - 三套 golden PPTX 当作模板；
 - 从 golden references 直接抽出的页面布局参数。
 
-### 1.3 面试口径
+### 1.4 面试口径
 
 可以这样讲：
 
-> 我们不是让模型从真空里凭空审美，也不是套模板。我们给它抽象设计原语，例如网格、字体层级、容器形状、proof-object 类型和约束，但不给完整模板。这样系统有基本设计语言，却必须自己决定 style_contract、layout grammar 和页面节奏。成熟模板只作为 frozen reference 和 evaluation baseline，不作为 proposal 输入。
+> 我们不是让模型从真空里凭空审美，也不是套模板。我们给它抽象设计原语，例如网格、字体层级、容器形状、proof-object 类型和约束，但不给完整 golden 模板。为了面试前实验稳定，我们保留一条 assisted seed scaffold route，由 Codex 给一个弱脚手架；另外两条 route 仍然自由 proposal。成熟模板只作为 frozen reference 和 evaluation baseline，不作为 proposal 输入。
 
-## 2. Style Proposal Agent 设计
+## 2. Style Proposal / Seed Agent 设计
 
 ### 2.1 输入
 
@@ -92,7 +118,7 @@ Autonomous style proposal agent 在生成新风格时不得读取：
 
 ### 2.2 输出
 
-每个 proposal 必须输出：
+每个新风格 route 必须输出：
 
 ```json
 {
@@ -123,15 +149,15 @@ Autonomous style proposal agent 在生成新风格时不得读取：
 
 ### 2.3 三个新风格的生成方式
 
-在一篇新论文 smoke test 中，系统同时生成三条 autonomous proposal route：
+在一篇新论文 smoke test 中，系统同时生成三条新风格实验 route：
 
 ```text
-auto_style_01: structured evidence map
-auto_style_02: editorial research narrative
-auto_style_03: data/proof ledger
+assisted_seed_scaffold_style: Codex 给一个弱初始脚手架，benchmark loop 负责迭代
+autonomous_style_proposal_a: 系统自由提出第一套新 style_contract + layout grammar
+autonomous_style_proposal_b: 系统自由提出第二套新 style_contract + layout grammar
 ```
 
-这些名字只是 proposal seed，不是固定模板。agent 可以根据论文内容调整，但必须保证三条 proposal 在 contact sheet 上明显不同，且都不复制 golden0/1/2。
+这些名字只是 route 类型，不是固定模板。三条新风格在 contact sheet 上应该明显不同，且都不复制 golden0/1/2。`assisted_seed_scaffold_style` 可以由 Codex 提供初始视觉雏形，但它必须是弱脚手架，并且必须通过 benchmark loop 才能变成可展示结果。
 
 ## 3. 多轮 Repair Loop
 
@@ -214,9 +240,10 @@ golden2 的经验说明：人工参与越来越少也能把模板调好，这本
 | `L1_agent_renders_given_template` | 系统只把内容放入给定模板 |
 | `L2_human_feedback_guided_repair` | 系统自动渲染和修复，但人类指出主要 badcase |
 | `L3_benchmark_guided_multi_round_repair` | 系统根据已有 benchmark 规则多轮自修，人类只做抽检 |
+| `L3.5_assisted_seed_scaffold_repair` | Codex 给弱初始脚手架，系统用 benchmark loop 自动迭代 |
 | `L4_autonomous_style_proposal_and_repair` | 系统自主提出风格并完成 bounded repair loop |
 
-golden2 应诚实标为 `L2` 到 `L3` 之间，而不是 `L4`。下一阶段新论文的 autonomous proposal route 才是冲击 `L4` 的实验。
+golden2 应诚实标为 `L2` 到 `L3` 之间，而不是 `L4`。下一阶段新论文的 assisted seed route 标为 `L3.5`，两条 autonomous free routes 才是冲击 `L4` 的实验。
 
 ### 4.2 面试口径
 
@@ -267,9 +294,9 @@ artifact success
 | `01_academic_frozen_reference` | golden0 frozen reference | 可以读取 academic |
 | `02_golden1_frozen_reference` | golden1 frozen reference | 可以读取 golden1 |
 | `03_golden2_frozen_reference` | golden2 frozen reference | 可以读取 golden2 |
-| `04_auto_style_proposal_a` | autonomous proposal | 禁止读取 golden0/1/2 完整模板 |
-| `05_auto_style_proposal_b` | autonomous proposal | 禁止读取 golden0/1/2 完整模板 |
-| `06_auto_style_proposal_c` | autonomous proposal | 禁止读取 golden0/1/2 完整模板 |
+| `04_assisted_seed_scaffold_style` | Codex weak seed + benchmark repair | 禁止读取 golden0/1/2 完整模板 |
+| `05_autonomous_style_proposal_a` | autonomous free proposal | 禁止读取 golden0/1/2 完整模板 |
+| `06_autonomous_style_proposal_b` | autonomous free proposal | 禁止读取 golden0/1/2 完整模板 |
 
 ### 6.2 输出产物
 
@@ -298,10 +325,21 @@ style_drift_report.json
 visual_human_review_packet.zh-CN.md
 ```
 
-autonomous route 额外保存：
+assisted seed route 额外保存：
+
+```text
+seed_scaffold_contract.json
+seed_authoring_note.md
+design_primitives_used.json
+forbidden_reference_attestation.json
+```
+
+autonomous free route 额外保存：
 
 ```text
 style_contract.json
+layout_grammar.json
+renderer_parameters.json
 design_primitives_used.json
 novelty_report.json
 forbidden_reference_attestation.json
@@ -319,9 +357,10 @@ iterations/iter_03/...
 ### 6.3 Smoke 通过标准
 
 - 六路都成功生成 `slides.pptx` 和 `speaker_script.md`；
-- 三条 frozen reference route 不能被 autonomous repair 污染；
-- 三条 autonomous route 都有 style_contract 和 forbidden-reference attestation；
-- autonomous route 至少一条在 3 轮内清掉 high / medium findings；
+- 三条 frozen reference route 不能被新风格 route 污染；
+- assisted seed route 有 `seed_scaffold_contract.json`、`seed_authoring_note.md` 和 forbidden-reference attestation；
+- 两条 autonomous free route 都有 style_contract、layout grammar、novelty report 和 forbidden-reference attestation；
+- 三条新风格 route 至少一条在 3 轮内清掉 high / medium findings；
 - 每轮 score curve 和 repair log 完整；
 - 人工抽检能指出 accepted / rejected / tradeoff，并写回 badcase registry。
 
@@ -366,10 +405,10 @@ source_asset_reuse_score
 
 - 六路总览表；
 - 每篇论文的 score curve；
-- autonomous route 的 iter0 -> iterN badcase 下降曲线；
+- assisted seed route 与 autonomous free route 的 iter0 -> iterN badcase 下降曲线；
 - human feedback effort 是否下降；
 - 哪些规则从 human feedback 晋升为 auto-detect / auto-repair；
-- 三套 golden references 和三条 autonomous proposals 的 style similarity / novelty 对比。
+- 三套 golden references、一条 assisted seed route、两条 autonomous free routes 的 style similarity / novelty 对比。
 
 ## 8. Benchmark / 代码实现顺序
 
@@ -384,10 +423,11 @@ source_asset_reuse_score
 ### Phase B：Runner 扩展
 
 1. 四路 runner 升级为 sixway runner 或 generalized multi-route runner；
-2. 增加 `style_proposal_agent`；
-3. 增加 `design_primitives_library`；
-4. 增加 forbidden-reference attestation；
-5. 增加 `max_iterations` / `patience` stop condition。
+2. 增加 `assisted_seed_scaffold` route；
+3. 增加 `style_proposal_agent`；
+4. 增加 `design_primitives_library`；
+5. 增加 forbidden-reference attestation；
+6. 增加 `max_iterations` / `patience` stop condition。
 
 ### Phase C：Audit / repair 扩展
 
@@ -395,7 +435,8 @@ source_asset_reuse_score
 2. 完成 `image_underutilized_in_wide_panel` 的 style-scoped 检测；
 3. 完成 `metric_improved_visual_regressed` 的 repair-risk 记录；
 4. 将 visual/human review packet 标准化为所有 autonomous route 输出；
-5. 增加 human feedback effort 统计。
+5. 将 assisted seed 的 seed scaffold、repair curve 和 human outcome 纳入同一统计；
+6. 增加 human feedback effort 统计。
 
 ### Phase D：Smoke + five-paper benchmark
 
@@ -411,7 +452,7 @@ source_asset_reuse_score
 用户下一个窗口给新论文时，建议直接发送：
 
 ```text
-Codex老师，我们继续 Paper2Slides-main 下一阶段：autonomous style proposal benchmark。
+Codex老师，我们继续 Paper2Slides-main 下一阶段：hybrid style proposal benchmark。
 
 项目路径：
 D:\coding\agent_paper_to_slider\Paper2Slides-main
@@ -433,12 +474,13 @@ D:\coding\agent_paper_to_slider\Paper2Slides-main
   1. academic frozen reference
   2. golden_baseline1 frozen reference
   3. golden_baseline2 frozen reference
-  4. autonomous style proposal A
-  5. autonomous style proposal B
-  6. autonomous style proposal C
+  4. assisted seed scaffold style
+  5. autonomous style proposal A
+  6. autonomous style proposal B
+- assisted seed route 可以由 Codex 先给一个非常基础、未成熟的视觉脚手架，但不能读取或复制 golden0/1/2 完整模板、style contract、layout grammar 或 PPTX。
 - autonomous style proposal 只能使用论文解析内容、设计约束、抽象 design primitives library 和 badcase registry，不能读取 golden0/1/2 完整模板或 PPTX。
 - repair loop 至少支持 2-3 轮，连续两轮无改善或触发 style/human risk 后停止。
 
 请先不要急着跑五篇论文。
-先检查这篇新论文是否从未解析过，再给出 six-route smoke 执行计划和需要改动的 runner/audit 文件范围。
+先检查这篇新论文是否从未解析过，再给出 six-route smoke 执行计划和需要改动的 runner/audit 文件范围。今天先以稳定面试叙事为主，不要把三条新风格都强行做成 fully autonomous。
 ```

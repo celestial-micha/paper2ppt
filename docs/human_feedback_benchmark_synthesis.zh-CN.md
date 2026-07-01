@@ -1038,9 +1038,10 @@ autonomy_level
 | `L1_agent_renders_given_template` | 系统把内容填入既定模板 |
 | `L2_human_feedback_guided_repair` | 系统生成/修复，人类指出主要问题 |
 | `L3_benchmark_guided_multi_round_repair` | 系统用已有规则多轮自修，人类抽查 |
+| `L3.5_assisted_seed_scaffold_repair` | Codex 给弱初始脚手架，系统用 benchmark loop 迭代 |
 | `L4_autonomous_style_proposal_and_repair` | 系统不读取完整 golden 模板，自主提出风格并多轮修复 |
 
-`golden_baseline1` 和 `golden_baseline2` 应诚实记为 human-tuned references；下一阶段的 autonomous proposal routes 才是冲击 `L4` 的实验。
+`golden_baseline1` 和 `golden_baseline2` 应诚实记为 human-tuned references；下一阶段的一条 assisted seed route 记为 `L3.5`，两条 autonomous free proposal routes 才是冲击 `L4` 的实验。
 
 ### 12.3 面试讲法
 

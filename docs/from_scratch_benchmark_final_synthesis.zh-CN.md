@@ -8,7 +8,7 @@
 golden_baseline2_blind_rectangular_research_board
 ```
 
-因此后续 benchmark 不再只有两个黄金参考，而是三套 human-tuned references 与 autonomous style proposal 分轨推进。
+因此后续 benchmark 不再只有两个黄金参考，而是三套 human-tuned references 与 hybrid new-style proposal 分轨推进：一条 assisted seed scaffold 用来保证短期 smoke 稳定，两条 autonomous free proposal 用来探索更高自主度。
 
 目标不是多保存一套 PPT，而是把“人类指出问题 -> 系统转成 badcase -> renderer 修复 -> audit 回归”的过程固化为 benchmark 和 agent workflow。
 
@@ -313,16 +313,16 @@ outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/
 
 ### 下一阶段实验形态
 
-下一篇新论文应采用六路 smoke：
+下一篇新论文应采用六路 hybrid smoke：
 
 1. `academic` frozen reference；
 2. `golden_baseline1_from_scratch_warm_academic` frozen reference；
 3. `golden_baseline2_blind_rectangular_research_board` frozen reference；
-4. autonomous style proposal A；
-5. autonomous style proposal B；
-6. autonomous style proposal C。
+4. assisted seed scaffold style；
+5. autonomous style proposal A；
+6. autonomous style proposal B。
 
-前三路允许读取各自 frozen style contract；后三路禁止读取 golden0/1/2 的完整 PPTX、style contract 和 layout grammar，只允许读取：
+前三路允许读取各自 frozen style contract。第 4 路允许 Codex 给一个弱初始视觉脚手架，但仍禁止读取 golden0/1/2 的完整 PPTX、style contract 和 layout grammar，并且必须进入 benchmark repair loop。第 5-6 路完全自由 proposal，只允许读取：
 
 - paper content inventory；
 - deck requirements；
@@ -361,7 +361,7 @@ docs/autonomous_style_proposal_benchmark_plan.zh-CN.md
 
 2026-07-01 后这四步需要改为：
 
-1. 先用用户提供的一篇未解析新论文做六路 smoke；
+1. 先用用户提供的一篇未解析新论文做六路 hybrid smoke；
 2. smoke 稳定后扩展到五篇论文，而不是立刻跑 ai20 全量；
-3. 重点统计 autonomous routes 的 repair curve 与 human feedback effort；
+3. 重点分开统计 assisted seed route 和 autonomous free routes 的 repair curve 与 human feedback effort；
 4. 再决定是否进入 10 篇或 ai20 全量。

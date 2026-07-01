@@ -69,28 +69,35 @@ speaker script 不应该只按论文生成一份通稿，而应该按 route 生�
 
 这样展示出来的重点就不只是“我能生成 PPT”，而是“我搭了一个可自动诊断、可自动返修、可追溯版本、可人工兜底的 benchmark 系统”。
 
-## 6. 2026-07-01 扩展：六路 smoke 与 autonomous proposal 记录
+## 6. 2026-07-01 扩展：六路 smoke 与 hybrid proposal 记录
 
-`golden_baseline2_blind_rectangular_research_board` 封版后，下一阶段 benchmark 从四路升级为六路：
+`golden_baseline2_blind_rectangular_research_board` 封版后，下一阶段 benchmark 从四路升级为六路。面试前采用更稳的 hybrid 方案：三条 frozen references，加一条 Codex weak seed scaffold，再加两条 autonomous free proposals。
 
 ```text
 01 academic frozen reference
 02 golden_baseline1 frozen reference
 03 golden_baseline2 frozen reference
-04 autonomous style proposal A
-05 autonomous style proposal B
-06 autonomous style proposal C
+04 assisted seed scaffold style
+05 autonomous style proposal A
+06 autonomous style proposal B
 ```
 
 这要求 run 级别新增：
 
-- `style_proposal_policy.json`：记录 autonomous route 能读什么、不能读什么。
+- `style_proposal_policy.json`：记录 assisted seed / autonomous route 能读什么、不能读什么。
 - `design_primitives_library.json`：记录可用抽象原语；不包含完整模板。
 - `human_feedback_effort.csv`：记录人工参与程度。
 - `external_artifact_eval.json`：记录与 PDF / raster / Beamer 类外部系统的可编辑性、文本抽取和溯源对比。
 - `sixway_result.json`：六路汇总。
 
-autonomous route 必须额外保留：
+assisted seed route 必须额外保留：
+
+- `seed_scaffold_contract.json`
+- `seed_authoring_note.md`
+- `design_primitives_used.json`
+- `forbidden_reference_attestation.json`
+
+autonomous free route 必须额外保留：
 
 - `style_contract.json`
 - `layout_grammar.json`
@@ -158,6 +165,7 @@ autonomous route 必须额外保留：
 | `L1_agent_renders_given_template` | 系统把内容填入给定模板 |
 | `L2_human_feedback_guided_repair` | 系统渲染/修复，人类指出主要 badcase |
 | `L3_benchmark_guided_multi_round_repair` | 系统依据已有规则多轮自修，人类抽检 |
+| `L3.5_assisted_seed_scaffold_repair` | Codex 给弱初始脚手架，系统用 benchmark loop 迭代 |
 | `L4_autonomous_style_proposal_and_repair` | 系统自主提出 style 并完成 bounded repair |
 
 ## 9. External artifact eval schema

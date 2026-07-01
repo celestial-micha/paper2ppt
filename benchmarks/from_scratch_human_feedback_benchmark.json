@@ -321,7 +321,8 @@
         "repair would violate active style_contract",
         "repair triggers metric_improved_visual_regressed or human rejection"
       ]
-    }
+    },
+    "relationship_to_hybrid_policy": "Applies to routes 05 and 06. Route 04 is governed by hybrid_style_proposal_policy as an assisted seed scaffold route."
   },
   "design_primitives_library_policy": {
     "schema_version": "design_primitives_policy.v1",
@@ -362,8 +363,80 @@
       "style-specific exact measurements copied from frozen references"
     ]
   },
+  "hybrid_style_proposal_policy": {
+    "schema_version": "hybrid_style_proposal_policy.v1",
+    "rationale": "For interview stability, the three new-style routes are split into one Codex-assisted weak seed scaffold and two fully autonomous free proposals.",
+    "new_style_routes": [
+      {
+        "route_id": "04_assisted_seed_scaffold_style",
+        "route_type": "assisted_seed_scaffold",
+        "autonomy_level": "L3.5_assisted_seed_scaffold_repair",
+        "allowed_seed_author": "codex",
+        "allowed_inputs": [
+          "paper_content_inventory",
+          "deck_requirements",
+          "abstract_design_primitives_library",
+          "badcase_registry",
+          "global correctness constraints",
+          "Codex-authored weak initial scaffold"
+        ],
+        "forbidden_inputs": [
+          "golden_baseline0 academic PPTX or full layout grammar",
+          "golden_baseline1 PPTX or full rounded proof-panel style contract",
+          "golden_baseline2 PPTX or full straight-rectangle research-board style contract",
+          "any complete page template copied from frozen references"
+        ],
+        "required_outputs": [
+          "seed_scaffold_contract.json",
+          "seed_authoring_note.md",
+          "design_primitives_used.json",
+          "forbidden_reference_attestation.json",
+          "repair_log.json",
+          "score_curve entries"
+        ]
+      },
+      {
+        "route_id": "05_autonomous_style_proposal_a",
+        "route_type": "autonomous_free_proposal",
+        "autonomy_level": "L4_candidate_autonomous_style_proposal_and_repair",
+        "required_outputs": [
+          "style_contract.json",
+          "layout_grammar.json",
+          "renderer_parameters.json",
+          "design_primitives_used.json",
+          "novelty_report.json",
+          "forbidden_reference_attestation.json"
+        ]
+      },
+      {
+        "route_id": "06_autonomous_style_proposal_b",
+        "route_type": "autonomous_free_proposal",
+        "autonomy_level": "L4_candidate_autonomous_style_proposal_and_repair",
+        "required_outputs": [
+          "style_contract.json",
+          "layout_grammar.json",
+          "renderer_parameters.json",
+          "design_primitives_used.json",
+          "novelty_report.json",
+          "forbidden_reference_attestation.json"
+        ]
+      }
+    ],
+    "shared_repair_loop": {
+      "max_iterations": 3,
+      "patience": 2,
+      "top_k_repairs_per_iteration": "1-3",
+      "stop_conditions": [
+        "no high or medium findings remain",
+        "two consecutive iterations do not improve multidimensional score",
+        "repair would violate active seed/style contract",
+        "repair triggers metric_improved_visual_regressed or human rejection"
+      ]
+    },
+    "interview_positioning": "The assisted seed route is a practical bridge, not a mature template. It demonstrates benchmark-guided improvement from a weak scaffold while the two autonomous routes test higher autonomy."
+  },
   "sixway_smoke_benchmark_plan": {
-    "schema_version": "sixway_smoke_plan.v1",
+    "schema_version": "sixway_hybrid_smoke_plan.v1",
     "paper_policy": "Use one user-provided paper that has not been parsed before; parse once, reuse checkpoints for all routes.",
     "routes": [
       {
@@ -385,28 +458,29 @@
         "repair_profile": "style_scoped_reference_repair"
       },
       {
-        "route_id": "04_auto_style_proposal_a",
+        "route_id": "04_assisted_seed_scaffold_style",
+        "style_id": "assisted_seed_scaffold_style",
+        "route_type": "assisted_seed_scaffold",
+        "repair_profile": "bounded_seed_scaffold_repair"
+      },
+      {
+        "route_id": "05_autonomous_style_proposal_a",
         "style_id": "auto_style_proposal_a",
-        "route_type": "autonomous_proposal",
+        "route_type": "autonomous_free_proposal",
         "repair_profile": "bounded_autonomous_repair"
       },
       {
-        "route_id": "05_auto_style_proposal_b",
+        "route_id": "06_autonomous_style_proposal_b",
         "style_id": "auto_style_proposal_b",
-        "route_type": "autonomous_proposal",
-        "repair_profile": "bounded_autonomous_repair"
-      },
-      {
-        "route_id": "06_auto_style_proposal_c",
-        "style_id": "auto_style_proposal_c",
-        "route_type": "autonomous_proposal",
+        "route_type": "autonomous_free_proposal",
         "repair_profile": "bounded_autonomous_repair"
       }
     ],
     "smoke_pass_criteria": [
       "all routes produce slides.pptx and speaker_script.md",
-      "autonomous routes produce style_contract and forbidden_reference_attestation",
-      "at least one autonomous route clears high and medium findings within three repair iterations",
+      "assisted seed route produces seed_scaffold_contract, seed_authoring_note, and forbidden_reference_attestation",
+      "autonomous free routes produce style_contract, layout_grammar, novelty_report, and forbidden_reference_attestation",
+      "at least one new-style route clears high and medium findings within three repair iterations",
       "score_curve and artifact_index are complete",
       "human review outcomes can be written back as scoped rules"
     ],
@@ -432,7 +506,8 @@
       "L1_agent_renders_given_template": "Agent renders paper content into a provided complete template.",
       "L2_human_feedback_guided_repair": "Agent renders/repairs, but human names the main badcases.",
       "L3_benchmark_guided_multi_round_repair": "Agent repairs with existing rules across multiple iterations; human spot-checks.",
-      "L4_autonomous_style_proposal_and_repair": "Agent proposes a new style without reading complete golden templates and completes bounded repair."
+      "L4_autonomous_style_proposal_and_repair": "Agent proposes a new style without reading complete golden templates and completes bounded repair.",
+      "L3.5_assisted_seed_scaffold_repair": "Codex provides a weak initial visual scaffold; the benchmark loop performs bounded repair and records improvement."
     }
   },
   "external_artifact_eval_schema": {
@@ -594,7 +669,9 @@
       "autonomy_level",
       "novelty_report_path",
       "forbidden_reference_attestation_path",
-      "human_feedback_effort_path"
+      "human_feedback_effort_path",
+      "seed_scaffold_contract_path",
+      "seed_authoring_note_path"
     ],
     "score_curve_columns": [
       "route_id",
@@ -629,6 +706,12 @@
       "renderer_parameters.json",
       "design_primitives_used.json",
       "novelty_report.json",
+      "forbidden_reference_attestation.json"
+    ],
+    "assisted_seed_route_extra_files": [
+      "seed_scaffold_contract.json",
+      "seed_authoring_note.md",
+      "design_primitives_used.json",
       "forbidden_reference_attestation.json"
     ]
   },
@@ -724,6 +807,11 @@
       "id": "frozen_references_are_not_proposal_inputs",
       "rule": "Academic, golden_baseline1, and golden_baseline2 are evaluation references and regression targets, not proposal templates.",
       "why": "The next benchmark must distinguish reusable human-tuned baselines from truly autonomous new style generation."
+    },
+    {
+      "id": "assisted_seed_is_bridge_not_template",
+      "rule": "The assisted seed route may start from a Codex-authored weak scaffold, but it must not become a hidden complete template or copy frozen references.",
+      "why": "This keeps the near-term benchmark stable for interviews while preserving the long-term distinction between assisted generation and fully autonomous proposal."
     }
   ],
   "iteration_log": [

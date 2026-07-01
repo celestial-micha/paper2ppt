@@ -120,8 +120,9 @@ PROMOTION_RECORD.zh-CN.md
 重要边界：
 
 ```text
-Autonomous style proposal agent 不能读取 golden0/1/2 的完整 PPTX、style contract 或 layout grammar。
-它只能使用抽象 design primitives library、论文解析内容、设计约束和 badcase registry。
+新风格实验不能读取 golden0/1/2 的完整 PPTX、style contract 或 layout grammar。
+assisted seed scaffold route 可以由 Codex 给弱初始脚手架，但不能复制 golden 模板。
+autonomous proposal route 只能使用抽象 design primitives library、论文解析内容、设计约束和 badcase registry。
 ```
 
 新增/固化规则：

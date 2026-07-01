@@ -423,12 +423,13 @@ golden_baseline2_blind_rectangular_research_board
 2. 用一篇从未解析过的新论文做 smoke test；
 3. 同一篇论文只解析一次；
 4. 生成三条 frozen reference route；
-5. 另外生成三条 autonomous style proposal route；
-6. autonomous proposal 只能使用抽象 design primitives、论文内容、设计约束和 badcase registry；
-7. autonomous proposal 不得读取 golden0/1/2 的完整模板或 layout grammar；
-8. 每条 autonomous route 支持 2-3 轮 bounded repair，连续两轮无改善或触发 repair-risk 后停止；
-9. 每轮输出 score curve、repair log、style drift report、human review packet；
-10. smoke 通过后，再扩展到 5 篇论文做量化。
+5. 另外生成三条 new-style experiment route：一条 assisted seed scaffold，两条 autonomous free proposal；
+6. assisted seed scaffold 可以由 Codex 给弱初始脚手架，但不能读取或复制 golden0/1/2 的完整模板或 layout grammar；
+7. autonomous proposal 只能使用抽象 design primitives、论文内容、设计约束和 badcase registry；
+8. assisted seed 和 autonomous proposal 都不得读取 golden0/1/2 的完整模板或 layout grammar；
+9. 每条 new-style route 支持 2-3 轮 bounded repair，连续两轮无改善或触发 repair-risk 后停止；
+10. 每轮输出 score curve、repair log、style drift report、human review packet；
+11. smoke 通过后，再扩展到 5 篇论文做量化。
 
 新的主计划见：
 
