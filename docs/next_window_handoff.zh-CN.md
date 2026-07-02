@@ -741,3 +741,32 @@ D:\coding\agent_paper_to_slider\Paper2Slides-main\benchmark_runs\openai_gpt5_sys
 ```
 
 成功标准：同一套 benchmark 能解释为什么 07 更好看、为什么 06 有潜力但 plateau、旧 nonvisual audit 哪些规则仍适用、哪些视觉规则需要 human feedback 校准。
+
+## 2026-07-02 README 与项目定位复核更新
+
+当前 GitHub/简历口径应以 PPTX 质量检测评估 Benchmark 为主，PPT 生成是候选产物来源之一。
+
+已完成：
+
+- README / README.zh-CN 第一屏改成 evaluation-first 叙事；
+- README 增加 golden_baseline1 和 golden_baseline2 的 2x2 视觉预览；
+- 新增 README 图片资产：
+
+```text
+docs/assets/readme/golden_baseline1_warm_academic_montage.jpg
+docs/assets/readme/golden_baseline2_blind_rectangular_montage.jpg
+```
+
+- 主计划文档已加状态提示：
+  - `docs/ppt_master_universal_benchmark_upgrade_plan.zh-CN.md`
+  - `docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md`
+  - `docs/autonomous_style_proposal_benchmark_plan.zh-CN.md`
+  - `docs/benchmark_plan.zh-CN.md`
+
+下一阶段不要重复“第一步新增 DeckIR / pptx_intake”。这些模块已经进入 `paper2slides/benchmark/universal/`。应继续推进：
+
+1. 用更多外部/人工 PPTX 验证 `universal-pptx-intake` 是否足够泛化；
+2. 把 visual rule registry 接到 scorecard / template gate 的晋升决策；
+3. 让 seed pipeline 的三款输出进入稳定的 preference calibration；
+4. 设计最小 human-feedback 标注表，用于记录 accepted / rejected / borrowable visual traits；
+5. 将 README 中的 golden reference 预览继续扩展为 benchmark gallery，而不是单纯作品展示。

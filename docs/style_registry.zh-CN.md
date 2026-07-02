@@ -78,6 +78,12 @@ DeepSeek_V4_golden_baseline1_from_scratch_warm_academic.pptx
 
 - Deep Residual：`DeepResidual_20260616_golden_baseline1_scoped_validation.pptx`
 
+README 预览图：
+
+```text
+docs/assets/readme/golden_baseline1_warm_academic_montage.jpg
+```
+
 ## Golden Baseline2
 
 style id：
@@ -99,6 +105,12 @@ DeepResidual_20260630_blind_rectangular_golden2_reference.pptx
 nonvisual_audit_DeepResidual_20260630_blind_rectangular_golden2_reference.json
 style_manifest.json
 PROMOTION_RECORD.zh-CN.md
+```
+
+README 预览图：
+
+```text
+docs/assets/readme/golden_baseline2_blind_rectangular_montage.jpg
 ```
 
 定位：

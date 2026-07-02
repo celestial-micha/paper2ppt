@@ -2,6 +2,27 @@
 
 本文档记录 paper2ppt 从 human-in-the-loop 人工验收到自动 benchmark / 自动迭代系统的建设计划。
 
+## 当前状态提示
+
+截至 2026-07-02，本文件记录的是早期 benchmark 建设脉络：从历史 `layout_qa.json` 汇总、ai20 数据集、批量 runner，到后续多风格实验。当前项目对外定位已经升级为 **PPTX 质量检测评估 Benchmark + 返修闭环**，新的主入口是：
+
+```text
+DeckIR
+universal-pptx-intake
+universal_scorecard.v0
+nonvisual-audit
+human-feedback packet
+seed-template gate
+```
+
+因此阅读本文件时应把它看作“历史 QA seed -> universal PPT benchmark”的前序记录，而不是最新执行计划。最新执行计划见：
+
+```text
+docs/ppt_master_universal_benchmark_upgrade_plan.zh-CN.md
+docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md
+docs/agent_workflow.md
+```
+
 ## 当前状态
 
 截至当前版本，已经完成的是 **历史 QA 汇总型 benchmark 种子**、**20 篇论文 benchmark 数据集准备**、**批量生成 runner 实现**，以及 **Kimi K2 单篇端到端生成与 QA 验证**。随后我们尝试了多套样式，确认 `academic` 应继续作为 golden baseline，同时筛出 `academic_warm`、`editorial`、`editorial_mono`、`data_report` 作为 baseline companion styles。

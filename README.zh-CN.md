@@ -2,13 +2,34 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-paper2ppt 是一个“论文转原生 PPTX + PPTX 质量检测评估 Benchmark + 返修闭环”项目。它可以把学术 PDF 论文转换成可编辑 PowerPoint、配套演讲稿，以及机器可读的质量评估报告。
+paper2ppt 首先是一个面向论文汇报 deck 的 PPTX 质量检测评估 Benchmark 与返修闭环项目。它同时包含原生论文转 PPTX 生成器，因此可以自己生成候选 deck，也可以接入外部或人工 PPTX，再统一检测、打分、对比 frozen reference，并把 human feedback 沉淀成可复用 benchmark rule。
 
-当前项目目标已经不只是“一次性生成 PPT”。更准确地说，它是一套面向论文汇报的闭环工作流：论文只解析一次，生成多条候选路线，把生成 PPT 或外部 PPTX 转成统一 DeckIR，再用 universal scorecard 做可追溯评测，最后把 audit / repair / human feedback 记录沉淀成可复用的 benchmark 规则。
+当前项目目标已经不只是“一次性生成 PPT”。更准确地说，它是一套评测优先的闭环工作流：论文只解析一次，生成或接入多条可编辑 PPTX 路线，把每个 deck 转成统一 DeckIR，再用 universal scorecard 做可追溯评测，最后把 audit / repair / human feedback 记录用于下一轮模板或生成器改进。
 
 本项目基于 [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides) 的论文处理思路和部分代码路径继续改造，同时也参考了 [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT) 在章节化讲解和 TeX/Beamer 汇报上的设计思路。当前仓库的主实现仍然是基于 `paper2slides/` 的工作流，只是已经被重度改造成“纯文本大模型调用 + 原生 PPTX 生成”的路线。
 
-![paper2ppt 效果预览](paper2ppt_preview.jpg)
+![Original academic golden baseline preview](paper2ppt_preview.jpg)
+
+## 视觉黄金参考
+
+Benchmark 保留多套 frozen reference，避免系统只围绕单一模板自我优化。新 route 必须能和不同视觉语法的 baseline 一起被评估，而不是只证明“看起来像某一个模板”。
+
+![Golden Baseline 1 - Warm Academic Proof Panel](docs/assets/readme/golden_baseline1_warm_academic_montage.jpg)
+
+![Golden Baseline 2 - Blind Rectangular Research Board](docs/assets/readme/golden_baseline2_blind_rectangular_montage.jpg)
+
+## 评测系统主要检测什么
+
+本项目的核心贡献是 PPTX 评测闭环：
+
+- **可编辑性**：deck 是否保留 PowerPoint 原生文本、形状、图片和表格，而不是整页截图。
+- **内容对齐**：slide role、章节覆盖、claim/detail/evidence 是否和论文 checkpoint 对齐。
+- **证据支撑**：figure、table、metric、caption、source-like note 是否存在且可追溯。
+- **布局几何**：重叠、溢出、安全区、留白、表格适配、图片适配和组件边界。
+- **字体与文案容量**：字号舒适度、层级、文本容量风险、截断、过空或过满区域。
+- **风格与返修风险**：frozen-reference scope、style drift、风险性自动返修，以及哪些视觉规则需要 human feedback 校准。
+
+生成器的价值在于给这个闭环提供候选 deck。评测器才是项目主线：它判断哪条 route 稳定，哪种风格 plateau，哪些视觉规则需要人工校准，以及哪个模板可以晋升。
 
 ## 项目来源与主要改造
 
@@ -44,9 +65,22 @@ paper2ppt 是一个“论文转原生 PPTX + PPTX 质量检测评估 Benchmark +
 
 本仓库不内置 Paper2PPT，也不在运行时依赖 Paper2PPT。
 
-## 当前状态
+## 当前评测能力
 
 项目现在支持：
+
+- parse-once benchmark：同一篇论文解析一次后分支到 frozen baseline、seed-template 草稿和实验路线。
+- metadata-only `nonvisual-audit`：不用大量截图也能做 PPTX 质量检测。
+- universal PPTX intake：为生成或外部 PPTX 写出 `deck_ir.json`、`universal_scorecard.v0.json` 和 schema。
+- six-way / universal benchmark runner：比较 route 质量、repair log、style drift、score curve 和 artifact 完整性。
+- content-alignment 检查：把 PPTX 原生文本和 summary / plan / slide spec checkpoint 对齐。
+- human-feedback packet 与 visual rule registry：把主观视觉意见和确定性缺陷分开记录。
+- 受保护的 frozen references：`academic`、`golden_baseline1_from_scratch_warm_academic`、`golden_baseline2_blind_rectangular_research_board`。
+- PPT-master-inspired seed pipeline gate：strategist、spec lock、seed template package、visual probe、template gate、human-feedback packet 和 full-deck seed renderer。
+
+## 生成能力
+
+生成分支负责给 benchmark 提供候选产物：
 
 - 可编辑 PowerPoint 输出：`slides.pptx`。
 - 配套讲稿：`speaker_script.md`。
@@ -55,28 +89,11 @@ paper2ppt 是一个“论文转原生 PPTX + PPTX 质量检测评估 Benchmark +
 - 通过 `.env` 配置 DeepSeek / OpenAI-compatible 文本模型。
 - 使用 `--slides` 精确指定目标页数。
 - 带章节意识的 PPT：标题页、目录页、章节分隔页、key message、结构化编号要点、紧凑指标卡、论文原图和表格。
-- slide spec evaluator 和 PPTX 排版 QA。
+- 进入 universal benchmark 前，先经过 slide spec evaluator 和 PPTX 排版 QA。
 - 有上限的修复循环，只修改失败页面的 slide spec，并重新渲染。
 - 对不支持的 LLM layout 名称、缺少图片的视觉布局、缺少表格的表格布局做自动规范化。
 - 双模型路由：文本生成使用 `deepseek-v4-flash`；图片/多模态调用使用 `gpt-5-mini`。
 - 使用 `PPTX_FORCE_DETERMINISTIC=1` 从已有 checkpoint 低成本重跑 deterministic fallback。
-- parse-once benchmark：同一篇论文解析一次后分支到 frozen baseline、seed-template 草稿和实验路线。
-- metadata-only `nonvisual-audit`：不用大量截图也能做 PPTX 质量检测。
-- universal PPTX intake：为生成或外部 PPTX 写出 `deck_ir.json`、`universal_scorecard.v0.json` 和 schema。
-- six-way / universal benchmark runner：比较 route 质量、repair log、style drift 和 score curve。
-- PPT-master-inspired seed pipeline：strategist、spec lock、seed template package、visual probe、template gate、human-feedback packet 和 full-deck seed renderer。
-- 受保护的 frozen references：`academic`、`golden_baseline1_from_scratch_warm_academic`、`golden_baseline2_blind_rectangular_research_board`。
-
-最近一轮视觉迭代重点是让生成结果更像正式 PPT：
-
-- 增加正式标题页，包含标题、作者、上下文/日期和右下角信息块。
-- 增加目录页，并把右侧横线改成有意义的章节进度线。
-- 增加章节分隔页。
-- 普通页改成“标题栏 + Key message + 结构化编号要点”。
-- 删除编号要点旁边无意义的小横杠。
-- 恢复有价值的装饰横线和信息块，但让它们承载真实信息。
-- 改进 bullet 渲染，使每条呈现“短 claim + 完整 detail 句子”，并保留 evidence 字段用于 QA 和讲稿。
-- 增加 evaluator 驱动的修复逻辑，覆盖缺失要点字段、低质量 metric label/value、空组件、不支持的 layout、视觉/表格布局素材不匹配和严重版式缺陷。
 
 ## 推荐测试 PDF
 
@@ -227,7 +244,28 @@ PPTX_MAX_FIGURE_ANALYSIS=5
 
 fast paper 模式下会跳过冗余的 `paper_info` RAG 查询；论文标题、作者等元数据仍由 summary 阶段从解析后的 markdown 中抽取。
 
-## 运行
+## 快速评测一个 PPTX
+
+优先从评测任意可编辑 PPTX 开始：
+
+```powershell
+python -m paper2slides.benchmark universal-pptx-intake `
+  --pptx path\to\deck.pptx `
+  --output-dir benchmark_runs\local_intake\deck_a `
+  --write-schemas
+```
+
+该命令会写出：
+
+```text
+deck_ir.json
+universal_scorecard.v0.json
+nonvisual_audit.json
+```
+
+这条路径可以用于本项目生成的 deck、人工编辑的 deck、frozen reference，以及其他生成器产出的 PPTX。
+
+## 生成候选 Deck
 
 典型运行：
 
@@ -391,6 +429,7 @@ docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md
 docs/universal_ppt_benchmark_v0_report.zh-CN.md
 docs/three_seed_styles_openai_gpt5_report.zh-CN.md
 docs/golden_baseline2_cover_signal_patch.zh-CN.md
+docs/ppt_evaluation_project_repositioning_report.zh-CN.md
 ```
 
 校验 `ai20` 论文集合：

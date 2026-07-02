@@ -2,6 +2,21 @@
 
 日期：2026-07-01
 
+## 当前状态提示
+
+截至 2026-07-02，本计划已从主线降级为历史路线与对照材料。04/05/06 的价值在于说明旧 autonomous style proposal 的边界：它能提供探索样本，也能通过 bounded repair 降低一部分低风险问题，但不能替代 template-level seed strategist 和 universal PPT benchmark。
+
+当前主线请以以下文档为准：
+
+```text
+docs/ppt_master_universal_benchmark_upgrade_plan.zh-CN.md
+docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md
+docs/universal_ppt_benchmark_v0_report.zh-CN.md
+docs/three_seed_styles_openai_gpt5_report.zh-CN.md
+```
+
+本文件仍保留，用于解释为什么 frozen references 不能被新 proposal route 当作模板，以及为什么需要记录 autonomous / assisted / human-tuned 的不同等级。
+
 本文档接住 `blind_rectangular_research_board` 晋升为 `golden_baseline2` 后的新阶段目标：把三套 human-tuned golden references 冻结起来，然后让系统在**不读取完整 golden 模板**的情况下，生成三个新 PPT 款式并通过 benchmark / repair / human feedback 评估它。
 
 2026-07-01 面试前调整：三个新款式不再全部要求 fully autonomous。为避免临面试前步子过大，采用更稳的 hybrid 方案：

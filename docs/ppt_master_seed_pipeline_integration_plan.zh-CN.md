@@ -2,6 +2,16 @@
 
 日期：2026-07-02
 
+## 当前定位更新
+
+Seed pipeline 的目标不是把项目重新包装成“多生成几种好看的 PPT 款式”。它在当前项目中的角色是：为 PPTX benchmark 提供更强、更可控的候选 deck，让评测闭环能比较不同初稿策略、记录 template gate 结果，并把人类偏好转成机器可读规则。
+
+因此：
+
+- `07_seed_full_deck_v10_final.pptx`、`08_seed_full_deck_blueprint_v1.pptx`、`09_seed_full_deck_console_v1.pptx` 是 seed pipeline 的候选输出；
+- 它们必须继续进入 DeckIR、nonvisual audit、universal scorecard 和 human-feedback packet；
+- 是否晋升为默认模板，不由“看起来不错”单独决定，而由 universal benchmark + human preference calibration 决定。
+
 本计划回应 GPT-5 System Card six-way smoke 后的新判断：
 
 - 历史 04 `assisted_seed_scaffold_style` 是 Codex 先给的弱脚手架，不再作为主线模板。

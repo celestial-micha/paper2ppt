@@ -3,6 +3,19 @@
 日期：2026-07-02
 目标项目：`D:\coding\agent_paper_to_slider\Paper2Slides-main`
 
+## 当前状态更新
+
+2026-07-02 二次复核后，项目对外介绍应以 **PPTX 质量检测评估 Benchmark 与返修闭环** 为主，PPT 生成器是候选产物来源之一，而不是唯一中心。
+
+因此本计划中的主线应解释为：
+
+```text
+先让任意可编辑 PPTX 进入 DeckIR / universal scorecard，
+再用生成器、seed pipeline、frozen reference 和人工 PPT 共同验证评测闭环。
+```
+
+README、面试口径和后续计划都应避免把项目写成“又一个论文转 PPT 生成器”。更准确的表达是：项目能生成 PPTX，但核心价值是检测、评估、对比、返修和沉淀 human-feedback rule。
+
 ## 0. 一句话目标
 
 把 Paper2Slides 从“能生成并评测自己几套模板的论文转 PPT 系统”，升级为：

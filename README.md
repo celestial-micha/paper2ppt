@@ -2,13 +2,34 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-paper2ppt is a paper-to-PPTX generation and evaluation benchmark project. It converts academic PDF papers into native editable PowerPoint decks, matching speaker scripts, and machine-readable quality reports.
+paper2ppt is primarily a PPTX evaluation benchmark and repair-loop project for paper-reading decks. It also includes a native paper-to-PPTX generator, so the project can create candidate decks, inspect them, compare them against frozen references, and turn human feedback into reusable benchmark rules.
 
-The current project goal is no longer just "generate a deck once." It is a closed-loop workflow for paper presentation generation, PPTX quality detection, benchmark comparison, and targeted repair: parse a paper once, generate multiple candidate routes, convert generated or external PPTX files into a shared DeckIR, score them with a universal scorecard, and preserve every audit/repair decision for later regression.
+The current project goal is no longer just "generate a deck once." It is an evaluation-first closed loop: parse a paper once, produce or ingest multiple editable PPTX routes, convert every deck into DeckIR, score it with a universal scorecard, preserve audit/repair decisions, and use those records to improve the next template or generator run.
 
 This project is built on ideas and code paths from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides), and it also borrows presentation-structuring inspiration from [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT). The main implementation in this repository is still the `paper2slides/`-based workflow, heavily modified for text-only LLM calls and native PPTX generation.
 
-![paper2ppt preview](paper2ppt_preview.jpg)
+![Original academic golden baseline preview](paper2ppt_preview.jpg)
+
+## Visual Golden References
+
+The benchmark keeps multiple frozen references so new routes can be evaluated against distinct visual grammars instead of a single preferred template.
+
+![Golden Baseline 1 - Warm Academic Proof Panel](docs/assets/readme/golden_baseline1_warm_academic_montage.jpg)
+
+![Golden Baseline 2 - Blind Rectangular Research Board](docs/assets/readme/golden_baseline2_blind_rectangular_montage.jpg)
+
+## What The Benchmark Measures
+
+The core contribution is the PPTX evaluation loop:
+
+- **Editability**: whether the deck remains native PowerPoint text, shapes, figures, and tables rather than rasterized pages.
+- **Content alignment**: whether slide roles, section coverage, claims, details, and evidence match the parsed paper checkpoints.
+- **Evidence grounding**: whether figures, tables, metrics, captions, and source-like notes are present and traceable.
+- **Layout geometry**: overlap, overflow, safe-area use, whitespace balance, table fit, figure fit, and component boundaries.
+- **Typography and copy fitting**: font comfort, type hierarchy, capacity risk, clipped text, and low-density or overfull regions.
+- **Style and repair risk**: frozen-reference scope, style drift, risky auto-repair, and rules that need human calibration.
+
+The generator is useful because it supplies candidate decks for this loop. The evaluator is the project center: it decides which route is stable, which style has plateaued, which visual rule needs human feedback, and which template can be promoted.
 
 ## Project Lineage And Changes
 
@@ -44,9 +65,22 @@ From gejifeng/Paper2PPT, this project mainly borrows product ideas rather than r
 
 This repository does not vendor Paper2PPT and does not depend on it at runtime.
 
-## Current Status
+## Current Evaluation Capabilities
 
 The project now supports:
+
+- Parse-once benchmark runs that branch one paper into frozen baselines, seed-template drafts, and experimental routes.
+- Metadata-only `nonvisual-audit` for PPTX quality detection without screenshot-heavy review.
+- Universal PPTX intake that writes `deck_ir.json`, `universal_scorecard.v0.json`, and schema files for generated or external decks.
+- Six-way and universal benchmark runners for comparing route quality, repair logs, style drift, score curves, and artifact completeness.
+- Content-alignment checks that compare native PPTX text against summary, plan, and slide-spec checkpoints.
+- Human-feedback packets and visual rule registries that keep subjective complaints separate from deterministic failures.
+- Protected frozen references: `academic`, `golden_baseline1_from_scratch_warm_academic`, and `golden_baseline2_blind_rectangular_research_board`.
+- PPT-master-inspired seed pipeline gates: strategist, spec lock, seed template package, visual probe, template gate, human-feedback packet, and full-deck seed renderer.
+
+## Generation Capabilities
+
+The generation branch supplies candidate artifacts for the benchmark:
 
 - Editable PowerPoint output: `slides.pptx`.
 - A matching narration draft: `speaker_script.md`.
@@ -55,28 +89,11 @@ The project now supports:
 - DeepSeek/OpenAI-compatible text model configuration via `.env`.
 - Optional exact slide count with `--slides`.
 - Section-aware decks with title page, contents page, section dividers, key-message blocks, structured numbered points, compact metric cards, source figures, and tables.
-- Spec-aware evaluator plus PPTX layout QA.
-- Bounded repair loop that reworks only failed slide specs before rerendering.
+- Spec-aware evaluator plus PPTX layout QA before the deck enters the universal benchmark layer.
+- Bounded repair loop that reworks failed slide specs before rerendering.
 - Layout normalization for unsupported LLM layout names and visual/table layouts without matching payload.
 - Split model routing: text generation uses `deepseek-v4-flash`; image/multimodal calls use `gpt-5-mini`.
 - Deterministic fallback generation with `PPTX_FORCE_DETERMINISTIC=1` for cheap reruns from existing checkpoints.
-- Parse-once benchmark runs that branch one paper into frozen baselines, seed-template drafts, and experimental routes.
-- Metadata-only `nonvisual-audit` for PPTX quality detection without screenshot-heavy review.
-- Universal PPTX intake that writes `deck_ir.json`, `universal_scorecard.v0.json`, and schema files for generated or external decks.
-- Six-way and universal benchmark runners for comparing route quality, repair logs, style drift, and score curves.
-- PPT-master-inspired seed pipeline pieces: strategist, spec lock, seed template package, visual probe, template gate, human-feedback packet, and full-deck seed renderer.
-- Protected frozen references: `academic`, `golden_baseline1_from_scratch_warm_academic`, and `golden_baseline2_blind_rectangular_research_board`.
-
-The most recent visual iteration focused on making the generated deck look like a real presentation:
-
-- Added a proper title page with title, authors, context/date, and summary tiles.
-- Added a contents page with meaningful section progress lines.
-- Added section divider pages.
-- Reworked normal slides into title bar + key message + structured numbered points.
-- Removed meaningless tiny connector marks beside numbered bullets.
-- Restored useful decorative bars and tiles when they carry information.
-- Improved bullet rendering so points show a short claim plus a complete detail sentence instead of clipped ellipses.
-- Added evaluator-driven repair for missing point fields, low-quality metric labels/values, empty components, unsupported layouts, visual/table payload mismatches, and severe layout defects.
 
 ## Recommended Test PDF
 
@@ -227,7 +244,28 @@ This optional step analyzes source paper figures. It does not generate new image
 
 In fast paper mode, redundant `paper_info` RAG querying is skipped because paper metadata is extracted directly from parsed markdown during summary generation.
 
-## Run
+## Quick Evaluation Run
+
+Evaluate any editable PPTX first:
+
+```powershell
+python -m paper2slides.benchmark universal-pptx-intake `
+  --pptx path\to\deck.pptx `
+  --output-dir benchmark_runs\local_intake\deck_a `
+  --write-schemas
+```
+
+This writes:
+
+```text
+deck_ir.json
+universal_scorecard.v0.json
+nonvisual_audit.json
+```
+
+Use this path for generated decks, manually edited decks, frozen references, and PPTX files from other generators.
+
+## Generate A Candidate Deck
 
 Typical run:
 
@@ -391,6 +429,7 @@ docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md
 docs/universal_ppt_benchmark_v0_report.zh-CN.md
 docs/three_seed_styles_openai_gpt5_report.zh-CN.md
 docs/golden_baseline2_cover_signal_patch.zh-CN.md
+docs/ppt_evaluation_project_repositioning_report.zh-CN.md
 ```
 
 To validate the `ai20` paper set:
