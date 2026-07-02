@@ -76,6 +76,26 @@
       "golden_baseline2 blind rectangular full style contract"
     ]
   },
+  "revision_history": [
+    {
+      "date": "2026-07-02",
+      "revision_id": "cover_signal_text_patch",
+      "scope": "cover slide text only",
+      "reason": "The frozen PPTX already had SIGNAL 1/2/3 labels and empty body boxes; the explanatory text was missing in the original frozen artifact.",
+      "changed_text": {
+        "signal_1": "Claim-first cards expose the problem, method, and evidence path.",
+        "signal_2": "Source figures and tables stay traceable inside editable proof panels.",
+        "signal_3": "Nonvisual audit converts layout defects into scoped repair rules."
+      },
+      "sha256": "7370E0507C304262F822628F5D0007416CE304ED26174A161F46D0D0BE82813C",
+      "nonvisual_audit_summary": {
+        "finding_count": 92,
+        "high": 16,
+        "medium": 11,
+        "low": 65
+      }
+    }
+  ],
   "evaluation_notes": {
     "human_in_the_loop_level": "high_to_medium_during_promotion",
     "use_for_automation_curve": "Do not use this promoted artifact itself as proof of a fully autonomous repair loop. Use it as a frozen reference and as evidence that human feedback can be converted into scoped benchmark rules.",

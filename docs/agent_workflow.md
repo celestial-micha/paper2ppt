@@ -254,6 +254,38 @@ Updated phrasing after v25:
 
 > The project now has two protected references: the original `academic` golden baseline and a from-scratch `golden_baseline1`. The benchmark harness parses a paper once, generates multiple style branches, audits them, and applies repairs with style scope so a rule learned from one visual grammar cannot silently damage another.
 
+## Universal PPTX Benchmark Upgrade
+
+The benchmark layer has now moved from "check our generated deck" toward "evaluate any editable PPTX with the same scorecard." This is the part that matches the current project positioning: generation and evaluation form one closed loop.
+
+The shared path is:
+
+```text
+PPTX artifact
+ -> nonvisual audit
+ -> DeckIR intake
+ -> universal scorecard v0
+ -> repair log / human-feedback packet / frozen-reference comparison
+```
+
+DeckIR is intentionally source-agnostic. A deck may come from paper2ppt, a PPT-master-inspired seed pipeline, a frozen human-tuned baseline, a manually edited PowerPoint file, or another PPT generator. Once it is native editable PPTX, the same evaluator can inspect slide roles, native text, figure/table objects, geometry, typography, capacity risk, evidence placement, and style signals.
+
+The first universal scorecard tracks:
+
+- **Editability**: whether the deck is mostly native text/shapes/tables rather than rasterized pages.
+- **Content alignment**: whether slide count, section roles, titles, and evidence density match the expected paper presentation shape.
+- **Evidence grounding**: whether figures, tables, captions, metrics, and source-like evidence objects are present and traceable.
+- **Layout geometry**: overlap, overflow, whitespace use, table/figure fit, and route-level repair risk.
+- **Typography**: font-size comfort, role consistency, title/body hierarchy, and text capacity warnings.
+- **Visual-design proxy**: palette consistency, repeated layout rhythm, structural variety, and style-specific rule matches.
+- **Human feedback**: unresolved subjective checks, promotion blockers, and whether a candidate needs human calibration before becoming a reusable seed.
+
+This lets the project compare route 06, route 07, academic baselines, seed-template candidates, and outside PPTX files in one table. Human visual feedback still matters, but it becomes a calibration layer on top of deterministic evidence instead of the only evaluation mechanism.
+
+Interview phrasing:
+
+> The project now treats PPT generation as a benchmarked artifact pipeline. We do not only generate a PowerPoint; we convert native PPTX into DeckIR, run deterministic quality checks, score multiple dimensions, preserve repair logs, and use human feedback to calibrate visual rules. That makes the output measurable, comparable, and improvable across different templates and even different PPT generators.
+
 ## 2026-07-01 Update: Frozen References And Hybrid Proposal
 
 After the Deep Residual blind-rectangular work, the project has a third human-tuned frozen reference:
@@ -286,3 +318,24 @@ The Observe/Repair loop remains bounded. The assisted seed branch must output a 
 Updated interview phrasing:
 
 > We first used human-in-the-loop work to create three frozen PPT style references. Then we separated evaluation from generation: frozen references can be used as baselines, but new-style branches cannot copy their full templates. For the near-term interview demo we run one assisted seed scaffold branch for stability and two autonomous free proposal branches for higher autonomy. That lets us measure the path from human-guided scaffolding toward fully autonomous style proposal instead of pretending the system jumped there in one step.
+
+## 2026-07-02 Update: PPT-Master-Style Seed Pipeline
+
+The route-04/05/06 autonomous style-proposal experiment is now treated as historical comparison material, not the preferred first-style pipeline. Route 06 remains useful as evidence that a rough autonomous style can have potential, but it also shows a plateau: page-level repair can reduce some capacity and typography findings, yet it cannot reliably invent a strong global visual grammar by itself.
+
+The mainline upgrade now combines two ideas:
+
+- **Universal PPT benchmark**: make Paper2Slides decks, PPT-master-inspired decks, frozen baselines, manually edited PPTX files, and other generators comparable through DeckIR and universal scorecard.
+- **PPT-master-style seed generation**: use strategist, spec lock, seed-template package, template gate, visual probe, and human-feedback packet before expanding to a full deck.
+
+For the OpenAI GPT-5 System Card smoke run, the stronger route is no longer "one assisted scaffold plus two free proposals." The preferred seed-family outputs are:
+
+```text
+07_seed_full_deck_v10_final.pptx       editorial data-report
+08_seed_full_deck_blueprint_v1.pptx    blueprint system map
+09_seed_full_deck_console_v1.pptx      dark evidence console
+```
+
+Interview phrasing:
+
+> The earlier autonomous style routes were useful experiments, but I do not present them as the final style-generation method. The current version separates generation quality from evaluation quality: first, every PPTX enters DeckIR and a universal scorecard; second, new initial styles are produced through a PPT-master-inspired seed pipeline with spec locks and quality gates. That gives the project both a better first draft and a more general PPT evaluation loop.

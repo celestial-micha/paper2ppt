@@ -1,11 +1,11 @@
 {
   "schema_version": "pptx_nonvisual_audit.v1",
-  "created_at": "2026-06-30T17:13:11",
-  "pptx_path": "benchmark_runs\\deep_residual_style_aware_rescore_20260630_0001\\pptx_for_review\\04_blind_rectangular_iter04_table_notes.pptx",
+  "created_at": "2026-07-02T21:42:43",
+  "pptx_path": "outputs\\golden_baselines\\golden_baseline2_blind_rectangular_research_board\\DeepResidual_20260630_blind_rectangular_golden2_reference.pptx",
   "review_mode": "non_visual_metadata_only",
   "rendering_used": false,
   "vision_model_used": false,
-  "rule_schema_version": "benchmark_rule_schema.v2",
+  "rule_schema_version": "benchmark_rule_schema.v3",
   "slide_count": 29,
   "slide_size": {
     "width_in": 13.333,
@@ -212,7 +212,8 @@
       "dimension": "style",
       "scope": "style_aware",
       "style_scope": [
-        "blind_rectangular_research_board"
+        "blind_rectangular_research_board",
+        "golden_baseline2_blind_rectangular_research_board"
       ],
       "repair_mode": "auto",
       "confidence": 0.76,
@@ -278,7 +279,8 @@
       "dimension": "component_fit",
       "scope": "style_aware",
       "style_scope": [
-        "blind_rectangular_research_board"
+        "blind_rectangular_research_board",
+        "golden_baseline2_blind_rectangular_research_board"
       ],
       "repair_mode": "auto_then_human_review",
       "confidence": 0.7,
@@ -422,7 +424,8 @@
       "dimension": "evidence",
       "scope": "style_aware",
       "style_scope": [
-        "blind_rectangular_research_board"
+        "blind_rectangular_research_board",
+        "golden_baseline2_blind_rectangular_research_board"
       ],
       "repair_mode": "auto",
       "confidence": 0.78,
@@ -482,7 +485,8 @@
       "dimension": "component_fit",
       "scope": "style_aware",
       "style_scope": [
-        "blind_rectangular_research_board"
+        "blind_rectangular_research_board",
+        "golden_baseline2_blind_rectangular_research_board"
       ],
       "repair_mode": "auto_then_human_review",
       "confidence": 0.73,
@@ -492,7 +496,8 @@
       "dimension": "style",
       "scope": "style_aware",
       "style_scope": [
-        "blind_rectangular_research_board"
+        "blind_rectangular_research_board",
+        "golden_baseline2_blind_rectangular_research_board"
       ],
       "repair_mode": "auto",
       "confidence": 0.74,
@@ -502,7 +507,8 @@
       "dimension": "style",
       "scope": "style_aware",
       "style_scope": [
-        "blind_rectangular_research_board"
+        "blind_rectangular_research_board",
+        "golden_baseline2_blind_rectangular_research_board"
       ],
       "repair_mode": "auto",
       "confidence": 0.74,
@@ -534,8 +540,9 @@
     }
   },
   "summary": {
-    "finding_count": 91,
+    "finding_count": 92,
     "by_type": {
+      "cover_left_typography_underpowered": 1,
       "near_text_capacity": 18,
       "below_ideal_font_band": 32,
       "estimated_text_overflow": 13,
@@ -545,19 +552,19 @@
       "table_support_band_off_balance": 1
     },
     "by_severity": {
+      "medium": 11,
       "low": 65,
-      "high": 16,
-      "medium": 10
+      "high": 16
     },
     "by_problem_type": {
+      "typography": 56,
       "copy_fitting": 31,
-      "typography": 55,
       "geometry": 3,
       "content_semantics": 1,
       "optical_balance": 1
     },
     "by_dimension": {
-      "typography": 73,
+      "typography": 74,
       "layout": 16,
       "content": 1,
       "style": 1
@@ -586,6 +593,7 @@
       26
     ],
     "medium_risk_pages": [
+      1,
       2,
       4,
       5,
@@ -594,6 +602,7 @@
       28
     ],
     "typography_pages": [
+      1,
       2,
       4,
       5,
@@ -646,6 +655,59 @@
     ]
   },
   "findings": [
+    {
+      "type": "cover_left_typography_underpowered",
+      "severity": "medium",
+      "problem_type": "typography",
+      "dimension": "typography",
+      "scope": "style_aware",
+      "style_scope": [
+        "golden_baseline1_from_scratch_warm_academic"
+      ],
+      "repair_mode": "human_gated",
+      "confidence": 0.68,
+      "human_outcome": "pending_review",
+      "repair_priority": "P3",
+      "geometry_repair_allowed": false,
+      "preferred_repair_scope": "font hierarchy, weight, and line-height before layout changes",
+      "slide_page": 1,
+      "message": "Cover left narrative text uses 12.5pt below the 14.0pt cover comfort floor.",
+      "evidence": {
+        "shape": {
+          "index": 19,
+          "role": "support_body",
+          "bbox": {
+            "x": 4.32,
+            "y": 2.69,
+            "w": 6.65,
+            "h": 0.45,
+            "right": 10.97,
+            "bottom": 3.14,
+            "area": 2.993
+          },
+          "font": {
+            "sizes_pt": [
+              12.5,
+              13.0
+            ],
+            "min_pt": 12.5,
+            "avg_pt": 12.75
+          },
+          "paragraph_alignment": "LEFT (1)",
+          "vertical_anchor": "MIDDLE (3)",
+          "text_preview": "Claim-first cards expose the problem, method, and evidence path.",
+          "text_words": 9,
+          "text_capacity": {
+            "font_pt": 12.75,
+            "capacity_chars": 106.2,
+            "effective_chars": 56.9,
+            "estimated_lines": 1.58,
+            "fill_ratio": 0.535
+          }
+        }
+      },
+      "repair_strategy": "Lift the cover's left-side title metadata/support typography as a group, then recheck wrapping before moving components."
+    },
     {
       "type": "near_text_capacity",
       "severity": "low",
@@ -5366,21 +5428,23 @@
       "page": 1,
       "shape_count": 30,
       "meaningful_shape_count": 12,
-      "visible_words": 28,
+      "visible_words": 56,
       "occupancy_ratio": 0.72,
       "role_counts": {
         "background": 1,
         "decorative_rule": 8,
-        "container": 8,
+        "container": 5,
         "component_label": 4,
         "title_claim": 2,
         "card_text": 1,
-        "support_body": 1,
+        "support_body": 4,
         "decorative": 3,
         "source_footer": 2
       },
-      "finding_count": 0,
-      "finding_types": []
+      "finding_count": 1,
+      "finding_types": [
+        "cover_left_typography_underpowered"
+      ]
     },
     {
       "page": 2,

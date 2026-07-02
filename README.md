@@ -2,9 +2,9 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-paper2ppt converts academic PDF papers into editable PowerPoint decks and matching speaker scripts.
+paper2ppt is a paper-to-PPTX generation and evaluation benchmark project. It converts academic PDF papers into native editable PowerPoint decks, matching speaker scripts, and machine-readable quality reports.
 
-The current project goal is practical paper presentation generation: reuse the paper's original figures and tables, use only text LLMs for planning and writing, render native editable `.pptx` slides, and keep a spec-aware QA/repair loop around the output.
+The current project goal is no longer just "generate a deck once." It is a closed-loop workflow for paper presentation generation, PPTX quality detection, benchmark comparison, and targeted repair: parse a paper once, generate multiple candidate routes, convert generated or external PPTX files into a shared DeckIR, score them with a universal scorecard, and preserve every audit/repair decision for later regression.
 
 This project is built on ideas and code paths from [HKUDS/Paper2Slides](https://github.com/HKUDS/Paper2Slides), and it also borrows presentation-structuring inspiration from [gejifeng/Paper2PPT](https://github.com/gejifeng/Paper2PPT). The main implementation in this repository is still the `paper2slides/`-based workflow, heavily modified for text-only LLM calls and native PPTX generation.
 
@@ -18,7 +18,7 @@ From HKUDS/Paper2Slides, this project keeps the useful paper-processing foundati
 - Summary, content planning, and checkpoint-style reruns.
 - A command-line workflow for turning a paper into presentation material.
 
-The main change is the generation path. The original image-style slide path has been replaced with a lower-cost, text-only LLM workflow:
+The first major change is the generation path. The original image-style slide path has been replaced with a lower-cost, text-only LLM workflow:
 
 - The model plans structured slide specs instead of generating slide images.
 - `python-pptx` renders native editable PowerPoint objects: text boxes, shapes, tables, and inserted source figures.
@@ -27,6 +27,14 @@ The main change is the generation path. The original image-style slide path has 
 - Spec and layout QA check for empty components, clipped text, weak metric cards, truncated ellipses, missing numbered-point fields, layout/payload mismatches, and decorative elements that do not carry information.
 - Numbered points are represented with structured `claim`, `detail`, and `evidence` fields before rendering.
 - The deck now has presentation structure: title page, contents page, section dividers, key-message blocks, numbered claim/detail/evidence points, source figures, and compact metric cards.
+
+The second major change is the evaluation path. The repository now treats PPTX as an inspectable structured artifact rather than only a visual output:
+
+- Parse-once checkpoints allow one paper to feed multiple style routes without paying repeated parsing cost.
+- Nonvisual PPTX audit checks geometry, typography, text capacity, table/figure use, evidence structure, and repair risk from PowerPoint metadata.
+- DeckIR converts native PPTX files into a common intermediate representation, so generated decks, frozen baselines, human-made PPTX files, and other PPT generators can be compared by the same benchmark.
+- Universal scorecard v0 reports editability, content alignment, evidence grounding, layout geometry, typography, visual-design proxies, and human-feedback status.
+- Repair logs and frozen references make every style experiment reproducible instead of relying on a one-off visual impression.
 
 From gejifeng/Paper2PPT, this project mainly borrows product ideas rather than runtime code:
 
@@ -52,6 +60,12 @@ The project now supports:
 - Layout normalization for unsupported LLM layout names and visual/table layouts without matching payload.
 - Split model routing: text generation uses `deepseek-v4-flash`; image/multimodal calls use `gpt-5-mini`.
 - Deterministic fallback generation with `PPTX_FORCE_DETERMINISTIC=1` for cheap reruns from existing checkpoints.
+- Parse-once benchmark runs that branch one paper into frozen baselines, seed-template drafts, and experimental routes.
+- Metadata-only `nonvisual-audit` for PPTX quality detection without screenshot-heavy review.
+- Universal PPTX intake that writes `deck_ir.json`, `universal_scorecard.v0.json`, and schema files for generated or external decks.
+- Six-way and universal benchmark runners for comparing route quality, repair logs, style drift, and score curves.
+- PPT-master-inspired seed pipeline pieces: strategist, spec lock, seed template package, visual probe, template gate, human-feedback packet, and full-deck seed renderer.
+- Protected frozen references: `academic`, `golden_baseline1_from_scratch_warm_academic`, and `golden_baseline2_blind_rectangular_research_board`.
 
 The most recent visual iteration focused on making the generated deck look like a real presentation:
 
@@ -120,6 +134,11 @@ PDF
     -> failed-slide repair loop
     -> speaker script generation
     -> optional detailed Beamer/TeX sidecar generation
+ -> benchmark / evaluation layer
+    -> nonvisual PPTX audit
+    -> DeckIR intake for generated or external PPTX
+    -> universal scorecard v0
+    -> repair log, score curve, and frozen-reference comparison
 ```
 
 For a diagram and interview-friendly explanation of the evaluator-driven loop, see [Agentic PPTX Workflow](docs/agent_workflow.md).
@@ -263,6 +282,10 @@ speaker_script.md
 layout_qa.json
 checkpoint_slide_spec.json
 checkpoint_slide_spec_llm_raw.txt
+nonvisual_audit.json
+deck_ir.json
+universal_scorecard.v0.json
+repair_log.json
 ```
 
 Meaning:
@@ -273,6 +296,10 @@ Meaning:
 - `layout_qa.json`: spec and layout QA result, including warnings and failed slide indexes.
 - `checkpoint_slide_spec.json`: final structured slide specification, including `claim`, `detail`, and `evidence` for numbered points.
 - `checkpoint_slide_spec_llm_raw.txt`: raw LLM output when a curator call was used.
+- `nonvisual_audit.json`: deterministic PPTX quality detection over metadata, geometry, typography, text capacity, tables, figures, and repair risk.
+- `deck_ir.json`: universal DeckIR representation for comparing native PPTX decks across generators.
+- `universal_scorecard.v0.json`: cross-deck benchmark scorecard with editability, content, evidence, layout, typography, visual proxy, and feedback dimensions.
+- `repair_log.json`: bounded repair and materialization record for benchmark routes.
 
 ## Important Implementation Files
 
@@ -287,6 +314,15 @@ paper2slides/generator/detailed_tex.py
 paper2slides/core/stages/rag_stage.py
 paper2slides/core/stages/generate_stage.py
 paper2slides/core/paths.py
+paper2slides/benchmark/nonvisual_audit.py
+paper2slides/benchmark/sixway.py
+paper2slides/benchmark/universal/deck_ir.py
+paper2slides/benchmark/universal/pptx_intake.py
+paper2slides/benchmark/universal/runner.py
+paper2slides/benchmark/seed_pipeline/strategist.py
+paper2slides/benchmark/seed_pipeline/template_package.py
+paper2slides/benchmark/seed_pipeline/template_gate.py
+paper2slides/benchmark/seed_pipeline/full_deck_renderer.py
 ```
 
 ## Test
@@ -295,29 +331,67 @@ paper2slides/core/paths.py
 python -m unittest test_phase1_pptx.py
 ```
 
-## Benchmark Seed
+## PPTX Benchmark And Evaluation Loop
 
-The repository includes a first benchmark seed for turning prior human-in-the-loop QA into automated reports:
+The repository now includes a universal benchmark layer for turning generated or external PPTX files into comparable quality evidence:
 
 ```powershell
 python -m paper2slides.benchmark --outputs outputs --report-dir benchmark_runs\local_history
 ```
 
-This scans existing `layout_qa.json` files, groups warnings into stable badcase categories, and writes `qa_summary.md` plus `qa_summary.json`. It does not rerun PDF-to-PPT generation yet. The paper manifest lives in `benchmarks/papers.json`; the `ai20` set now combines the original 12 local papers with 8 additional model, reasoning, and agent/evaluation reports.
+The legacy command above scans existing `layout_qa.json` files, groups warnings into stable badcase categories, and writes `qa_summary.md` plus `qa_summary.json`. The newer benchmark layer operates directly on PPTX artifacts:
 
-`Kimi_K2_Technical_Report.pdf` has been used for one single-paper end-to-end validation run: resumed from the `summary` stage, text calls used `deepseek-v4-flash`, image/multimodal calls used `gpt-5-mini`, and the final result passed 1/1 with 23 slides and 2 warnings. The report is under `benchmark_runs/ai20_20260607_005847/aggregate_report.md`.
+```powershell
+python -m paper2slides.benchmark nonvisual-audit `
+  --pptx path\to\slides.pptx `
+  --output path\to\nonvisual_audit.json
 
-The next planned phase protects the current `academic` template as the original golden baseline, while preserving the from-scratch warm academic proof-panel style as `golden_baseline1_from_scratch_warm_academic`. The latest route is a three-way validation plan: ordinary `academic`, `golden_baseline1`, and benchmark-improved `academic` on one fresh paper first, then the same three-way comparison on ai20, followed by a blind from-scratch loop that proves the benchmark can guide a new style rather than only maintain existing ones. See:
+python -m paper2slides.benchmark universal-pptx-intake `
+  --pptx path\to\slides.pptx `
+  --output-dir benchmark_runs\local_intake\deck_a `
+  --write-schemas
+```
+
+The universal intake writes `deck_ir.json`, `universal_scorecard.v0.json`, and optional schema files. Because DeckIR is source-agnostic, the same evaluator can score:
+
+- paper2ppt generated decks;
+- PPT-master-inspired seed-template decks;
+- manually edited PowerPoint files;
+- frozen golden baselines;
+- decks produced by other PPT generators, as long as they are editable PPTX files.
+
+For a parse-once multi-route smoke run, use the six-way runner:
+
+```powershell
+python -m paper2slides.benchmark sixway `
+  --paper test_papers\OpenAI_GPT-5_System_Card.pdf `
+  --run-dir benchmark_runs\openai_gpt5_system_card_sixway_20260701_smoke `
+  --slides 24
+```
+
+The current benchmark direction is:
+
+- keep parse-once checkpoints, native PPTX output, nonvisual audit, six-way benchmark, repair logs, and frozen references;
+- preserve `academic`, `golden_baseline1`, and `golden_baseline2` as evaluation references, not as templates for new autonomous style proposals;
+- use PPT-master-inspired strategist/spec-lock/seed-template/quality-gate ideas for the initial style pipeline;
+- compare all routes through DeckIR and universal scorecard before relying on human visual preference;
+- convert useful human feedback into durable, style-scoped benchmark rules.
+
+The paper manifest lives in `benchmarks/papers.json`; the `ai20` set combines local papers with additional model, reasoning, and agent/evaluation reports.
+
+Useful planning and run reports:
 
 ```text
 docs/benchmark_plan.zh-CN.md
 docs/multistyle_aesthetic_benchmark_plan.zh-CN.md
 docs/from_scratch_benchmark_final_synthesis.zh-CN.md
 docs/next_window_handoff.zh-CN.md
-docs/hitl_v10_component_reflow_lessons.zh-CN.md
+docs/ppt_master_universal_benchmark_upgrade_plan.zh-CN.md
+docs/ppt_master_seed_pipeline_integration_plan.zh-CN.md
+docs/universal_ppt_benchmark_v0_report.zh-CN.md
+docs/three_seed_styles_openai_gpt5_report.zh-CN.md
+docs/golden_baseline2_cover_signal_patch.zh-CN.md
 ```
-
-The Kimi K2 from-scratch track produced `rough_draft_v10_component_reflow`; mHC cross-paper validation reached `mHC_v14_table_support_balance`; DeepSeek_V4 reached the accepted checkpoint `DeepSeek_V4_v25_panel_identity_label_centered`. Benchmark rules now cover figure aspect-to-panel routing, centered figure placement inside proof panels, image-anchored figure labels, proof-panel identity label anchoring, inline-table payload indexing, shallow-card internal spacing, agenda Read path header clearance, table-bottom support band balance, and capacity-aware proof-caption fitting.
 
 To validate the `ai20` paper set:
 

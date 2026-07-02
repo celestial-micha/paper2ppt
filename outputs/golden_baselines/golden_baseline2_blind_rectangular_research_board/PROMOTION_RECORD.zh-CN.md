@@ -27,6 +27,28 @@ outputs/golden_baselines/golden_baseline2_blind_rectangular_research_board/
   style_manifest.json
 ```
 
+## 2026-07-02 修订记录
+
+本次只修订首页 cover 的三个空白 `S I G N A L` 说明框，未改变 baseline2 的直角矩形 research-board 版式语法、页面数量和 frozen-reference 身份。
+
+修订原因：原冻结 PPTX 首页已经存在 `S I G N A L 1/2/3` 标签和对应空文本框，但正文没有填入，属于当时生成/封版时留下的 cover copy 缺口，不是后续 six-way deliverables 复制流程造成的。
+
+新增文案：
+
+```text
+Signal 1: Claim-first cards expose the problem, method, and evidence path.
+Signal 2: Source figures and tables stay traceable inside editable proof panels.
+Signal 3: Nonvisual audit converts layout defects into scoped repair rules.
+```
+
+修订后 SHA256：
+
+```text
+7370E0507C304262F822628F5D0007416CE304ED26174A161F46D0D0BE82813C
+```
+
+修订后 nonvisual audit：`finding_count=92`，`high=16`，`medium=11`，`low=65`。finding 数比旧版多 1，是因为新增正文被纳入字体/容量规则统计；视觉上首页信息完整度提高。
+
 源 run：
 
 ```text

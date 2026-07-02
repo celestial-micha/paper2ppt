@@ -47,6 +47,8 @@ from paper2slides.benchmark.fourway import (
 ASSISTED_SEED_STYLE_ID = "assisted_seed_scaffold_style"
 AUTONOMOUS_STYLE_A_ID = "autonomous_style_proposal_a"
 AUTONOMOUS_STYLE_B_ID = "autonomous_style_proposal_b"
+GOLDEN_BASELINE2_REFERENCE_DIR = Path("outputs") / "golden_baselines" / GOLDEN_BASELINE2_STYLE_ID
+GOLDEN_BASELINE2_REFERENCE_PPTX = GOLDEN_BASELINE2_REFERENCE_DIR / "DeepResidual_20260630_blind_rectangular_golden2_reference.pptx"
 
 
 def run_sixway_hybrid_smoke(
@@ -253,11 +255,19 @@ def _materialize_golden2_frozen_route(inventory: Dict[str, Any], rough: Dict[str
     _write_json(route_dir / "rough_draft_spec.json", rough)
     _write_json(route_dir / "style_contract.json", contract)
     pptx_path = route_dir / "slides.pptx"
-    _render_reference_board_pptx(inventory, rough, pptx_path, contract=contract, repair_mode=True)
+    if GOLDEN_BASELINE2_REFERENCE_PPTX.exists():
+        shutil.copy2(GOLDEN_BASELINE2_REFERENCE_PPTX, pptx_path)
+        materialization_note = f"Copied the exact frozen golden_baseline2 reference PPTX from {GOLDEN_BASELINE2_REFERENCE_PPTX}."
+    else:
+        _render_reference_board_pptx(inventory, rough, pptx_path, contract=contract, repair_mode=True)
+        materialization_note = "Fallback: frozen golden_baseline2 reference PPTX was missing, so the route used the legacy reference-board renderer."
     audit = _audit_to_file(pptx_path, route_dir / "nonvisual_audit.json")
     speaker_path = route_dir / "speaker_script.md"
     speaker_path.write_text(
-        _build_rough_speaker_script(inventory, rough, "golden2 frozen reference", narrative_mode="blind_experimental"),
+        _build_rough_speaker_script(inventory, rough, "golden2 frozen reference", narrative_mode="blind_experimental")
+        + "\n\n"
+        + materialization_note
+        + "\n",
         encoding="utf-8",
     )
     speaker_audit_path = route_dir / "speaker_script_audit.json"
@@ -271,13 +281,13 @@ def _materialize_golden2_frozen_route(inventory: Dict[str, Any], rough: Dict[str
                 0,
                 pptx_path,
                 audit,
-                ["Rendered with the frozen golden_baseline2 reference grammar; no proposal route may consume this contract."],
+                [materialization_note, "No proposal route may consume this protected frozen reference as a template."],
                 _stop_reason_for_profile(audit, "audit_only"),
                 speaker_script_path=speaker_path,
                 speaker_script_audit_path=speaker_audit_path,
             )
         ],
-        note="Frozen golden_baseline2 reference route. This route is allowed to use the protected style; new proposal routes are not.",
+        note="Frozen golden_baseline2 reference route. This route materializes the exact protected PPTX when available; new proposal routes are not allowed to consume it.",
     )
     _write_json(route_dir / "repair_log.json", repair_log)
     style_report = build_style_drift_report_payload_local(
